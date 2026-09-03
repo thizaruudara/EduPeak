@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Teacher & Faculty Studio | EduPeak LMS</title>
+  <link rel="icon" type="image/png" href="assets/img/edupeak_logo.png">
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800;900&family=Noto+Sans+Sinhala:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- CSS Framework -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/teacher.css">
+
+  <!-- Supabase Client JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="teacher-body">
+
+  <!-- Teacher Top Navigation Header -->
+  <header class="teacher-header">
+    <div class="container teacher-header-inner">
+      <a href="index.html" class="brand-logo" aria-label="EduPeak Home">
+        <img src="assets/img/edupeak_logo.png" alt="EduPeak Logo" class="site-brand-img">
+        <div class="brand-text">
+          <span class="brand-tagline">Teacher & Faculty Studio</span>
+        </div>
+      </a>
+
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <!-- Teacher Profile Capsule -->
+        <div class="teacher-profile-pill">
+          <div class="teacher-avatar" id="teacherProfileAvatar">A</div>
+          <div>
+            <div style="font-weight: 700; font-size: 0.85rem; color: #0f172a;" id="teacherProfileName">Amalsha Wanniarachchi (MBBS UG)</div>
+            <div style="font-size: 0.725rem; color: #227aff; font-weight: 600;" id="teacherProfileSubject">G.C.E. A/L Physics</div>
+          </div>
+        </div>
+
+        <a href="index.html" class="btn btn-ghost btn-sm">
+          <i class="fa-solid fa-house"></i> Home
+        </a>
+        <button class="btn btn-ghost btn-sm" id="btnTeacherLogout" onclick="TEACHER_CONTROLLER.logout()" style="color: #ef4444; border: 1px solid #fecaca; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: var(--radius-md); cursor: pointer;" title="Sign Out & Return to Home">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Banner -->
+  <section class="teacher-hero-banner">
+    <div class="container teacher-hero-grid">
+      <div>
+        <div style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.75rem; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 9999px; font-size: 0.75rem; font-weight: 700; color: #93c5fd; margin-bottom: 0.75rem;">
+          <i class="fa-solid fa-chalkboard-user"></i> Master Lecturer Workspace
+        </div>
+        <h1 style="font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem;">Academic Course & Paper Studio</h1>
+        <p style="color: #cbd5e1; font-size: 0.95rem; margin: 0; max-width: 650px;">
+          Create syllabuses, add video lessons, build timed speed MCQ exams with explanations, and control live studio streams.
+        </p>
+      </div>
+      <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <button class="btn btn-primary" onclick="TEACHER_CONTROLLER.openNewCourseModal()" style="background: #227aff; border-color: #227aff; font-weight: 700; box-shadow: 0 4px 15px rgba(34, 122, 255, 0.4);">
+          <i class="fa-solid fa-plus"></i> Create New Course
+        </button>
+        <button class="btn btn-ghost" onclick="TEACHER_CONTROLLER.openNewQuizModal()" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); color: #ffffff;">
+          <i class="fa-solid fa-file-circle-plus"></i> Create MCQ Quiz
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content Container -->
+  <main class="container" style="flex: 1; padding-bottom: 3rem;">
+    
+    <!-- Metrics Row -->
+    <div class="teacher-stats-row">
+      <div class="teacher-stat-card">
+        <div class="teacher-stat-icon icon-blue"><i class="fa-solid fa-graduation-cap"></i></div>
+        <div>
+          <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">Active Courses</div>
+          <div style="font-size: 1.5rem; font-weight: 800; color: #0f172a;" id="metricTotalCourses">5</div>
+        </div>
+      </div>
+      <div class="teacher-stat-card">
+        <div class="teacher-stat-icon icon-emerald"><i class="fa-solid fa-video"></i></div>
+        <div>
+          <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">Published Lessons</div>
+          <div style="font-size: 1.5rem; font-weight: 800; color: #0f172a;" id="metricTotalLessons">24</div>
+        </div>
+      </div>
+      <div class="teacher-stat-card">
+        <div class="teacher-stat-icon icon-amber"><i class="fa-solid fa-clipboard-question"></i></div>
+        <div>
+          <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">Speed MCQ Quizzes</div>
+          <div style="font-size: 1.5rem; font-weight: 800; color: #0f172a;" id="metricTotalQuizzes">12</div>
+        </div>
+      </div>
+      <div class="teacher-stat-card" onclick="TEACHER_CONTROLLER.switchTab('students')" style="cursor: pointer;" title="Click to view registered students directory">
+        <div class="teacher-stat-icon icon-purple"><i class="fa-solid fa-users"></i></div>
+        <div>
+          <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">Enrolled Students</div>
+          <div style="font-size: 1.5rem; font-weight: 800; color: #0f172a;" id="metricTotalStudents">4,250+</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="teacher-nav-tabs">
+      <button class="teacher-tab-btn active" data-tab="courses" onclick="TEACHER_CONTROLLER.switchTab('courses')">
+        <i class="fa-solid fa-book-bookmark"></i> My Courses
+      </button>
+      <button class="teacher-tab-btn" data-tab="lessons" onclick="TEACHER_CONTROLLER.switchTab('lessons')">
+        <i class="fa-solid fa-film"></i> Lessons & Video Manager
+      </button>
+      <button class="teacher-tab-btn" data-tab="quizzes" onclick="TEACHER_CONTROLLER.switchTab('quizzes')">
+        <i class="fa-solid fa-pen-ruler"></i> MCQ Quiz & Paper Creator
+      </button>
+      <button class="teacher-tab-btn" data-tab="live" onclick="TEACHER_CONTROLLER.switchTab('live')">
+        <i class="fa-solid fa-tower-broadcast"></i> Live Studio Controls
+      </button>
+      <button class="teacher-tab-btn" data-tab="students" onclick="TEACHER_CONTROLLER.switchTab('students')">
+        <i class="fa-solid fa-users"></i> Registered Students
+      </button>
+      <button class="teacher-tab-btn" data-tab="gradebook" onclick="TEACHER_CONTROLLER.switchTab('gradebook')">
+        <i class="fa-solid fa-chart-simple"></i> Student Submissions
+      </button>
+    </nav>
+
+    <!-- 1. COURSES TAB -->
+    <section class="teacher-tab-pane active" id="teacherTab_courses">
+      <div class="teacher-card-header">
+        <div>
+          <h2 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">Faculty Course Directory</h2>
+          <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Manage your published courses across Colombo and Victory Embilipitiya branches.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="TEACHER_CONTROLLER.openNewCourseModal()">
+          <i class="fa-solid fa-plus"></i> Create New Course
+        </button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;" id="teacherCoursesGrid">
+        <!-- Injected via JavaScript -->
+      </div>
+    </section>
+
+    <!-- 2. LESSONS & VIDEO TAB -->
+    <section class="teacher-tab-pane" id="teacherTab_lessons">
+      <div class="teacher-card">
+        <div class="teacher-card-header">
+          <div>
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">Lesson & Video Curriculum</h2>
+            <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Upload lecture recordings, attach summary PDFs, and set chapter titles.</p>
+          </div>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <select class="form-control" id="lessonCourseSelect" style="width: auto; padding: 0.4rem 0.85rem; font-size: 0.85rem;" onchange="TEACHER_CONTROLLER.renderLessons()">
+              <!-- Options populated by JS -->
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="TEACHER_CONTROLLER.openNewLessonModal()">
+              <i class="fa-solid fa-plus"></i> Add Lesson
+            </button>
+          </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table class="teacher-table">
+            <thead>
+              <tr>
+                <th>Module</th>
+                <th>Lesson Title</th>
+                <th>Chapter Timeline</th>
+                <th>Duration</th>
+                <th>PDF Handout</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="teacherLessonsTbody">
+              <!-- Injected by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. MCQ QUIZ BUILDER TAB -->
+    <section class="teacher-tab-pane" id="teacherTab_quizzes">
+      <div class="teacher-card">
+        <div class="teacher-card-header">
+          <div>
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">Speed MCQ Paper & Quiz Creator</h2>
+            <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Design timed MCQ examinations with instant automatic grading and step-by-step solutions.</p>
+          </div>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <select class="form-control" id="quizCourseSelect" style="width: auto; padding: 0.4rem 0.85rem; font-size: 0.85rem;" onchange="TEACHER_CONTROLLER.renderQuizzes()">
+              <!-- Populated by JS -->
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="TEACHER_CONTROLLER.openNewQuizModal()">
+              <i class="fa-solid fa-plus"></i> Add New MCQ Question
+            </button>
+          </div>
+        </div>
+
+        <div id="teacherQuizList">
+          <!-- Injected by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. LIVE STUDIO BROADCAST TAB -->
+    <section class="teacher-tab-pane" id="teacherTab_live">
+      <div class="teacher-card" style="max-width: 920px; margin: 0 auto 2rem;">
+        <div class="teacher-card-header">
+          <div>
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">Live Stream Broadcast & Schedule Console</h2>
+            <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Configure your YouTube Live, Zoom, or Vimeo broadcast session and schedule upcoming live classes for student LMS streaming.</p>
+          </div>
+          <span class="status-tag active"><i class="fa-solid fa-circle" style="color: #ef4444; font-size: 0.6rem;"></i> Live Broadcast Hub</span>
+        </div>
+
+        <form id="liveStudioForm" onsubmit="TEACHER_CONTROLLER.handleLiveStudioSave(event)">
+          <input type="hidden" id="liveStudioScheduleId" value="">
+
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Live Stream Topic / Lecture Title</label>
+              <input type="text" class="form-control" id="liveStudioTopic" placeholder="e.g. 2027 A/L Physics - Mechanics Speed Paper Discussion & Revision" required value="2027 A/L Physics - Mechanics Special Live Broadcast">
+            </div>
+            <div class="form-group">
+              <label class="form-label"><i class="fa-solid fa-book-bookmark" style="color: #227aff;"></i> Broadcast Course</label>
+              <select class="form-control" id="liveStudioCourseSelect">
+                <!-- Populated dynamically by JS -->
+              </select>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label"><i class="fa-solid fa-clock" style="color: #227aff;"></i> Scheduled Date & Time</label>
+              <input type="text" class="form-control" id="liveStudioScheduleTime" placeholder="e.g. Saturday, 7:30 AM - 1:30 PM" value="Saturday, 7:30 AM - 1:30 PM">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Stream Provider</label>
+              <select class="form-control" id="liveStudioProvider" onchange="TEACHER_CONTROLLER.handleProviderChange()">
+                <option value="youtube">YouTube Live (Ultra Low Latency)</option>
+                <option value="zoom">Zoom Webinar / Meeting</option>
+                <option value="vimeo">Vimeo Enterprise Video</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Broadcast Status</label>
+              <select class="form-control" id="liveStudioStatus">
+                <option value="live">🔴 LIVE NOW (Broadcasting)</option>
+                <option value="scheduled" selected>⏳ Scheduled for Next Class</option>
+                <option value="ended">⏹️ Stream Concluded</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Live Video Embed URL / Meeting Link</label>
+            <input type="text" class="form-control" id="liveStudioUrl" placeholder="https://www.youtube.com/embed/..." required value="https://www.youtube.com/embed/dQw4w9WgXcQ">
+          </div>
+
+          <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap;">
+            <button type="submit" class="btn btn-primary" style="flex: 2; padding: 0.85rem; font-weight: 700; font-size: 0.95rem;">
+              <i class="fa-solid fa-tower-broadcast"></i> <span id="btnSaveScheduleText">Save & Push Broadcast Schedule</span>
+            </button>
+            <button type="button" class="btn btn-ghost" id="btnDeleteCurrentSchedule" style="flex: 1; color: #ef4444; border: 1px solid #fecaca; font-weight: 700;" onclick="TEACHER_CONTROLLER.handleDeleteCurrentSchedule()">
+              <i class="fa-solid fa-trash-can"></i> Delete / Cancel Schedule
+            </button>
+          </div>
+        </form>
+
+        <!-- Live Monitor & Preview Player -->
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <h4 style="margin: 0; font-size: 1rem; font-weight: 700; color: #0f172a;">Live Broadcast Monitor & Student LMS Feed Preview</h4>
+            <span id="livePreviewStatusBadge" class="status-tag active" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;">Status: ⏳ Scheduled</span>
+          </div>
+          <div style="position: relative; width: 100%; padding-top: 56.25%; border-radius: var(--radius-lg); overflow: hidden; background: #0f172a; box-shadow: var(--shadow-md);">
+            <iframe id="teacherLivePreviewIframe" src="https://www.youtube.com/embed/dQw4w9WgXcQ" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scheduled Classes & Broadcasts Directory -->
+      <div class="teacher-card" style="max-width: 920px; margin: 0 auto;">
+        <div class="teacher-card-header">
+          <div>
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">
+              <i class="fa-solid fa-calendar-check" style="color: #227aff;"></i> Scheduled Live Classes & Broadcasts
+            </h2>
+            <p style="font-size: 0.85rem; color: #64748b; margin: 0;">View, edit, or delete scheduled live sessions pushed to students' dashboards and LMS classroom.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="TEACHER_CONTROLLER.resetScheduleForm()">
+            <i class="fa-solid fa-plus"></i> New Broadcast Schedule
+          </button>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table class="teacher-table">
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Lecture / Topic Title</th>
+                <th>Course</th>
+                <th>Schedule Date & Time</th>
+                <th>Provider</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="teacherSchedulesTbody">
+              <!-- Injected by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. GRADEBOOK & SUBMISSIONS TAB -->
+    <section class="teacher-tab-pane" id="teacherTab_gradebook">
+      <div class="teacher-card">
+        <div class="teacher-card-header">
+          <div>
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">Student Submissions & Marks Register</h2>
+            <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Review student exam scores, submission timestamps, and grade distributions.</p>
+          </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table class="teacher-table">
+            <thead>
+              <tr>
+                <th>Student ID</th>
+                <th>Student Name</th>
+                <th>Exam / Paper Title</th>
+                <th>Score</th>
+                <th>Grade</th>
+                <th>Submitted</th>
+              </tr>
+            </thead>
+            <tbody id="teacherGradebookTbody">
+              <!-- Injected by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. REGISTERED STUDENTS TAB (READ-ONLY FOR TEACHERS) -->
+    <section class="teacher-tab-pane" id="teacherTab_students">
+      <div class="teacher-card-header">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.25rem;">
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">Enrolled & Registered Students Directory</h2>
+            <span style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.65rem; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 9999px; font-size: 0.725rem; font-weight: 700; color: #475569;">
+              <i class="fa-solid fa-lock" style="color: #64748b;"></i> Read-Only Faculty View
+            </span>
+          </div>
+          <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Verified student roster registered across your physics batches and theory modules.</p>
+        </div>
+        <span id="teacherStudentCountBadge" style="font-size: 0.8rem; font-weight: 700; background: #ede9fe; color: #6d28d9; padding: 0.35rem 0.85rem; border-radius: 9999px; border: 1px solid #ddd6fe;">
+          <i class="fa-solid fa-users"></i> Loading Roster...
+        </span>
+      </div>
+
+      <!-- Information Notice -->
+      <div style="display: flex; align-items: center; gap: 0.75rem; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.85rem 1.15rem; margin-bottom: 1.25rem; font-size: 0.85rem; color: #1e40af;">
+        <i class="fa-solid fa-shield-halved" style="font-size: 1.25rem; color: #227aff; flex-shrink: 0;"></i>
+        <div>
+          <strong>Faculty Access Policy:</strong> Teachers have read-only access to verify student registration details, exam batches, and attendance. Account modifications, password resets, deactivations, and deletions are restricted exclusively to <strong>System Administrators</strong>.
+        </div>
+      </div>
+
+      <div class="teacher-card" style="padding: 1.5rem;">
+        <!-- Filters Row -->
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+          <div>
+            <input type="text" class="form-control" id="teacherStudentSearch" placeholder="🔍 Search student by name, student index, or email..." oninput="TEACHER_CONTROLLER.renderStudents()">
+          </div>
+          <div>
+            <select class="form-control" id="teacherStudentBatchFilter" onchange="TEACHER_CONTROLLER.renderStudents()" style="font-weight: 600;">
+              <option value="all">🌟 All Batches & Streams</option>
+              <option value="2026 A/L">2026 A/L Batches</option>
+              <option value="2027 A/L">2027 A/L Batches</option>
+              <option value="2028 A/L">2028 A/L Batches</option>
+              <option value="Physical Science">Physical Science (Maths)</option>
+              <option value="Biological Science">Biological Science</option>
+              <option value="Victory Embilipitiya">Victory Embilipitiya</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Students Roster Table -->
+        <div style="overflow-x: auto;">
+          <table class="teacher-table">
+            <thead>
+              <tr>
+                <th>Student ID</th>
+                <th>Student Name & Info</th>
+                <th>Contact</th>
+                <th>Batch / Exam Year</th>
+                <th>Stream & Branch</th>
+                <th>Enrolled Module</th>
+                <th>Registration Status</th>
+              </tr>
+            </thead>
+            <tbody id="teacherStudentsTbody">
+              <!-- Injected dynamically by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL: CREATE COURSE -->
+  <div class="modal-overlay" id="newCourseModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: #0f172a;">Create New Course</h3>
+        <button class="modal-close-btn" onclick="TEACHER_CONTROLLER.closeModal('newCourseModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="TEACHER_CONTROLLER.handleCreateCourseSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Course Title (English)</label>
+            <input type="text" class="form-control" id="courseTitleInput" placeholder="e.g. 2026 A/L Physics Complete Theory & Revision" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Course Title (Sinhala)</label>
+            <input type="text" class="form-control" id="courseTitleSiInput" placeholder="e.g. 2026 උ/පෙළ භෞතික විද්‍යාව පූර්ණ සිද්ධාන්ත හා පුනරීක්ෂණ">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label"><i class="fa-solid fa-calendar-check" style="color: #227aff;"></i> Target Exam Batch <span style="color: #ef4444;">*</span></label>
+              <select class="form-control" id="courseExamYearSelect" style="font-weight: 700;">
+                <option value="2027 A/L" selected>2027 A/L (2027 Theory / Revision)</option>
+                <option value="2028 A/L">2028 A/L (2028 ආරම්භක කණ්ඩායම)</option>
+                <option value="2029 A/L">2029 A/L (2029 Foundation Batch)</option>
+                <option value="All Batches">General / Open to All Batches (විවෘත)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Academic Stream</label>
+              <select class="form-control" id="courseStreamSelect">
+                <option value="maths">Physical Science (Maths)</option>
+                <option value="science">Biological Science</option>
+                <option value="tech">Technology Stream</option>
+                <option value="commerce">Commerce Stream</option>
+                <option value="arts">Arts Stream</option>
+              </select>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Monthly Fee (LKR)</label>
+              <input type="text" class="form-control" id="courseFeeInput" placeholder="e.g. 4,500">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Lecture Schedule & Time</label>
+              <input type="text" class="form-control" id="courseScheduleInput" placeholder="e.g. Every Saturday 7:30 AM">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Thumbnail Icon</label>
+            <select class="form-control" id="courseIconSelect">
+              <option value="fa-atom">Atom / Physics (fa-atom)</option>
+              <option value="fa-calculator">Calculator / Maths (fa-calculator)</option>
+              <option value="fa-bolt">Lightning / Revision (fa-bolt)</option>
+              <option value="fa-stopwatch">Stopwatch / MCQ Paper (fa-stopwatch)</option>
+              <option value="fa-dna">DNA / Biology (fa-dna)</option>
+              <option value="fa-flask">Flask / Chemistry (fa-flask)</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; padding: 0.8rem;">
+            <i class="fa-solid fa-plus"></i> Publish Course to LMS
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EDIT COURSE -->
+  <div class="modal-overlay" id="editCourseModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Course Syllabus</h3>
+        <button class="modal-close-btn" onclick="TEACHER_CONTROLLER.closeModal('editCourseModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="TEACHER_CONTROLLER.handleEditCourseSubmit(event)">
+          <input type="hidden" id="editCourseIdInput">
+          <div class="form-group">
+            <label class="form-label">Course Title (English)</label>
+            <input type="text" class="form-control" id="editCourseTitleInput" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Course Title (Sinhala)</label>
+            <input type="text" class="form-control" id="editCourseTitleSiInput">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label"><i class="fa-solid fa-calendar-check" style="color: #227aff;"></i> Target Exam Batch <span style="color: #ef4444;">*</span></label>
+              <select class="form-control" id="editCourseExamYearSelect" style="font-weight: 700;">
+                <option value="2027 A/L">2027 A/L (2027 Theory / Revision)</option>
+                <option value="2028 A/L">2028 A/L (2028 ආරම්භක කණ්ඩායම)</option>
+                <option value="2029 A/L">2029 A/L (2029 Foundation Batch)</option>
+                <option value="All Batches">General / Open to All Batches (විවෘත)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select class="form-control" id="editCourseCategorySelect">
+                <option value="theory">Theory Class</option>
+                <option value="revision">Revision Class</option>
+                <option value="papers">Speed Paper Class</option>
+              </select>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Monthly Fee (LKR)</label>
+              <input type="text" class="form-control" id="editCourseFeeInput" placeholder="e.g. LKR 3,500 / Month">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Lecture Schedule & Time</label>
+              <input type="text" class="form-control" id="editCourseScheduleInput" placeholder="e.g. Every Saturday 7:30 AM - 1:30 PM">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Medium of Study</label>
+            <input type="text" class="form-control" id="editCourseMediumInput" placeholder="Sinhala & English Medium">
+          </div>
+          <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+            <button type="submit" class="btn btn-primary" style="flex: 1; padding: 0.85rem; font-weight: 700;">
+              <i class="fa-solid fa-floppy-disk"></i> Save Changes
+            </button>
+            <button type="button" class="btn btn-ghost" onclick="TEACHER_CONTROLLER.closeModal('editCourseModal')">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD LESSON -->
+  <div class="modal-overlay" id="newLessonModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: #0f172a;">Add Lesson to Course</h3>
+        <button class="modal-close-btn" onclick="TEACHER_CONTROLLER.closeModal('newLessonModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="TEACHER_CONTROLLER.handleCreateLessonSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Select Course</label>
+            <select class="form-control" id="modalLessonCourseSelect">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Lesson Title (English)</label>
+            <input type="text" class="form-control" id="lessonTitleInput" placeholder="e.g. Circular Motion & Gravitational Fields" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Lesson Title (Sinhala)</label>
+            <input type="text" class="form-control" id="lessonTitleSiInput" placeholder="e.g. වෘත්ත චලිතය සහ ගුරුත්වාකර්ෂණ ක්ෂේත්‍ර">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Duration</label>
+              <input type="text" class="form-control" id="lessonDurationInput" placeholder="e.g. 55 mins" value="50 mins">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Video Embed / Stream URL</label>
+              <input type="text" class="form-control" id="lessonVideoUrlInput" placeholder="https://www.youtube.com/embed/..." value="https://www.youtube.com/embed/dQw4w9WgXcQ">
+            </div>
+          </div>
+          <div style="margin-bottom: 1rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+              <input type="checkbox" id="lessonHasPdfCheckbox" checked>
+              <span>Attach Summary PDF Handout for Students</span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="form-label">PDF Handout File Name</label>
+            <input type="text" class="form-control" id="lessonPdfNameInput" placeholder="e.g. Circular_Motion_Theory_Notes.pdf" value="Lesson_Summary_Notes.pdf">
+          </div>
+
+          <!-- Chapter Timeline Builder for New Lesson -->
+          <div style="border-top: 1px solid #e2e8f0; padding-top: 1rem; margin-top: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+              <label class="form-label" style="margin: 0; font-weight: 800; color: #0f172a;">
+                <i class="fa-solid fa-list-ol" style="color: #227aff;"></i> Video Chapter Markers
+              </label>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="TEACHER_CONTROLLER.addChapterRowToNewModal()" style="color: #227aff; font-weight: 700; border: 1px solid #bfdbfe; font-size: 0.75rem;">
+                <i class="fa-solid fa-plus"></i> Add Marker
+              </button>
+            </div>
+            <div id="newLessonChaptersContainer" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 160px; overflow-y: auto;">
+              <!-- Chapter input rows injected dynamically -->
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-weight: 700; margin-top: 1.25rem;">
+            <i class="fa-solid fa-plus"></i> Publish Lesson with Chapters
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EDIT LESSON & CHAPTER TIMELINE -->
+  <div class="modal-overlay" id="editLessonModal">
+    <div class="modal-card" style="max-width: 650px;">
+      <div class="modal-header">
+        <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: #0f172a;">Edit Lesson & Chapter Timeline</h3>
+        <button class="modal-close-btn" onclick="TEACHER_CONTROLLER.closeModal('editLessonModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="TEACHER_CONTROLLER.handleEditLessonSubmit(event)">
+          <input type="hidden" id="editLessonIdInput">
+          
+          <div class="form-group">
+            <label class="form-label">Select Course</label>
+            <select class="form-control" id="editModalLessonCourseSelect">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Lesson Title (English)</label>
+            <input type="text" class="form-control" id="editLessonTitleInput" required>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Lesson Title (Sinhala)</label>
+            <input type="text" class="form-control" id="editLessonTitleSiInput">
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Duration</label>
+              <input type="text" class="form-control" id="editLessonDurationInput">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Video Embed / Stream URL</label>
+              <input type="text" class="form-control" id="editLessonVideoUrlInput" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">PDF Handout File Name</label>
+            <input type="text" class="form-control" id="editLessonPdfNameInput">
+          </div>
+
+          <!-- Chapter Timeline Builder Section -->
+          <div style="border-top: 1px solid #e2e8f0; padding-top: 1rem; margin-top: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+              <label class="form-label" style="margin: 0; font-weight: 800; color: #0f172a;">
+                <i class="fa-solid fa-list-ol" style="color: #227aff;"></i> Chapter Timeline Markers
+              </label>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="TEACHER_CONTROLLER.addChapterRowToEditModal()" style="color: #227aff; font-weight: 700; border: 1px solid #bfdbfe; font-size: 0.75rem;">
+                <i class="fa-solid fa-plus"></i> Add Chapter Marker
+              </button>
+            </div>
+
+            <div id="editLessonChaptersContainer" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 180px; overflow-y: auto; padding-right: 0.25rem;">
+              <!-- Chapter input rows injected dynamically by JS -->
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+            <button type="button" class="btn btn-ghost" style="color: #ef4444; border: 1px solid #fecaca;" onclick="TEACHER_CONTROLLER.handleDeleteCurrentEditingLesson()">
+              <i class="fa-solid fa-trash"></i> Delete Lesson
+            </button>
+            <button type="submit" class="btn btn-primary" style="flex: 1; padding: 0.85rem; font-weight: 700;">
+              <i class="fa-solid fa-check"></i> Save Changes & Sync with LMS
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD MCQ QUIZ -->
+  <div class="modal-overlay" id="newQuizModal">
+    <div class="modal-card" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: #0f172a;">Create Speed MCQ Question</h3>
+        <button class="modal-close-btn" onclick="TEACHER_CONTROLLER.closeModal('newQuizModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="TEACHER_CONTROLLER.handleCreateQuizSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Select Course for this Quiz / Paper</label>
+            <select class="form-control" id="modalQuizCourseSelect" required>
+              <!-- Populated by JS -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Subject & Unit</label>
+            <input type="text" class="form-control" id="quizSubjectInput" placeholder="e.g. Physics - Mechanics" required value="Physics - Mechanics">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Question Text (English)</label>
+            <textarea class="form-control" id="quizQTextInput" rows="2" placeholder="e.g. What is the centripetal acceleration of an object moving in a circle of radius r with speed v?" required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Question Text (Sinhala)</label>
+            <textarea class="form-control" id="quizQTextSiInput" rows="2" placeholder="e.g. r අරයක් ඇති වෘත්තාකාර මාර්ගයක v ප්‍රවේගයෙන් ගමන් කරන වස්තුවක කේන්ද්‍රාභිසාරී ත්වරණය කුමක්ද?"></textarea>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+            <div>
+              <label class="form-label">Option A</label>
+              <input type="text" class="form-control" id="quizOptAInput" placeholder="Option A" required>
+            </div>
+            <div>
+              <label class="form-label">Option B</label>
+              <input type="text" class="form-control" id="quizOptBInput" placeholder="Option B" required>
+            </div>
+            <div>
+              <label class="form-label">Option C</label>
+              <input type="text" class="form-control" id="quizOptCInput" placeholder="Option C" required>
+            </div>
+            <div>
+              <label class="form-label">Option D</label>
+              <input type="text" class="form-control" id="quizOptDInput" placeholder="Option D" required>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Correct Option</label>
+              <select class="form-control" id="quizCorrectSelect">
+                <option value="0">Option A</option>
+                <option value="1">Option B</option>
+                <option value="2">Option C</option>
+                <option value="3">Option D</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Step-by-Step Explanation</label>
+              <input type="text" class="form-control" id="quizExplanationInput" placeholder="e.g. a = v^2 / r from circular kinematics.">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-weight: 700;">
+            <i class="fa-solid fa-plus"></i> Save Question to Speed MCQ Engine
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EDIT MCQ QUIZ -->
+  <div class="modal-overlay" id="editQuizModal">
+    <div class="modal-card" style="max-width: 650px;">
+      <div class="modal-header">
+        <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: #0f172a;">Edit MCQ Quiz Question</h3>
+        <button class="modal-close-btn" onclick="TEACHER_CONTROLLER.closeModal('editQuizModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="TEACHER_CONTROLLER.handleEditQuizSubmit(event)">
+          <input type="hidden" id="editQuizIdInput">
+
+          <div class="form-group">
+            <label class="form-label">Course for this Quiz / Paper</label>
+            <select class="form-control" id="editModalQuizCourseSelect" required>
+              <!-- Populated by JS -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Subject & Unit</label>
+            <input type="text" class="form-control" id="editQuizSubjectInput" placeholder="e.g. Physics - Mechanics" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Question Text (English)</label>
+            <textarea class="form-control" id="editQuizQTextInput" rows="2" required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Question Text (Sinhala)</label>
+            <textarea class="form-control" id="editQuizQTextSiInput" rows="2"></textarea>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+            <div>
+              <label class="form-label">Option A</label>
+              <input type="text" class="form-control" id="editQuizOptAInput" placeholder="Option A" required>
+            </div>
+            <div>
+              <label class="form-label">Option B</label>
+              <input type="text" class="form-control" id="editQuizOptBInput" placeholder="Option B" required>
+            </div>
+            <div>
+              <label class="form-label">Option C</label>
+              <input type="text" class="form-control" id="editQuizOptCInput" placeholder="Option C" required>
+            </div>
+            <div>
+              <label class="form-label">Option D</label>
+              <input type="text" class="form-control" id="editQuizOptDInput" placeholder="Option D" required>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Correct Option</label>
+              <select class="form-control" id="editQuizCorrectSelect">
+                <option value="0">Option A</option>
+                <option value="1">Option B</option>
+                <option value="2">Option C</option>
+                <option value="3">Option D</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Step-by-Step Explanation</label>
+              <input type="text" class="form-control" id="editQuizExplanationInput" placeholder="e.g. Detailed step derivation">
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem;">
+            <button type="button" class="btn btn-ghost" style="color: #ef4444; border: 1px solid #fecaca; font-weight: 700;" onclick="TEACHER_CONTROLLER.handleDeleteCurrentEditingQuiz()">
+              <i class="fa-solid fa-trash"></i> Delete Question
+            </button>
+            <button type="submit" class="btn btn-primary" style="flex: 1; padding: 0.85rem; font-weight: 700;">
+              <i class="fa-solid fa-check"></i> Save Changes & Update Quiz
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/translations.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/teacher.js"></script>
+</body>
+</html>

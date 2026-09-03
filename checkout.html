@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure Course Enrollment & Checkout - EduPeak Institute & LMS</title>
+  <meta name="description" content="Securely complete your enrollment for G.C.E. A/L Physics classes conducted by Amalsha Wanniarachchi at Victory Embilipitiya & EduPeak LMS.">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="assets/img/edupeak_logo.png">
+
+  <!-- Google Fonts: Inter & Outfit & Noto Sans Sinhala -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Sinhala:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome 6 Pro Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Core CSS Files -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/lms.css">
+
+  <style>
+    body {
+      background: #f8fafc;
+      color: #1e293b;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .checkout-navbar {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 0.9rem 0;
+    }
+
+    .checkout-nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .checkout-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+    }
+
+    .checkout-brand img {
+      height: 42px;
+      width: auto;
+    }
+
+    .checkout-sec-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.775rem;
+      font-weight: 700;
+    }
+
+    .checkout-main {
+      flex: 1;
+      padding: 3rem 0 4.5rem;
+    }
+
+    .checkout-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    .checkout-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 2.5rem;
+      align-items: start;
+    }
+
+    .checkout-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 2.25rem;
+      box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.06);
+    }
+
+    .card-title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-title-bar h2 {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Course Summary Card */
+    .summary-course-box {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .summary-course-tag {
+      display: inline-block;
+      font-size: 0.725rem;
+      font-weight: 800;
+      color: #227aff;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .summary-course-title {
+      font-family: var(--font-heading);
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 0.5rem 0;
+      line-height: 1.35;
+    }
+
+    .summary-course-meta {
+      font-size: 0.85rem;
+      color: #64748b;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .summary-course-meta span {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .summary-benefits-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 1.5rem 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .summary-benefits-list li {
+      font-size: 0.85rem;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .summary-benefits-list li i {
+      color: #10b981;
+      font-size: 0.9rem;
+    }
+
+    .pricing-table {
+      border-top: 1px dashed #cbd5e1;
+      padding-top: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .pricing-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      color: #64748b;
+    }
+
+    .pricing-row.total-row {
+      border-top: 1.5px solid #e2e8f0;
+      padding-top: 0.85rem;
+      margin-top: 0.35rem;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .pricing-row.total-row .total-amount {
+      color: #227aff;
+      font-size: 1.35rem;
+    }
+
+    /* Payment Tabs */
+    .payment-methods-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .pay-tab-btn {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 0.85rem 0.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .pay-tab-btn i {
+      font-size: 1.25rem;
+      color: #64748b;
+    }
+
+    .pay-tab-btn span {
+      font-size: 0.775rem;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .pay-tab-btn:hover {
+      border-color: #227aff;
+      background: #eff6ff;
+    }
+
+    .pay-tab-btn.active {
+      border-color: #227aff;
+      background: #eff6ff;
+      box-shadow: 0 0 0 1.5px #227aff inset;
+    }
+
+    .pay-tab-btn.active i,
+    .pay-tab-btn.active span {
+      color: #227aff;
+    }
+
+    .pay-pane {
+      display: none;
+    }
+
+    .pay-pane.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Bank Transfer Info Box */
+    .bank-info-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .bank-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      padding: 0.25rem 0;
+    }
+
+    .bank-row strong {
+      color: #1e3a8a;
+    }
+
+    /* Slip Upload Box */
+    .slip-upload-dropzone {
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      background: #f8fafc;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .slip-upload-dropzone:hover {
+      border-color: #227aff;
+      background: #eff6ff;
+    }
+
+    .slip-preview-box {
+      margin-top: 0.75rem;
+      display: none;
+    }
+
+    .slip-preview-img {
+      max-height: 140px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+    }
+
+    /* Form Controls */
+    .form-group {
+      margin-bottom: 1.15rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.825rem;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 0.35rem;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.7rem 0.95rem;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      color: #1e293b;
+      background: #ffffff;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: #227aff;
+      box-shadow: 0 0 0 3px rgba(34, 122, 255, 0.15);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    .btn-checkout-pay {
+      width: 100%;
+      padding: 0.95rem;
+      font-size: 1.05rem;
+      font-weight: 800;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #1565d8 0%, #227aff 100%);
+      color: #ffffff;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: 0 8px 20px -4px rgba(34, 122, 255, 0.4);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      margin-top: 1.25rem;
+    }
+
+    .btn-checkout-pay:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px -4px rgba(34, 122, 255, 0.5);
+    }
+
+    .btn-checkout-pay:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Success Modal */
+    .success-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .success-modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .success-modal-card {
+      background: #ffffff;
+      border-radius: 20px;
+      max-width: 520px;
+      width: 100%;
+      padding: 2.5rem 2rem;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      transform: scale(0.9);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .success-modal-overlay.active .success-modal-card {
+      transform: scale(1);
+    }
+
+    .success-icon-badge {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: #ecfdf5;
+      color: #10b981;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      border: 2px solid #a7f3d0;
+    }
+
+    @media (max-width: 900px) {
+      .checkout-grid {
+        grid-template-columns: 1fr;
+      }
+      .payment-methods-tabs {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .checkout-navbar {
+        padding: 0.5rem 0;
+      }
+      .checkout-nav-container {
+        padding: 0.5rem 0.75rem;
+        gap: 0.5rem;
+      }
+      .checkout-sec-badge {
+        display: none;
+      }
+      .checkout-brand img {
+        height: 28px;
+      }
+      .checkout-brand span {
+        display: none;
+      }
+      .checkout-main {
+        padding: 1.5rem 0 3rem;
+      }
+      .checkout-container {
+        padding: 0 0.75rem;
+      }
+      .checkout-card {
+        padding: 1.25rem 1rem;
+        border-radius: 14px;
+      }
+      .form-row {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+      }
+      .btn-checkout-pay {
+        padding: 0.85rem;
+        font-size: 0.95rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Checkout Top Navigation -->
+  <header class="checkout-navbar">
+    <div class="checkout-nav-container">
+      <a href="index.html" class="checkout-brand">
+        <img src="assets/img/edupeak_logo.png" alt="EduPeak Logo">
+        <span style="font-size: 0.85rem; font-weight: 800; color: #227aff; letter-spacing: 0.5px; text-transform: uppercase;">Secure Checkout</span>
+      </a>
+
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <div class="checkout-sec-badge">
+          <i class="fa-solid fa-lock"></i> 256-Bit SSL Encrypted
+        </div>
+        <a href="courses.html" class="btn btn-ghost btn-sm" style="color: #64748b;">
+          <i class="fa-solid fa-arrow-left"></i> Back to Courses
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Checkout Content Area -->
+  <main class="checkout-main">
+    <div class="checkout-container">
+
+      <!-- Breadcrumbs & Heading -->
+      <div style="margin-bottom: 2rem;">
+        <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
+          <a href="index.html" style="color: inherit; text-decoration: none;">Home</a>
+          <i class="fa-solid fa-chevron-right" style="font-size: 0.7rem;"></i>
+          <a href="courses.html" style="color: inherit; text-decoration: none;">Courses</a>
+          <i class="fa-solid fa-chevron-right" style="font-size: 0.7rem;"></i>
+          <span style="color: #227aff; font-weight: 700;">Course Enrollment & Checkout</span>
+        </div>
+        <h1 style="font-family: var(--font-heading); font-size: 2rem; font-weight: 900; color: #0f172a; margin: 0;">
+          Confirm Enrollment & Tuition Payment
+        </h1>
+      </div>
+
+      <!-- Already Enrolled Notice Box (Shown if student already owns this course) -->
+      <div id="alreadyEnrolledNoticeBox" style="display: none; background: #f0fdf4; border: 2px solid #86efac; border-radius: var(--radius-lg); padding: 2.25rem 1.5rem; text-align: center; margin-bottom: 2rem; box-shadow: 0 4px 16px rgba(16, 185, 129, 0.08);">
+        <div style="width: 64px; height: 64px; background: #dcfce7; color: #16a34a; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1.25rem;">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <h2 style="color: #14532d; font-size: 1.45rem; font-weight: 800; margin-bottom: 0.5rem;">
+          You Are Already Enrolled in this Course!
+        </h2>
+        <p id="alreadyEnrolledCourseName" style="color: #15803d; font-weight: 700; font-size: 1.05rem; margin-bottom: 0.5rem;">
+          2025 A/L Physics - Complete Theory
+        </p>
+        <p style="color: #166534; font-size: 0.9rem; max-width: 520px; margin: 0 auto 1.75rem; line-height: 1.5;">
+          You have active unlimited access to all live streams, 1080p video lecture recordings, MCQ exam arena, and PDF handouts for this subject.
+        </p>
+        <div style="display: flex; gap: 0.85rem; justify-content: center; flex-wrap: wrap;">
+          <a href="index.html?openLms=video-classroom" id="alreadyEnrolledLmsBtn" class="btn btn-primary" style="padding: 0.75rem 1.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem;">
+            <i class="fa-solid fa-graduation-cap"></i> Launch Student LMS Portal
+          </a>
+          <a href="courses.html" class="btn btn-outline" style="padding: 0.75rem 1.5rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem; background: #ffffff;">
+            <i class="fa-solid fa-arrow-left"></i> Browse Other Courses
+          </a>
+        </div>
+      </div>
+
+      <div class="checkout-grid" id="checkoutGrid">
+
+        <!-- Left Column: Selected Course & Invoice Summary -->
+        <div class="checkout-card">
+          <div class="card-title-bar">
+            <h2><i class="fa-solid fa-clipboard-check" style="color: #227aff;"></i> Selected Academic Program</h2>
+            <span class="checkout-sec-badge" id="checkoutBatchYearBadge">2025 A/L</span>
+          </div>
+
+          <!-- Dynamic Course Box -->
+          <div class="summary-course-box" id="summaryCourseBox">
+            <span class="summary-course-tag" id="summaryCourseTag">Theory Masterclass</span>
+            <h3 class="summary-course-title" id="summaryCourseTitle">
+              2025 A/L Physics - Complete Theory & Mechanics Masterclass
+            </h3>
+            <div class="summary-course-meta">
+              <span><i class="fa-solid fa-user-tie" style="color: #227aff;"></i> Master Lecturer: <strong>Amalsha Wanniarachchi (MBBS UG)</strong></span>
+              <span><i class="fa-solid fa-building-columns" style="color: #227aff;"></i> Institute: <strong>Victory Embilipitiya & EduPeak LMS</strong></span>
+              <span><i class="fa-regular fa-clock" style="color: #227aff;"></i> Live Schedule: <strong id="summaryCourseSchedule">Every Saturday 7:30 AM - 1:30 PM</strong></span>
+            </div>
+          </div>
+
+          <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 0 0 0.75rem 0;">
+            Included Student Benefits:
+          </h4>
+          <ul class="summary-benefits-list">
+            <li><i class="fa-solid fa-circle-check"></i> 24/7 Unlimited 1080p Lecture Video Replay Access</li>
+            <li><i class="fa-solid fa-circle-check"></i> Monthly Theory & Revision Tutes Free Courier Delivery</li>
+            <li><i class="fa-solid fa-circle-check"></i> 50 Speed MCQ Arena & Live Island Rank Percentile Evaluation</li>
+            <li><i class="fa-solid fa-circle-check"></i> Weekly Zoom Live Doubt-Clearing & Q&A Discussion</li>
+            <li><i class="fa-solid fa-circle-check"></i> Official Victory Embilipitiya Hybrid Classroom Pass</li>
+          </ul>
+
+          <!-- Pricing Table -->
+          <div class="pricing-table">
+            <div class="pricing-row">
+              <span>Monthly Batch Tuition Fee:</span>
+              <strong id="summaryCourseFee" style="color: #0f172a;">LKR 3,500.00</strong>
+            </div>
+            <div class="pricing-row">
+              <span>Island-wide Tute Courier (Promex / Speed Post):</span>
+              <strong style="color: #10b981;">FREE (LKR 0.00)</strong>
+            </div>
+            <div class="pricing-row">
+              <span>Cloud LMS Digital Platform Fee:</span>
+              <strong style="color: #10b981;">FREE (LKR 0.00)</strong>
+            </div>
+            <div class="pricing-row total-row">
+              <span>Total Payable Amount:</span>
+              <span class="total-amount" id="summaryTotalFee">LKR 3,500.00</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Column: Student Profile & Payment Form -->
+        <div class="checkout-card">
+          <div class="card-title-bar">
+            <h2><i class="fa-solid fa-credit-card" style="color: #227aff;"></i> Payment Gateway</h2>
+            <div id="checkoutUserPill" style="font-size: 0.8rem; font-weight: 700; color: #227aff; background: #eff6ff; padding: 0.25rem 0.65rem; border-radius: 9999px;">
+              <i class="fa-solid fa-user-check"></i> <span id="checkoutUserNameDisplay">Kasun</span>
+            </div>
+          </div>
+
+          <!-- BATCH MISMATCH CONFIRMATION ALERT BOX -->
+          <div id="checkoutBatchMismatchAlert" style="display: none; background: #fffbeb; border: 2px solid #fde68a; border-radius: 12px; padding: 1.15rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+              <div style="font-size: 1.35rem; color: #f59e0b; flex-shrink: 0; line-height: 1;">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+              </div>
+              <div>
+                <h4 style="font-size: 0.95rem; font-weight: 800; color: #92400e; margin: 0 0 0.35rem 0;">
+                  Target Exam Batch Notice
+                </h4>
+                <p style="font-size: 0.85rem; color: #78350f; line-height: 1.5; margin: 0 0 0.85rem 0;" id="checkoutBatchMismatchText">
+                  You are checking out a course for a different academic batch than your student profile.
+                </p>
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 700; color: #92400e; cursor: pointer;">
+                  <input type="checkbox" id="confirmDifferentBatchCheckbox" style="width: 18px; height: 18px; accent-color: #d97706;">
+                  <span>I confirm that I intend to enroll and join this year's batch.</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Student & Delivery Info -->
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.15rem; margin-bottom: 1.5rem;">
+            <h4 style="font-size: 0.85rem; font-weight: 800; color: #334155; margin: 0 0 0.75rem 0; text-transform: uppercase;">
+              <i class="fa-solid fa-address-card" style="color: #227aff;"></i> Registered Student Details
+            </h4>
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom: 0.5rem;">
+                <label>Student Name</label>
+                <input type="text" class="form-control" id="studentNameInput" readonly>
+              </div>
+              <div class="form-group" style="margin-bottom: 0.5rem;">
+                <label>Student ID</label>
+                <input type="text" class="form-control" id="studentIdInput" readonly>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label>Mobile Number (For Courier SMS)</label>
+                <input type="tel" class="form-control" id="studentPhoneInput" placeholder="0771234567" required>
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label>Tute Delivery City / District</label>
+                <input type="text" class="form-control" id="studentAddressInput" placeholder="e.g. Embilipitiya, Ratnapura" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment Method Tabs -->
+          <div class="payment-methods-tabs">
+            <button type="button" class="pay-tab-btn active" data-tab="card" onclick="switchPayTab('card')">
+              <i class="fa-solid fa-credit-card"></i>
+              <span>Card / LankaQR</span>
+            </button>
+            <button type="button" class="pay-tab-btn" data-tab="bank" onclick="switchPayTab('bank')">
+              <i class="fa-solid fa-building-columns"></i>
+              <span>Bank Transfer</span>
+            </button>
+            <button type="button" class="pay-tab-btn" data-tab="branch" onclick="switchPayTab('branch')">
+              <i class="fa-solid fa-receipt"></i>
+              <span>Victory Cash Slip</span>
+            </button>
+          </div>
+
+          <!-- TAB 1: CARD / LANKAQR PAYMENT -->
+          <div class="pay-pane active" id="payPane_card">
+            <div class="form-group">
+              <label>Name on Card</label>
+              <input type="text" class="form-control" id="cardNameInput" placeholder="e.g. K. S. Jayasundara">
+            </div>
+
+            <div class="form-group">
+              <label>Card Number</label>
+              <div style="position: relative;">
+                <input type="text" class="form-control" id="cardNumberInput" placeholder="4111 2222 3333 4444" maxlength="19">
+                <i class="fa-brands fa-cc-visa" style="position: absolute; right: 12px; top: 12px; font-size: 1.25rem; color: #1e3a8a;"></i>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Expiry Date</label>
+                <input type="text" class="form-control" id="cardExpiryInput" placeholder="MM / YY" maxlength="5">
+              </div>
+              <div class="form-group">
+                <label>CVV / CVC</label>
+                <input type="password" class="form-control" id="cardCvvInput" placeholder="123" maxlength="4">
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: BANK TRANSFER & SLIP UPLOAD -->
+          <div class="pay-pane" id="payPane_bank">
+            <div class="bank-info-box">
+              <div class="bank-row"><span>Bank:</span> <strong>Bank of Ceylon (BOC)</strong></div>
+              <div class="bank-row"><span>Account Name:</span> <strong>Victory Higher Educational Institute</strong></div>
+              <div class="bank-row"><span>Account Number:</span> <strong>889420188</strong></div>
+              <div class="bank-row"><span>Branch:</span> <strong>Embilipitiya Super Branch</strong></div>
+            </div>
+
+            <div class="form-group">
+              <label>Upload Deposit / Online Transfer Slip</label>
+              <div class="slip-upload-dropzone" onclick="document.getElementById('slipFileInput').click()">
+                <input type="file" id="slipFileInput" accept="image/*,.pdf" style="display: none;" onchange="handleSlipFile(this)">
+                <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2rem; color: #227aff; margin-bottom: 0.5rem;"></i>
+                <p style="margin: 0; font-size: 0.85rem; font-weight: 700; color: #1e293b;">Click to upload bank payment receipt</p>
+                <span style="font-size: 0.75rem; color: #64748b;">Supports PNG, JPG, JPEG or PDF (Max 5MB)</span>
+              </div>
+              <div class="slip-preview-box" id="slipPreviewBox">
+                <img id="slipPreviewImg" src="" alt="Payment Slip Preview" class="slip-preview-img">
+                <p id="slipFileName" style="font-size: 0.8rem; color: #047857; margin: 0.4rem 0 0 0; font-weight: 600;"></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 3: VICTORY EMBILIPITIYA CASH VOUCHER -->
+          <div class="pay-pane" id="payPane_branch">
+            <div style="background: #fdf4ff; border: 1px solid #f5d0fe; border-radius: 12px; padding: 1.15rem; margin-bottom: 1.25rem; font-size: 0.85rem; color: #86198f;">
+              <i class="fa-solid fa-building-columns"></i> Paid at <strong>Victory College Embilipitiya Cash Counter</strong>? Enter the receipt number stamped on your payment card.
+            </div>
+            <div class="form-group">
+              <label>Branch Receipt / Voucher Number</label>
+              <input type="text" class="form-control" id="voucherNumberInput" placeholder="e.g. VIC-EMB-2025-9842">
+            </div>
+          </div>
+
+          <!-- Complete Enrollment Button -->
+          <button type="button" class="btn-checkout-pay" id="btnCompletePayment" onclick="processCheckoutEnrollment()">
+            <i class="fa-solid fa-lock"></i> Pay & Activate LMS Enrollment
+          </button>
+
+          <p style="text-align: center; font-size: 0.775rem; color: #64748b; margin-top: 1rem;">
+            🔒 By confirming payment, your student portal access is activated immediately with 24/7 video and tute tracking.
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- SUCCESS CONFIRMATION MODAL -->
+  <div class="success-modal-overlay" id="checkoutSuccessModal">
+    <div class="success-modal-card">
+      <div class="success-icon-badge">
+        <i class="fa-solid fa-check"></i>
+      </div>
+      <h2 style="font-family: var(--font-heading); font-size: 1.6rem; font-weight: 900; color: #0f172a; margin: 0 0 0.5rem 0;">
+        Enrollment Confirmed! 🎉
+      </h2>
+      <p style="font-size: 0.925rem; color: #64748b; line-height: 1.5; margin-bottom: 1.5rem;" id="successModalMessage">
+        You are now registered in the <strong>2025 A/L Physics Masterclass</strong>. Your LMS digital pass and tute delivery tracking are ready.
+      </p>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; text-align: left; font-size: 0.85rem; color: #334155;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
+          <span>Invoice ID:</span> <strong id="successInvoiceId">INV-2025-88421</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
+          <span>Student ID:</span> <strong id="successStudentId">EP-2025-001</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span>Status:</span> <strong style="color: #047857;"><i class="fa-solid fa-circle-check"></i> Active in LMS</strong>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem;">
+        <button class="btn btn-primary" style="flex: 1; padding: 0.85rem;" onclick="redirectToLMS()">
+          <i class="fa-solid fa-play"></i> Launch Video Classroom
+        </button>
+        <button class="btn btn-ghost" style="padding: 0.85rem;" onclick="window.location.href='index.html'">
+          Home
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/translations.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/lms.js"></script>
+
+  <script>
+    let activePayTab = "card";
+    let selectedCourse = null;
+    let currentUser = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // 1. Check User Session
+      currentUser = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
+
+      if (!currentUser) {
+        // Not logged in -> save current URL and redirect to login
+        const currentUrl = window.location.href;
+        sessionStorage.setItem("edupeak_redirect_after_login", currentUrl);
+        window.location.href = `login.html?redirect=${encodeURIComponent(window.location.search ? 'checkout.html' + window.location.search : 'checkout.html')}`;
+        return;
+      }
+
+      // Populate User details
+      document.getElementById("checkoutUserNameDisplay").textContent = currentUser.name || "Student";
+      document.getElementById("studentNameInput").value = currentUser.name || "";
+      document.getElementById("studentIdInput").value = currentUser.id || currentUser.studentId || "EP-2025-001";
+      document.getElementById("studentPhoneInput").value = currentUser.phone || "0771234567";
+      document.getElementById("studentAddressInput").value = currentUser.district || "Victory Embilipitiya Campus";
+
+      // 2. Identify Course from URL Parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const courseId = urlParams.get("course") || "crs-phy-2025";
+
+      const allCourses = window.EDUPEAK_DATA ? window.EDUPEAK_DATA.courses : [];
+      selectedCourse = allCourses.find(c => c.id === courseId) || allCourses[0];
+
+      if (selectedCourse) {
+        document.getElementById("summaryCourseTitle").textContent = selectedCourse.title;
+        document.getElementById("summaryCourseTag").textContent = selectedCourse.category ? selectedCourse.category.toUpperCase() + " BATCH" : "THEORY MASTERCLASS";
+        document.getElementById("summaryCourseSchedule").textContent = selectedCourse.liveTime || "Every Saturday 7:30 AM - 1:30 PM";
+        document.getElementById("summaryCourseFee").textContent = selectedCourse.fee || "LKR 3,500 / Month";
+        document.getElementById("summaryTotalFee").textContent = selectedCourse.fee || "LKR 3,500.00";
+        document.getElementById("checkoutBatchYearBadge").textContent = selectedCourse.examYear || selectedCourse.level || "2025 A/L";
+
+        // CHECK IF STUDENT IS ALREADY ENROLLED IN THIS COURSE
+        const isAlreadyEnrolled = typeof isCourseEnrolled === "function" 
+          ? isCourseEnrolled(selectedCourse.id) 
+          : (window.isCourseEnrolled ? window.isCourseEnrolled(selectedCourse.id) : false);
+
+        if (isAlreadyEnrolled) {
+          const noticeBox = document.getElementById("alreadyEnrolledNoticeBox");
+          const checkoutGrid = document.getElementById("checkoutGrid");
+          const courseNameEl = document.getElementById("alreadyEnrolledCourseName");
+          const lmsBtn = document.getElementById("alreadyEnrolledLmsBtn");
+
+          if (courseNameEl) courseNameEl.textContent = selectedCourse.title;
+          if (lmsBtn) lmsBtn.href = `index.html?openLms=video-classroom&course=${encodeURIComponent(selectedCourse.id)}`;
+          if (noticeBox) noticeBox.style.display = "block";
+          if (checkoutGrid) checkoutGrid.style.display = "none";
+          return;
+        }
+
+        // CHECK FOR TARGET BATCH MISMATCH WITH STUDENT PROFILE
+        const userExamYear = currentUser ? (currentUser.examYear || "") : "";
+        const courseBatch = selectedCourse.examYear || selectedCourse.level || "2026 A/L";
+        const courseYearNum = (courseBatch.match(/\d{4}/) || [""])[0];
+        const userYearNum = (userExamYear.match(/\d{4}/) || [""])[0];
+        const isBatchMismatch = !!(userYearNum && courseYearNum && userYearNum !== courseYearNum && !courseBatch.toLowerCase().includes("all"));
+
+        if (isBatchMismatch) {
+          const alertBox = document.getElementById("checkoutBatchMismatchAlert");
+          const alertText = document.getElementById("checkoutBatchMismatchText");
+          if (alertBox) alertBox.style.display = "block";
+          if (alertText) {
+            alertText.innerHTML = `⚠️ <strong>Attention:</strong> You are checking out a <strong>${courseBatch}</strong> course, but your student profile is set to <strong>${userExamYear}</strong>. Please confirm below before proceeding so you don't enroll in the wrong year.`;
+          }
+        }
+      }
+    });
+
+    function switchPayTab(tabId) {
+      activePayTab = tabId;
+      document.querySelectorAll(".pay-tab-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.getAttribute("data-tab") === tabId);
+      });
+      document.querySelectorAll(".pay-pane").forEach(pane => {
+        pane.classList.toggle("active", pane.id === `payPane_${tabId}`);
+      });
+    }
+
+    function handleSlipFile(input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        document.getElementById("slipFileName").textContent = `✓ Attached: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        
+        if (file.type.startsWith("image/")) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            document.getElementById("slipPreviewImg").src = e.target.result;
+            document.getElementById("slipPreviewBox").style.display = "block";
+          };
+          reader.readAsDataURL(file);
+        } else {
+          document.getElementById("slipPreviewBox").style.display = "block";
+          document.getElementById("slipPreviewImg").style.display = "none";
+        }
+      }
+    }
+
+    async function processCheckoutEnrollment() {
+      const btn = document.getElementById("btnCompletePayment");
+      if (!selectedCourse) return;
+
+      // Duplicate enrollment guard
+      if (typeof isCourseEnrolled === "function" && isCourseEnrolled(selectedCourse.id)) {
+        showToast("You are already enrolled in this course!", "info");
+        setTimeout(() => { window.location.href = "index.html?openLms=video-classroom"; }, 600);
+        return;
+      }
+
+      // Batch mismatch confirmation check
+      const userExamYear = currentUser ? (currentUser.examYear || "") : "";
+      const courseBatch = selectedCourse.examYear || selectedCourse.level || "2026 A/L";
+      const courseYearNum = (courseBatch.match(/\d{4}/) || [""])[0];
+      const userYearNum = (userExamYear.match(/\d{4}/) || [""])[0];
+      const isBatchMismatch = !!(userYearNum && courseYearNum && userYearNum !== courseYearNum && !courseBatch.toLowerCase().includes("all"));
+
+      if (isBatchMismatch) {
+        const confirmBox = document.getElementById("confirmDifferentBatchCheckbox");
+        if (confirmBox && !confirmBox.checked) {
+          showToast("⚠️ Please check the confirmation box to confirm you intend to join this different year's batch.", "info");
+          confirmBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          confirmBox.parentElement.style.outline = "2px solid #f59e0b";
+          setTimeout(() => { confirmBox.parentElement.style.outline = "none"; }, 3000);
+          return;
+        }
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing Secure Payment...';
+
+      // Simulate payment delay
+      await new Promise(resolve => setTimeout(resolve, 900));
+
+      // 1. Add course to user's enrolled courses in LocalStorage
+      let enrolled = [];
+      try {
+        const saved = localStorage.getItem("edupeak_enrolled");
+        enrolled = saved ? JSON.parse(saved) : [];
+      } catch (e) {
+        enrolled = [];
+      }
+
+      if (!enrolled.includes(selectedCourse.id)) {
+        enrolled.push(selectedCourse.id);
+        localStorage.setItem("edupeak_enrolled", JSON.stringify(enrolled));
+      }
+
+      // 2. Sync to Supabase cloud if helper exists
+      if (window.SUPABASE_HELPER && currentUser) {
+        try {
+          await window.SUPABASE_HELPER.createEnrollment({
+            userId: currentUser.id,
+            courseId: selectedCourse.id,
+            amount: selectedCourse.fee,
+            paymentMethod: activePayTab
+          });
+        } catch (err) {
+          console.warn("Supabase enrollment sync note:", err);
+        }
+      }
+
+      // 3. Populate Success Modal
+      const invId = `INV-2025-${Math.floor(10000 + Math.random() * 90000)}`;
+      document.getElementById("successInvoiceId").textContent = invId;
+      document.getElementById("successStudentId").textContent = currentUser.id || "EP-2025-001";
+      document.getElementById("successModalMessage").innerHTML = `
+        You are now registered in <strong>${selectedCourse.title}</strong>. Your 24/7 video replay, live classes, and tute courier delivery to <strong>${document.getElementById("studentAddressInput").value || 'Embilipitiya'}</strong> are active!
+      `;
+
+      document.getElementById("checkoutSuccessModal").classList.add("active");
+    }
+
+    function redirectToLMS() {
+      window.location.href = "student-dashboard.html";
+    }
+
+    function showToast(msg, type = "info") {
+      const container = document.getElementById("toastContainer");
+      if (!container) return;
+      const toast = document.createElement("div");
+      toast.className = `toast toast-${type}`;
+      toast.innerHTML = `<i class="fa-solid fa-circle-info"></i> <span>${msg}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+  </script>
+
+</body>
+</html>

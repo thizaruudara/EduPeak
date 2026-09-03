@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Profile Settings | EduPeak LMS</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/lms.css">
+
+  <style>
+    body {
+      background: #f8fafc;
+      color: #0f172a;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .profile-container {
+      max-width: 900px;
+      margin: 2.5rem auto 4rem;
+      padding: 0 1.25rem;
+    }
+
+    .profile-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 2.25rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+      margin-bottom: 2rem;
+    }
+
+    .avatar-upload-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid #f1f5f9;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .avatar-preview-box {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: #eff6ff;
+      color: #227aff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      font-weight: 800;
+      border: 3px solid #bfdbfe;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .avatar-preview-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .avatar-upload-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1.25rem;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .avatar-upload-btn:hover {
+      background: #dbeafe;
+    }
+
+    .form-grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 640px) {
+      .form-grid-2col {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 0.4rem;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      color: #0f172a;
+      box-sizing: border-box;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #227aff;
+      box-shadow: 0 0 0 3px rgba(34, 122, 255, 0.15);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="index.html" class="brand-logo">
+        <img src="assets/img/edupeak_logo.png" alt="EduPeak Logo" class="site-brand-img">
+      </a>
+      <nav class="main-nav">
+        <a href="student-dashboard.html" class="nav-link">Dashboard</a>
+        <a href="courses.html" class="nav-link">Courses</a>
+        <a href="past-papers.html" class="nav-link">Paper Vault</a>
+        <a href="index.html?openLms=video-classroom" class="nav-link">LMS Player</a>
+      </nav>
+      <div class="header-actions">
+        <a href="student-dashboard.html" class="btn btn-ghost btn-sm">
+          <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="profile-container">
+
+    <div style="margin-bottom: 1.5rem;">
+      <h1 style="font-size: 1.85rem; font-weight: 800; color: #0f172a; margin: 0 0 0.35rem 0;">Student Profile Settings</h1>
+      <p style="color: #64748b; font-size: 0.95rem; margin: 0;">Manage your personal profile, tute delivery address, and target A/L batch details.</p>
+    </div>
+
+    <!-- Personal Profile Card -->
+    <div class="profile-card">
+      
+      <!-- Avatar Upload Section -->
+      <div class="avatar-upload-wrapper">
+        <div class="avatar-preview-box" id="profileAvatarBox">
+          <span id="avatarLetter">K</span>
+          <img id="avatarImage" style="display: none;" alt="Student Avatar">
+        </div>
+        <div>
+          <h3 style="margin: 0 0 0.35rem 0; font-size: 1.1rem; font-weight: 800;">Profile Photo</h3>
+          <p style="font-size: 0.8rem; color: #64748b; margin: 0 0 0.75rem 0;">Upload a clear photo (JPG or PNG, max 2MB).</p>
+          <label class="avatar-upload-btn">
+            <i class="fa-solid fa-camera"></i> Change Photo
+            <input type="file" id="avatarFileInput" accept="image/*" style="display: none;" onchange="handleAvatarFileChange(this)">
+          </label>
+        </div>
+      </div>
+
+      <form id="profileForm" onsubmit="handleSaveProfile(event)">
+        
+        <div class="form-grid-2col">
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-user"></i> Full Student Name</label>
+            <input type="text" class="form-input" id="profileFullName" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-id-card"></i> Student ID</label>
+            <input type="text" class="form-input" id="profileStudentId" readonly style="background: #f8fafc; color: #64748b;">
+          </div>
+        </div>
+
+        <div class="form-grid-2col">
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-envelope"></i> Email Address</label>
+            <input type="email" class="form-input" id="profileEmail" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><i class="fa-brands fa-whatsapp" style="color: #10b981;"></i> WhatsApp Mobile Number</label>
+            <input type="tel" class="form-input" id="profilePhone" placeholder="077 123 4567" required>
+          </div>
+        </div>
+
+        <div class="form-grid-2col">
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-calendar-check" style="color: #227aff;"></i> Target Exam Batch</label>
+            <select class="form-input" id="profileExamYear" required style="font-weight: 700;">
+              <option value="2027 A/L">2027 A/L (2027 උසස් පෙළ කණ්ඩායම)</option>
+              <option value="2028 A/L">2028 A/L (2028 නවක කණ්ඩායම)</option>
+              <option value="2029 A/L">2029 A/L (2029 Foundation Batch)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-graduation-cap"></i> Academic Stream</label>
+            <select class="form-input" id="profileStream" required>
+              <option value="Physical Science">Physical Science (Combined Maths)</option>
+              <option value="Biological Science">Biological Science (Biology)</option>
+              <option value="Technology Stream">Technology Stream</option>
+              <option value="Commerce Stream">Commerce Stream</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-2col">
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-school"></i> School Name</label>
+            <input type="text" class="form-input" id="profileSchool" placeholder="e.g. President's College Embilipitiya">
+          </div>
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-location-dot"></i> Home District / City</label>
+            <input type="text" class="form-input" id="profileDistrict" placeholder="e.g. Ratnapura / Embilipitiya">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label"><i class="fa-solid fa-truck-fast"></i> Tute Courier Delivery Postal Address</label>
+          <textarea class="form-input" id="profileAddress" rows="2" placeholder="Full postal address for courier delivery of printed physics tutes"></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-ghost" onclick="window.location.href='student-dashboard.html'">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" style="font-weight: 800; padding: 0.75rem 2rem;">
+            <i class="fa-solid fa-floppy-disk"></i> Save Profile Changes
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+
+  </main>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    let activeUser = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      if (window.AUTH_SYSTEM) {
+        activeUser = window.AUTH_SYSTEM.getCurrentUser();
+      }
+
+      if (!activeUser) {
+        activeUser = {
+          id: "EP-2027-001",
+          name: "Kasun Jayasundara",
+          email: "student@edupeak.lk",
+          phone: "077 123 4567",
+          examYear: "2027 A/L",
+          stream: "Physical Science",
+          school: "President's College Embilipitiya",
+          district: "Ratnapura",
+          address: "Victory College, Embilipitiya Pallegama, Sri Lanka"
+        };
+      }
+
+      // Populate Form
+      document.getElementById("profileFullName").value = activeUser.name || "";
+      document.getElementById("profileStudentId").value = activeUser.id || "EP-2027-001";
+      document.getElementById("profileEmail").value = activeUser.email || "";
+      document.getElementById("profilePhone").value = activeUser.phone || "";
+      document.getElementById("profileExamYear").value = activeUser.examYear || "2027 A/L";
+      document.getElementById("profileStream").value = activeUser.stream || "Physical Science";
+      document.getElementById("profileSchool").value = activeUser.school || "";
+      document.getElementById("profileDistrict").value = activeUser.district || "Ratnapura";
+      document.getElementById("profileAddress").value = activeUser.address || "";
+
+      // Load Avatar if stored
+      const savedAvatar = localStorage.getItem("edupeak_user_avatar") || activeUser.avatar;
+      if (savedAvatar) {
+        document.getElementById("avatarImage").src = savedAvatar;
+        document.getElementById("avatarImage").style.display = "block";
+        document.getElementById("avatarLetter").style.display = "none";
+      } else {
+        document.getElementById("avatarLetter").textContent = (activeUser.name || "K").charAt(0).toUpperCase();
+      }
+    });
+
+    function handleAvatarFileChange(input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imgUrl = e.target.result;
+          document.getElementById("avatarImage").src = imgUrl;
+          document.getElementById("avatarImage").style.display = "block";
+          document.getElementById("avatarLetter").style.display = "none";
+          localStorage.setItem("edupeak_user_avatar", imgUrl);
+          if (activeUser) {
+            activeUser.avatar = imgUrl;
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    async function handleSaveProfile(e) {
+      e.preventDefault();
+
+      const saveBtn = e.target.querySelector('button[type="submit"]');
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving changes...';
+      }
+
+      activeUser.name = document.getElementById("profileFullName").value.trim();
+      activeUser.email = document.getElementById("profileEmail").value.trim();
+      activeUser.phone = document.getElementById("profilePhone").value.trim();
+      activeUser.examYear = document.getElementById("profileExamYear").value;
+      activeUser.stream = document.getElementById("profileStream").value;
+      activeUser.school = document.getElementById("profileSchool").value.trim();
+      activeUser.district = document.getElementById("profileDistrict").value.trim();
+      activeUser.address = document.getElementById("profileAddress").value.trim();
+      activeUser.avatar = localStorage.getItem("edupeak_user_avatar") || activeUser.avatar;
+
+      // 1. Permanently update across Registered Users DB & Active Session & Supabase Cloud
+      if (window.AUTH_SYSTEM && typeof window.AUTH_SYSTEM.updateUserProfile === 'function') {
+        await window.AUTH_SYSTEM.updateUserProfile(activeUser);
+      } else {
+        localStorage.setItem("edupeak_active_session", JSON.stringify(activeUser));
+      }
+
+      // Alert & Redirect back
+      alert("✅ Profile details updated and saved successfully!");
+      window.location.href = "student-dashboard.html";
+    }
+  </script>
+</body>
+</html>

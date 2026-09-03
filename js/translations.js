@@ -1,0 +1,267 @@
+/**
+ * EduPeak Bilingual (Sinhala / English / Mixed) Translation Engine
+ */
+
+const EDUPEAK_TRANSLATIONS = {
+  en: {
+    // Header & Nav
+    nav_home: "Home",
+    nav_courses: "Courses",
+    nav_institutes: "Institutes",
+    nav_support: "Support",
+    nav_signin: "Sign In",
+    nav_register: "Register",
+    nav_lms: "LMS Portal",
+    
+    // Top Bar
+    topbar_call: "Hotline:",
+    topbar_email: "Email Support:",
+    topbar_admissions: "🎓 2025 / 2026 Admissions Open - Physical & Online Hybrid Batches",
+    
+    // Hero Section
+    hero_guarantee: "100% Satisfaction Guarantee",
+    hero_badge: "Sri Lanka's #1 Hybrid LMS",
+    hero_title_lead: "Shape Your Future With",
+    hero_title_sub: "Higher Educational Institute & LMS",
+    hero_desc: "Join thousands of Sri Lankan students achieving Island Top Ranks in G.C.E. A/L Physics with Amalsha Wanniarachchi at Victory Embilipitiya and 24/7 cloud LMS.",
+    hero_btn_explore: "Explore Courses",
+    hero_btn_lms: "Launch LMS Portal",
+    hero_stat_students: "Active Students",
+    hero_stat_ranks: "Island Top 10 Ranks",
+    hero_stat_hours: "HD Lecture Hours",
+    hero_stat_pass: "University Pass Rate",
+
+    // Teachers Section
+    teachers_tag: "DISTINGUISHED FACULTY",
+    teachers_title: "Meet Our Master Lecturer",
+    teachers_subtitle: "Learn directly from Sri Lanka's leading educator & medical scholar at Victory Embilipitiya.",
+    teachers_filter_all: "All Faculty",
+    teachers_filter_maths: "Combined Maths",
+    teachers_filter_physics: "Physics",
+    teachers_filter_chem: "Chemistry",
+    teachers_filter_bio: "Biology",
+    teachers_filter_ict: "ICT & Computing",
+    teacher_btn_profile: "View Full Profile",
+    teacher_btn_preview: "Free Lesson",
+    teacher_btn_enroll: "Enroll in Class",
+    teacher_label_subject: "Subject:",
+    teacher_label_degree: "Degree & Qualifications:",
+    teacher_label_branches: "Branches:",
+    teacher_label_students: "Mentored Students",
+    teacher_label_exp: "Experience",
+
+    // Courses Section
+    courses_tag: "ACADEMIC EXCELLENCE",
+    courses_title: "Featured Academic & Professional Courses",
+    courses_subtitle: "Comprehensive theory, revision, speed paper classes and modern industry diplomas.",
+    course_tab_all: "All Courses",
+    course_tab_al: "A/L Theory & Revision",
+    course_tab_papers: "Paper Classes",
+    course_tab_diploma: "Professional Diplomas",
+    course_card_lessons: "Modules",
+    course_card_enroll: "Enroll Now",
+    course_card_enrolled: "Enrolled • Go to LMS",
+    course_card_preview: "View Details",
+
+    // LMS Section
+    lms_tag: "NEXT-GEN LEARNING SYSTEM",
+    lms_title: "EduPeak Smart LMS Experience",
+    lms_subtitle: "Experience Sri Lanka's fastest, ultra-low latency educational platform built for seamless student success.",
+    lms_feat_1_title: "Ultra HD Live & Recorded Streaming",
+    lms_feat_1_desc: "Low-data streaming with multi-bitrate 1080p video player, chapter markers & bookmarking.",
+    lms_feat_2_title: "Timed Speed MCQ & Auto-Ranking",
+    lms_feat_2_desc: "Real-time automated exam engine with detailed Sinhala & English step-by-step explanations.",
+    lms_feat_3_title: "Doorstep Tute Delivery & PDFs",
+    lms_feat_3_desc: "Printed revision packs dispatched to your home within 48 hours + instant PDF access.",
+    lms_feat_4_title: "Smart Performance Analytics",
+    lms_feat_4_desc: "Visual charts for attendance, assignment grades, exam percentile and island rankings.",
+    lms_launch_demo: "Register to Access LMS Portal",
+
+    // Institutes Section
+    inst_tag: "CAMPUS LOCATIONS",
+    inst_title: "Our Physical & Digital Campuses",
+    inst_subtitle: "State-of-the-art auditorium at Victory Embilipitiya and 24/7 global cloud learning access.",
+    inst_btn_directions: "Branch Info & Map",
+    inst_btn_contact: "Contact Campus",
+    inst_badge_facilities: "Campus Highlights",
+
+    // Support Section
+    support_tag: "24/7 STUDENT ASSISTANCE",
+    support_title: "How Can We Help You?",
+    support_subtitle: "Our dedicated student care and technical helpdesk teams are always here for you.",
+    support_card_1_title: "LMS Technical Support",
+    support_card_1_desc: "Login issues, video playback troubleshooting and mobile app support.",
+    support_card_2_title: "Admissions & Payments",
+    support_card_2_desc: "Class fee verification, LankaQR, bank transfers and branch card collections.",
+    support_card_3_title: "Tute & Material Delivery",
+    support_card_3_desc: "Track your monthly postal parcel and courier tracking numbers.",
+    support_faq_title: "Frequently Asked Questions",
+    support_form_title: "Submit a Support Inquiry",
+    support_form_name: "Your Full Name",
+    support_form_phone: "Phone / WhatsApp Number",
+    support_form_cat: "Inquiry Category",
+    support_form_msg: "Describe your question or issue...",
+    support_form_submit: "Send Inquiry to EduPeak",
+
+    // Modals & Portal
+    modal_signin_title: "Sign In to EduPeak LMS",
+    modal_signin_subtitle: "Enter your Student ID / Mobile to access your live classes and study materials.",
+    modal_register_title: "Student Registration Portal",
+    modal_register_subtitle: "Join EduPeak family and start your journey towards university excellence.",
+    role_student: "Student Portal",
+    role_teacher: "Teacher Portal",
+    role_parent: "Parent Portal",
+    form_identifier: "Student ID or Mobile Number",
+    form_password: "Password",
+    form_remember: "Remember my session",
+    form_forgot: "Forgot Password?",
+    btn_signin: "Sign In to LMS",
+    btn_register: "Complete Registration",
+    form_fullname: "Full Name",
+    form_whatsapp: "WhatsApp Mobile Number",
+    form_email: "Email Address (Optional)",
+    form_stream: "Select Academic Stream",
+    form_branch: "Select Preferred Branch",
+    already_account: "Already registered?",
+    new_to_edupeak: "New to EduPeak?",
+
+    // Footer
+    footer_desc: "Sri Lanka's premier higher education institute combining world-class physical campus auditoriums with state-of-the-art hybrid cloud LMS.",
+    footer_quick_links: "Quick Navigation",
+    footer_courses: "Top Academic Streams",
+    footer_contact: "Campus Headquarters",
+    footer_copyright: "© 2026 EduPeak Higher Educational Institute. All Rights Reserved. Designed for Sri Lankan Student Excellence."
+  },
+
+  si: {
+    // Header & Nav
+    nav_home: "මුල් පිටුව",
+    nav_courses: "පාඨමාලා",
+    nav_institutes: "ආයතන ශාඛා",
+    nav_support: "සහාය සේවාව",
+    nav_signin: "පිවිසෙන්න",
+    nav_register: "ලියාපදිංචි වන්න",
+    nav_lms: "LMS ද්වාරය",
+    
+    // Top Bar
+    topbar_call: "ක්ෂණික ඇමතුම්:",
+    topbar_email: "විද්‍යුත් තැපෑල:",
+    topbar_admissions: "🎓 2025 / 2026 නවක සිසුන් බඳවා ගැනීම් ඇරඹුනා - භෞතික හා මාර්ගගත පන්ති",
+    
+    // Hero Section
+    hero_guarantee: "100% තෘප්තිමත්භාවය සහතික කෙරේ",
+    hero_badge: "ශ්‍රී ලංකාවේ #1 දෙමුහුන් LMS",
+    hero_title_lead: "ඔබගේ අනාගතය ජයගන්න",
+    hero_title_sub: "උසස් අධ්‍යාපන ආයතනය & LMS",
+    hero_desc: "වික්ටරි ඇඹිලිපිටිය සහ 24/7 මාර්ගගත LMS හරහා අමල්ෂ වන්නිආරච්චි සර්ගේ උසස් පෙළ භෞතික විද්‍යා පාඨමාලා සමගින් දිවයිනේ විශිෂ්ටතම ප්‍රතිඵල හිමිකරගන්න.",
+    hero_btn_explore: "පාඨමාලා ගවේෂණය",
+    hero_btn_lms: "LMS ද්වාරයට පිවිසෙන්න",
+    hero_stat_students: "ක්‍රියාකාරී සිසුන්",
+    hero_stat_ranks: "දිවයිනේ ප්‍රමුඛ ස්ථාන",
+    hero_stat_hours: "HD දේශන පැය ගණන",
+    hero_stat_pass: "විශ්වවිද්‍යාල ප්‍රවේශ ප්‍රතිශතය",
+
+    // Teachers Section
+    teachers_tag: "ප්‍රවීණ දේශක මණ්ඩලය",
+    teachers_title: "අපගේ ප්‍රධාන භෞතික විද්‍යා දේශකවරයා",
+    teachers_subtitle: "ශ්‍රී ලංකාවේ ප්‍රමුඛතම වෛද්‍ය විද්‍යාර්ථී හා භෞතික විද්‍යා දේශක අමල්ෂ වන්නිආරච්චි ගුරුතුමාගෙන් ඉගෙන ගන්න.",
+    teachers_filter_all: "සියලුම ගුරුභවතුන්",
+    teachers_filter_maths: "සංයුක්ත ගණිතය",
+    teachers_filter_physics: "භෞතික විද්‍යාව",
+    teachers_filter_chem: "රසායන විද්‍යාව",
+    teachers_filter_bio: "ජීව විද්‍යාව",
+    teachers_filter_ict: "තොරතුරු තාක්ෂණය (ICT)",
+    teacher_btn_profile: "සම්පූර්ණ විස්තරය",
+    teacher_btn_preview: "නොමිලේ වීඩියෝවක්",
+    teacher_btn_enroll: "පන්තියට ලියාපදිංචිය",
+    teacher_label_subject: "විෂයය:",
+    teacher_label_degree: "උපාධිය සහ සුදුසුකම්:",
+    teacher_label_branches: "දේශන පැවැත්වෙන ශාඛා:",
+    teacher_label_students: "මගපෙන්වූ සිසුන්",
+    teacher_label_exp: "පළපුරුද්ද",
+
+    // Courses Section
+    courses_tag: "විෂය ධාරාවන්",
+    courses_title: "විශේෂ උසස් පෙළ සහ වෘත්තීය පාඨමාලා",
+    courses_subtitle: "සම්පූර්ණ සිද්ධාන්ත, පුනරීක්ෂණ, ප්‍රශ්න පත්‍ර පන්ති සහ නවීන ක්ලවුඩ් හා AI ඩිප්ලෝමා.",
+    course_tab_all: "සියලුම පාඨමාලා",
+    course_tab_al: "උ/පෙළ සිද්ධාන්ත හා පුනරීක්ෂණ",
+    course_tab_papers: "ප්‍රශ්න පත්‍ර පන්ති",
+    course_tab_diploma: "වෘත්තීය ඩිප්ලෝමා",
+    course_card_lessons: "මොඩියුල",
+    course_card_enroll: "ලියාපදිංචි වන්න",
+    course_card_enrolled: "✓ ලියාපදිංචි වී ඇත • LMS",
+    course_card_preview: "විස්තර බලන්න",
+
+    // LMS Section
+    lms_tag: "නවීනතම ඉගෙනුම් අත්දැකීම",
+    lms_title: "එඩියුපීක් Smart LMS පද්ධතිය",
+    lms_subtitle: "අඩු ඩේටා වැයවන, ක්ෂණික වේගවත් සජීවී විකාශන සහ ස්මාර්ට් විභාග පද්ධතිය සමගින් ඉගෙන ගන්න.",
+    lms_feat_1_title: "Ultra HD සජීවී හා පටිගත කළ දේශන",
+    lms_feat_1_desc: "1080p වීඩියෝ, කාල සටහන් (Chapters) සහ නැවත නැවත නැරඹීමේ පහසුකම්.",
+    lms_feat_2_title: "කාලගත MCQ හා ලකුණු ශ්‍රේණිගත කිරීම",
+    lms_feat_2_desc: "ස්වයංක්‍රීයව ලකුණු ලබාදෙන, සිංහල හා ඉංග්‍රීසි විවරණ සහිත මාර්ගගත විභාග පද්ධතිය.",
+    lms_feat_3_title: "නිවසටම නිබන්ධන කුරියර් බෙදාහැරීම",
+    lms_feat_3_desc: "පැය 48ක් ඇතුළත නිවසටම ලැබෙන මුද්‍රිත පොත් කට්ටලය සහ ක්ෂණික PDF පිටපත්.",
+    lms_feat_4_title: "ප්‍රතිඵල හා ප්‍රගති විශ්ලේෂණය",
+    lms_feat_4_desc: "පැමිණීම, පැවරුම් ලකුණු සහ දිවයිනේ ශ්‍රේණිගත කිරීම් පෙන්වන ස්මාර්ට් චාට්ස්.",
+    lms_launch_demo: "LMS පද්ධතියට ලියාපදිංචි වන්න",
+
+    // Institutes Section
+    inst_tag: "ශාඛා ජාලය",
+    inst_title: "අපගේ භෞතික හා ඩිජිටල් මධ්‍යස්ථාන",
+    inst_subtitle: "වික්ටරි ඇඹිලිපිටිය ප්‍රධාන ශ්‍රවණාගාරය සහ 24/7 දිවයින පුරා මාර්ගගත සේවාව.",
+    inst_btn_directions: "ශාඛා තොරතුරු සහ පිහිටීම",
+    inst_btn_contact: "ශාඛාව අමතන්න",
+    inst_badge_facilities: "ශාඛාවේ පහසුකම්",
+
+    // Support Section
+    support_tag: "24/7 ශිෂ්‍ය සත්කාරය",
+    support_title: "අපෙන් ඔබට අවශ්‍ය සහාය කුමක්ද?",
+    support_subtitle: "ඕනෑම තාක්ෂණික හෝ පන්ති සම්බන්ධ ගැටළුවක් සඳහා අපගේ කණ්ඩායම සූදානම්ව සිටී.",
+    support_card_1_title: "LMS තාක්ෂණික සහාය",
+    support_card_1_desc: "ගිණුමට පිවිසීමේ ගැටළු, වීඩියෝ නැරඹීමේ දෝෂ සහ ඇප් සහාය.",
+    support_card_2_title: "ගෙවීම් සහ ඇතුළත් කිරීම්",
+    support_card_2_desc: "පන්ති ගාස්තු තහවුරු කිරීම්, LankaQR, බැංකු රිසිට්පත් සහ කාඩ්පත් සක්‍රිය කිරීම.",
+    support_card_3_title: "නිබන්ධන කුරියර් තොරතුරු",
+    support_card_3_desc: "ඔබගේ මාසික නිබන්ධන පාර්සලයේ Courier Tracking තොරතුරු සොයාගන්න.",
+    support_faq_title: "නිතර අසන ප්‍රශ්න (FAQ)",
+    support_form_title: "ඔබගේ ගැටළුව අප වෙත යොමු කරන්න",
+    support_form_name: "ඔබගේ සම්පූර්ණ නම",
+    support_form_phone: "දුරකථන / WhatsApp අංකය",
+    support_form_cat: "ගැටළුවේ ස්වභාවය",
+    support_form_msg: "ඔබගේ ප්‍රශ්නය මෙහි සටහන් කරන්න...",
+    support_form_submit: "එඩියුපීක් වෙත යොමු කරන්න",
+
+    // Modals & Portal
+    modal_signin_title: "එඩියුපීක් LMS ගිණුමට පිවිසෙන්න",
+    modal_signin_subtitle: "දේශන හා නිබන්ධන සඳහා ශිෂ්‍ය අංකය හෝ දුරකථන අංකය ඇතුළත් කරන්න.",
+    modal_register_title: "නව ශිෂ්‍ය ලියාපදිංචිය",
+    modal_register_subtitle: "එඩියුපීක් පවුලට එකතු වී ඔබේ විශ්වවිද්‍යාල සිහිනය ජයගන්න.",
+    role_student: "ශිෂ්‍ය ගිණුම",
+    role_teacher: "ගුරු ගිණුම",
+    role_parent: "දෙමාපිය ගිණුම",
+    form_identifier: "ශිෂ්‍ය අංකය හෝ දුරකථන අංකය",
+    form_password: "මුරපදය (Password)",
+    form_remember: "මතක තබා ගන්න",
+    form_forgot: "මුරපදය අමතකද?",
+    btn_signin: "LMS වෙත පිවිසෙන්න",
+    btn_register: "ලියාපදිංචිය සම්පූර්ණ කරන්න",
+    form_fullname: "සම්පූර්ණ නම",
+    form_whatsapp: "WhatsApp දුරකථන අංකය",
+    form_email: "විද්‍යුත් තැපෑල (අවශ්‍ය නම්)",
+    form_stream: "විෂය ධාරාව තෝරන්න",
+    form_branch: "ප්‍රියතම ශාඛාව තෝරන්න",
+    already_account: "දැනටමත් ලියාපදිංචි වී ඇත්නම්?",
+    new_to_edupeak: "එඩියුපීක් වෙත අලුත්ද?",
+
+    // Footer
+    footer_desc: "නවීන භෞතික ශ්‍රවණාගාර පහසුකම් සහ අතිනවීන ක්ලවුඩ් LMS තාක්ෂණය එක්තැන් කළ ශ්‍රී ලංකාවේ අංක 1 උසස් අධ්‍යාපන පීඨය.",
+    footer_quick_links: "ක්ෂණික සබැඳි",
+    footer_courses: "ප්‍රමුඛ විෂය ධාරාවන්",
+    footer_contact: "ප්‍රධාන මධ්‍යස්ථානය",
+    footer_copyright: "© 2026 එඩියුපීක් උසස් අධ්‍යාපන ආයතනය. සියලු හිමිකම් ඇවිරිණි."
+  }
+};
+
+window.EDUPEAK_TRANSLATIONS = EDUPEAK_TRANSLATIONS;

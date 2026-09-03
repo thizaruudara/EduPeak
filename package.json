@@ -1,0 +1,12 @@
+{
+  "name": "edupeak-lms",
+  "version": "1.0.0",
+  "description": "EduPeak - Advanced Physics Masterclass & Educational Management System",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "devDependencies": {
+    "pg": "^8.23.0",
+    "playwright-core": "^1.62.1"
+  }
+}

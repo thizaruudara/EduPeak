@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Faculty & Staff Portal | EduPeak LMS</title>
+  <link rel="icon" type="image/png" href="assets/img/edupeak_logo.png">
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800;900&family=Noto+Sans+Sinhala:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- CSS Framework -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/auth-pages.css">
+
+  <!-- Supabase Client JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="auth-page-body">
+
+  <!-- Ambient Light Glows -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="auth-top-header">
+    <div class="container auth-header-container">
+      <a href="index.html" class="brand-logo" aria-label="EduPeak Home">
+        <img src="assets/img/edupeak_logo.png" alt="EduPeak Logo" class="site-brand-img">
+        <div class="brand-text">
+          <span class="brand-tagline">Faculty & Staff Portal</span>
+        </div>
+      </a>
+
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <a href="login.html" class="btn btn-ghost btn-sm">
+          <i class="fa-solid fa-graduation-cap"></i> Student Login
+        </a>
+        <a href="index.html" class="auth-back-link">
+          <i class="fa-solid fa-house"></i>
+          <span>Home</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Showcase + Form Layout -->
+  <main class="auth-main-container">
+    <div class="auth-card-layout">
+      
+      <!-- Left Brand Showcase Side -->
+      <div class="auth-showcase-side" style="background: linear-gradient(145deg, #090d16 0%, #1e293b 50%, #0f172a 100%);">
+        <div>
+          <div class="showcase-badge" style="background: rgba(234, 179, 8, 0.15); border-color: rgba(234, 179, 8, 0.3); color: #facc15;">
+            <i class="fa-solid fa-shield-halved"></i> Faculty & Staff Access
+          </div>
+          <h1 class="showcase-title" style="font-size: 1.85rem;">
+            EduPeak Academic & Administrative Console
+          </h1>
+          <p class="showcase-desc">
+            Manage live lecture broadcasts, upload study resources, grade assignments, and monitor student progress across all branch institutes.
+          </p>
+
+          <ul class="showcase-features-list">
+            <li class="showcase-feature-item">
+              <div class="showcase-feature-icon" style="background: rgba(234, 179, 8, 0.2); border-color: rgba(234, 179, 8, 0.4); color: #facc15;">
+                <i class="fa-solid fa-video"></i>
+              </div>
+              <div>
+                <strong>Live Stream & Studio Controls</strong>
+                <p style="margin: 0; font-size: 0.8rem; color: #94a3b8;">Manage high-definition YouTube/Vimeo/Zoom hybrid streams.</p>
+              </div>
+            </li>
+            <li class="showcase-feature-item">
+              <div class="showcase-feature-icon" style="background: rgba(234, 179, 8, 0.2); border-color: rgba(234, 179, 8, 0.4); color: #facc15;">
+                <i class="fa-solid fa-file-circle-check"></i>
+              </div>
+              <div>
+                <strong>Automated MCQ Grading & Analytics</strong>
+                <p style="margin: 0; font-size: 0.8rem; color: #94a3b8;">Review paper submissions and real-time island rank distributions.</p>
+              </div>
+            </li>
+            <li class="showcase-feature-item">
+              <div class="showcase-feature-icon" style="background: rgba(234, 179, 8, 0.2); border-color: rgba(234, 179, 8, 0.4); color: #facc15;">
+                <i class="fa-solid fa-users-gear"></i>
+              </div>
+              <div>
+                <strong>Branch & Enrollment Management</strong>
+                <p style="margin: 0; font-size: 0.8rem; color: #94a3b8;">Full physical & online batch admission controls for institute staff.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="showcase-testimonial" style="background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1);">
+          <p class="testimonial-quote" style="font-size: 0.8rem;">
+            "Authorized personnel only. All access attempts are securely logged with multi-factor authentication protocols."
+          </p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar" style="background: #eab308; color: #000;">🛡️</div>
+            <div class="testimonial-info">
+              <h5>EduPeak Security Shield</h5>
+              <p>Subdomain & Role Partitioned Auth</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Sign-In Form Area -->
+      <div class="auth-form-side">
+        
+        <div class="auth-form-header">
+          <div style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0.65rem; background: #fef9c3; border: 1px solid #fde047; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; color: #854d0e; margin-bottom: 0.75rem;">
+            <i class="fa-solid fa-lock"></i> Staff & Lecturer Login
+          </div>
+          <h2>Faculty / Admin Sign In</h2>
+          <p>Select your authorized role and enter your staff credentials.</p>
+        </div>
+
+        <!-- Role Switcher Tabs for Faculty / Staff -->
+        <div class="role-switcher-tabs" style="margin-bottom: 1.5rem;">
+          <div class="role-tab-btn active" data-role="teacher" onclick="switchAuthRole('teacher', this)">👨‍🏫 Teacher / Lecturer</div>
+          <div class="role-tab-btn" data-role="admin" onclick="switchAuthRole('admin', this)">🛡️ System Admin</div>
+        </div>
+
+        <!-- Error and Success Message Alerts -->
+        <div class="auth-error-alert" id="signInErrorAlert"></div>
+        <div class="auth-success-alert" id="signInSuccessAlert"></div>
+
+        <form id="staffSignInForm" onsubmit="handleStaffSignInSubmit(event)">
+          <div class="form-group">
+            <label class="form-label" id="staffIdLabel">Faculty / Teacher ID or Email</label>
+            <input type="text" class="form-control" id="signInIdInput" placeholder="e.g. TCH-PHYSICS or teacher@edupeak.lk" required autocomplete="username">
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label class="form-label">Password</label>
+              <a href="javascript:void(0)" onclick="showToast('Contact EduPeak Academic Administration for staff password resets.', 'info')" style="font-size: 0.75rem; color: var(--primary);">Forgot Password?</a>
+            </div>
+            <input type="password" class="form-control" id="signInPasswordInput" placeholder="Enter staff password" required autocomplete="current-password">
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; font-size: 0.825rem; color: var(--text-muted);">
+            <input type="checkbox" id="rememberMe" checked>
+            <label for="rememberMe">Remember secure staff session</label>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="btnSubmitSignIn" style="width: 100%; font-size: 1rem; padding: 0.85rem; background: linear-gradient(135deg, #0f172a 0%, #1e40af 100%);">
+            <i class="fa-solid fa-lock"></i> Access Console
+          </button>
+
+          <div style="text-align: center; margin-top: 1.5rem; font-size: 0.875rem; color: var(--text-muted);">
+            <span>Are you a student?</span> 
+            <a href="login.html" style="color: var(--primary); font-weight: 700; margin-left: 0.25rem;">
+              Go to Student LMS Login ➔
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <!-- Simple Footer -->
+  <footer class="auth-simple-footer">
+    <p>&copy; 2025/2026 EduPeak Higher Educational Institute. All Rights Reserved.</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/translations.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/lms.js"></script>
+  <script src="js/admin.js"></script>
+  <script>
+    // Initialize activeAuthRole to teacher
+    activeAuthRole = 'teacher';
+
+    async function handleStaffSignInSubmit(e) {
+      e.preventDefault();
+      const idInput = document.getElementById("signInIdInput");
+      const passInput = document.getElementById("signInPasswordInput");
+      const submitBtn = document.getElementById("btnSubmitSignIn");
+      const errorAlert = document.getElementById("signInErrorAlert");
+      const successAlert = document.getElementById("signInSuccessAlert");
+      const role = activeAuthRole || "teacher";
+
+      const identifier = idInput ? idInput.value.trim() : "";
+      const password = passInput ? passInput.value : "";
+
+      if (errorAlert) errorAlert.style.display = "none";
+      if (successAlert) successAlert.style.display = "none";
+
+      if (!identifier || !password) {
+        if (errorAlert) {
+          errorAlert.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Please enter your staff credentials.';
+          errorAlert.style.display = "block";
+        }
+        return;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Authenticating Staff Session...';
+      }
+
+      try {
+        const result = await AUTH_SYSTEM.login(identifier, password, role);
+
+        if (!result.success) {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Access Console';
+          }
+          if (errorAlert) {
+            errorAlert.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ${result.message}`;
+            errorAlert.style.display = "block";
+          }
+          return;
+        }
+
+        // Login Success
+        if (successAlert) {
+          successAlert.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${result.message || 'Staff Authentication Successful! Accessing console...'}`;
+          successAlert.style.display = "block";
+        }
+
+        if (submitBtn) {
+          submitBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Redirecting...';
+        }
+
+        if (window.showToast) {
+          window.showToast(`🛡️ Welcome, ${result.user.name}! Staff access granted.`, "success");
+        }
+
+        setTimeout(() => {
+          if (role === "admin") {
+            window.location.href = "index.html#admin";
+          } else {
+            window.location.href = "teacher-portal.html";
+          }
+        }, 700);
+      } catch (err) {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Access Console';
+        }
+        if (errorAlert) {
+          errorAlert.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Authentication error: ${err.message}`;
+          errorAlert.style.display = "block";
+        }
+      }
+    }
+  </script>
+</body>
+</html>
+

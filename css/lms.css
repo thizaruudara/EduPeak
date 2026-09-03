@@ -1,0 +1,1409 @@
+/* ==========================================================================
+   EduPeak Advanced LMS System - Stylesheet
+   Theme: eWings.lk Signature Color Palette (#227AFF, #EFF5FF, #FFFFFF)
+   Video Player, Live Classroom, Timed MCQ Engine & Student Dashboard
+   ========================================================================== */
+
+.lms-modal-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  background: #f6faff;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.lms-modal-wrapper.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* LMS Top Navigation Bar */
+.lms-navbar {
+  min-height: 4rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1.25rem;
+  flex-shrink: 0;
+  gap: 0.75rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.lms-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.lms-brand-img {
+  height: 30px;
+  width: auto;
+  object-fit: contain;
+}
+
+.lms-badge-tag {
+  background: var(--gradient-primary);
+  color: #ffffff;
+  font-size: 0.675rem;
+  font-weight: 800;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.lms-nav-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.2rem 0.25rem;
+}
+
+.lms-nav-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.lms-tab-btn {
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.785rem;
+  font-weight: 600;
+  padding: 0.42rem 0.75rem;
+  border-radius: var(--radius-full);
+  border: 1.5px solid #e2e8f0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lms-tab-btn:hover {
+  background: #eff6ff;
+  color: var(--primary);
+  border-color: #bfdbfe;
+}
+
+.lms-tab-btn.active {
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 700;
+  border-color: #227aff;
+  box-shadow: 0 2px 8px rgba(34, 122, 255, 0.16);
+}
+
+.badge-live-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
+  animation: pulseLive 1.5s infinite;
+  display: inline-block;
+}
+
+@keyframes pulseLive {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(239, 68, 68, 0);
+  }
+}
+
+.lms-user-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-shrink: 0;
+}
+
+.lms-student-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+  background: #f8faff;
+  padding: 0.35rem 0.75rem 0.35rem 0.4rem;
+  border-radius: var(--radius-full);
+  border: 1px solid #e2e8f0;
+}
+
+.student-avatar-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--gradient-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(34, 122, 255, 0.25);
+}
+
+.student-info-mini {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.student-name {
+  font-size: 0.825rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.student-id-tag {
+  font-size: 0.7rem;
+  color: var(--primary);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.lms-exit-btn {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: var(--transition);
+}
+
+.lms-exit-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+/* LMS View Container */
+.lms-main-content {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2rem;
+  background: #f6faff;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+}
+
+.lms-view-pane {
+  display: none;
+  max-width: 1350px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 auto;
+  overflow-x: hidden;
+}
+
+.lms-view-pane.active {
+  display: block;
+}
+
+/* ==========================================================================
+   LMS Tab 1: Video Classroom & Notes
+   ========================================================================== */
+.classroom-layout-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 1.75rem;
+}
+
+.video-player-container {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-sm);
+}
+
+.video-screen-box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-screen-box iframe, .video-screen-box video {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.video-sim-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0%, transparent 40%, rgba(0, 0, 0, 0.8) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.25rem;
+  pointer-events: none;
+}
+
+.video-top-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.video-hd-pill {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: 0.725rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.video-live-pill {
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.725rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.video-meta-bar {
+  padding: 1.25rem 1.5rem;
+  background: #ffffff;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.video-title-box h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.25rem;
+}
+
+.video-instructor {
+  font-size: 0.825rem;
+  color: var(--primary);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.video-actions-box {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-video-tool {
+  background: #eff5ff;
+  color: var(--primary-dark);
+  border: 1px solid var(--border-color);
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: var(--transition);
+}
+
+.btn-video-tool:hover {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+/* Side Panel */
+.classroom-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.sidebar-card-box {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-sm);
+}
+
+.sidebar-box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-box-header h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.chapters-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.chapter-item {
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: #f6faff;
+  border: 1px solid var(--border-color);
+  font-size: 0.825rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.chapter-item:hover, .chapter-item.active {
+  background: #eff5ff;
+  border-color: var(--primary);
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+
+.chapter-time {
+  font-size: 0.725rem;
+  font-family: monospace;
+  color: var(--primary);
+  background: #ffffff;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+}
+
+.lms-notepad-textarea {
+  width: 100%;
+  height: 140px;
+  background: #f6faff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  resize: vertical;
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+}
+
+.lms-notepad-textarea:focus {
+  border-color: var(--primary);
+  background: #ffffff;
+}
+
+/* ==========================================================================
+   LMS Tab 2: Live Interactive Classroom
+   ========================================================================== */
+.live-banner-alert {
+  background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 100%);
+  border: 1px solid rgba(34, 122, 255, 0.25);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1.25rem;
+  box-shadow: 0 4px 16px rgba(34, 122, 255, 0.06);
+}
+
+.live-banner-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.live-banner-status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.2rem;
+}
+
+.video-live-pill {
+  font-size: 0.725rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+}
+
+.video-live-pill.status-live {
+  background: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+}
+
+.video-live-pill.status-scheduled {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.video-live-pill.status-ended {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.live-topic-title {
+  color: #0f172a;
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.live-topic-meta {
+  font-size: 0.825rem;
+  color: #64748b;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.live-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.btn-zoom-launch {
+  background: #2d8cff !important;
+  border-color: #2d8cff !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+  font-weight: 700 !important;
+  padding: 0.55rem 1.1rem !important;
+  border-radius: var(--radius-md) !important;
+  white-space: nowrap !important;
+  box-shadow: 0 4px 12px rgba(45, 140, 255, 0.25) !important;
+}
+
+.btn-zoom-launch:hover {
+  background: #1b73e8 !important;
+  transform: translateY(-1px);
+}
+
+.live-countdown-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.775rem;
+  color: #64748b;
+}
+
+.countdown-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.countdown-digits {
+  font-family: monospace;
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.live-room-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.75rem;
+}
+
+.live-whiteboard-feed {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  aspect-ratio: 16 / 9;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.live-teacher-cam {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  width: 180px;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-sm);
+  border: 3px solid var(--primary);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.live-teacher-cam img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.live-chat-panel {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  height: 520px;
+  box-shadow: var(--shadow-sm);
+}
+
+.chat-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-messages-scroll {
+  flex-grow: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.chat-bubble {
+  background: #f6faff;
+  border: 1px solid var(--border-color);
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  color: var(--text-main);
+}
+
+.chat-sender {
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 0.15rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+.chat-time {
+  font-size: 0.675rem;
+  color: var(--text-muted);
+}
+
+.chat-input-bar {
+  padding: 0.85rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chat-input-field {
+  flex-grow: 1;
+  background: #f6faff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-main);
+}
+
+/* ==========================================================================
+   LMS Tab 3: Timed Speed MCQ Engine
+   ========================================================================== */
+.quiz-container-box {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+  box-shadow: var(--shadow-md);
+}
+
+.quiz-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 2rem;
+}
+
+.quiz-timer-pill {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.quiz-progress-dots {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.quiz-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #eff5ff;
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.quiz-dot.active {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+.quiz-dot.answered {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #86efac;
+}
+
+.question-text-box {
+  margin-bottom: 2rem;
+}
+
+.question-subject-tag {
+  font-size: 0.775rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.question-main-text {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+
+.question-sinhala-text {
+  font-size: 1.05rem;
+  color: var(--primary-dark);
+  line-height: 1.6;
+}
+
+.options-list-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-bottom: 2rem;
+}
+
+.quiz-option-item {
+  background: #f6faff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-main);
+}
+
+.quiz-option-item:hover {
+  background: #eff5ff;
+  border-color: var(--primary);
+}
+
+.quiz-option-item.selected {
+  background: #eff5ff;
+  border-color: var(--primary);
+  box-shadow: 0 0 12px rgba(34, 122, 255, 0.25);
+}
+
+.quiz-option-item.correct {
+  background: #dcfce7 !important;
+  border-color: #10b981 !important;
+  color: #15803d !important;
+}
+
+.quiz-option-item.incorrect {
+  background: #fee2e2 !important;
+  border-color: #ef4444 !important;
+  color: #b91c1c !important;
+}
+
+.option-radio-mark {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.quiz-option-item.selected .option-radio-mark {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.quiz-explanation-box {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin-top: 1.5rem;
+  display: none;
+}
+
+.quiz-explanation-box.show {
+  display: block;
+  animation: fadeIn 0.3s ease;
+}
+
+.quiz-footer-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+/* ==========================================================================
+   LMS Tab 4: Student Enrolled Courses Dashboard
+   ========================================================================== */
+.enrolled-dashboard-topbar {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.student-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.enrolled-course-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 16px rgba(34, 122, 255, 0.06);
+  transition: var(--transition);
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+}
+
+.enrolled-course-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--primary);
+  box-shadow: 0 10px 25px rgba(34, 122, 255, 0.12);
+}
+
+.enrolled-course-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.85rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.enrolled-stream-badge {
+  font-size: 0.725rem;
+  font-weight: 800;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #eff6ff;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-full);
+  border: 1px solid #bfdbfe;
+  display: inline-block;
+}
+
+.enrolled-level-tag {
+  font-size: 0.725rem;
+  color: #64748b;
+  font-weight: 700;
+  background: #f8fafc;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+.enrolled-course-title {
+  font-size: 1.15rem;
+  color: #0f172a !important;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.enrolled-teacher-row {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: var(--radius-full);
+  margin: 0.5rem 0 0.85rem 0;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--gradient-primary);
+  border-radius: var(--radius-full);
+  transition: width 0.4s ease;
+}
+
+.enrolled-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.775rem;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+}
+
+.enrolled-cta-btn {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  margin-top: auto;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints for LMS System (Tablet, Mobile & Small Devices)
+   ========================================================================== */
+
+/* Large Tablets & Small Laptops (<= 1024px) */
+@media (max-width: 1024px) {
+  .lms-navbar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 0.5rem 1rem 0.35rem !important;
+    gap: 0.4rem !important;
+    min-height: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .lms-brand {
+    order: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    flex: 0 0 auto !important;
+  }
+
+  .lms-user-bar {
+    order: 2 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.45rem !important;
+    margin-left: auto !important;
+    flex: 0 0 auto !important;
+  }
+
+  .student-id-tag {
+    display: none !important;
+  }
+
+  .student-name {
+    max-width: 85px !important;
+  }
+
+  .lms-nav-tabs {
+    order: 3 !important;
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 0.45rem !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding: 0.45rem 0.15rem 0.25rem !important;
+    margin-top: 0.25rem !important;
+    border-top: 1px solid #f1f5f9 !important;
+    box-sizing: border-box !important;
+  }
+
+  .lms-nav-tabs::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .lms-tab-btn {
+    font-size: 0.8rem !important;
+    padding: 0.42rem 0.85rem !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    border-radius: 9999px !important;
+  }
+
+  .classroom-layout-grid,
+  .live-room-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+  }
+}
+
+/* Tablets Portrait & Standard Mobile (<= 768px) */
+@media (max-width: 768px) {
+  .lms-navbar {
+    padding: 0.5rem 0.75rem 0.3rem;
+    gap: 0.4rem;
+  }
+
+  .lms-brand-img {
+    height: 28px;
+  }
+
+  .lms-student-profile {
+    max-width: 130px;
+    padding: 0.25rem 0.55rem 0.25rem 0.35rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+  }
+
+  .student-avatar-circle {
+    width: 26px;
+    height: 26px;
+    font-size: 0.75rem;
+  }
+
+  .student-name {
+    max-width: 70px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .lms-exit-btn {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .lms-nav-tabs {
+    gap: 0.4rem;
+    padding: 0.4rem 0.1rem 0.2rem;
+  }
+
+  .lms-tab-btn {
+    font-size: 0.775rem;
+    padding: 0.4rem 0.75rem;
+  }
+
+  .lms-main-content {
+    padding: 0.85rem 0.65rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Video Classroom Mobile */
+  .classroom-layout-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem;
+  }
+
+  .video-meta-bar {
+    padding: 1rem !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.85rem !important;
+  }
+
+  .video-meta-bar select {
+    width: 100% !important;
+    max-width: 100% !important;
+    font-size: 0.85rem !important;
+  }
+
+  .video-actions-box {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .btn-video-tool {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.65rem;
+  }
+
+  .classroom-sidebar {
+    width: 100% !important;
+  }
+
+  .sidebar-card-box {
+    padding: 1rem !important;
+  }
+
+  /* Live Room Mobile */
+  .live-banner-alert {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 1rem !important;
+    gap: 0.75rem !important;
+    margin-bottom: 1.25rem !important;
+    border-radius: 14px !important;
+    box-sizing: border-box !important;
+  }
+
+  .live-banner-main {
+    width: 100% !important;
+  }
+
+  .live-banner-status-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    gap: 0.5rem !important;
+    margin-bottom: 0.35rem !important;
+  }
+
+  .live-topic-title {
+    font-size: 0.975rem !important;
+    font-weight: 800 !important;
+    line-height: 1.35 !important;
+    color: #0f172a !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  .live-topic-meta {
+    font-size: 0.75rem !important;
+    line-height: 1.3 !important;
+    color: #64748b !important;
+  }
+
+  .live-banner-actions {
+    width: 100% !important;
+    display: flex !important;
+    padding-top: 0.65rem !important;
+    border-top: 1px solid rgba(34, 122, 255, 0.15) !important;
+  }
+
+  .btn-zoom-launch {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 0.55rem 1rem !important;
+    font-size: 0.825rem !important;
+  }
+
+  .live-room-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem;
+  }
+
+  .live-chat-panel {
+    height: 380px !important;
+    max-height: 50vh !important;
+  }
+
+  /* Speed Quiz Mobile */
+  .quiz-container-box {
+    padding: 1.25rem 1rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    border-radius: 14px !important;
+  }
+
+  .quiz-header-bar {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.85rem !important;
+    padding-bottom: 1rem !important;
+    margin-bottom: 1.25rem !important;
+  }
+
+  .quiz-header-bar > div:last-child {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 0.65rem !important;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 0.75rem;
+  }
+
+  .quiz-progress-dots {
+    gap: 0.35rem !important;
+  }
+
+  .quiz-dot {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 0.75rem !important;
+  }
+
+  .question-text-box {
+    padding: 1rem !important;
+    margin: 1rem 0 !important;
+  }
+
+  .question-main-text {
+    font-size: 1rem !important;
+  }
+
+  .question-sinhala-text {
+    font-size: 0.9rem !important;
+  }
+
+  .quiz-option-item {
+    padding: 0.85rem 1rem !important;
+    gap: 0.75rem !important;
+  }
+
+  .quiz-footer-actions {
+    gap: 0.5rem !important;
+  }
+
+  .quiz-footer-actions .btn {
+    flex: 1 1 auto;
+    font-size: 0.825rem;
+    padding: 0.55rem 0.85rem;
+  }
+
+  /* My Courses Mobile */
+  .student-dashboard-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .enrolled-course-card {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 1.25rem 1rem;
+  }
+}
+
+/* Extra Small Phones (<= 480px) */
+@media (max-width: 480px) {
+  .lms-navbar {
+    padding: 0.45rem 0.5rem 0.25rem;
+    gap: 0.35rem;
+  }
+
+  .lms-brand-img {
+    height: 24px;
+  }
+
+  .lms-student-profile {
+    max-width: 110px;
+    padding: 0.2rem 0.45rem 0.2rem 0.25rem;
+    gap: 0.3rem;
+  }
+
+  .student-name {
+    max-width: 60px;
+    font-size: 0.72rem;
+  }
+
+  .lms-exit-btn {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.7rem;
+  }
+
+  .lms-exit-btn span {
+    display: none; /* Icon only on extra small screens */
+  }
+
+  .lms-nav-tabs {
+    gap: 0.35rem;
+    padding: 0.35rem 0.1rem 0.15rem;
+  }
+
+  .lms-tab-btn {
+    font-size: 0.75rem;
+    padding: 0.38rem 0.7rem;
+    gap: 0.3rem;
+  }
+
+  .lms-main-content {
+    padding: 0.75rem 0.5rem !important;
+  }
+
+  .quiz-container-box {
+    padding: 1rem 0.75rem !important;
+  }
+
+  .quiz-timer-pill {
+    font-size: 0.8rem !important;
+    padding: 0.3rem 0.65rem !important;
+  }
+
+  .quiz-dot {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 0.7rem !important;
+  }
+
+  .enrolled-course-card {
+    padding: 1rem 0.75rem !important;
+  }
+
+  .enrolled-course-title {
+    font-size: 0.975rem;
+  }
+}
+
+/* Very Compact Screens (<= 360px) */
+@media (max-width: 360px) {
+  .lms-tab-btn {
+    font-size: 0.72rem;
+    padding: 0.35rem 0.6rem;
+  }
+}

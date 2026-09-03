@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Registration | EduPeak Higher Educational Institute</title>
+  <meta name="description" content="Register as a student with EduPeak & Victory Institute. Access A/L Combined Maths, Physics, Chemistry, Biology and IT classes.">
+  <meta name="theme-color" content="#227AFF">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="assets/img/edupeak_logo.png">
+  
+  <!-- FontAwesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/lms.css">
+  <link rel="stylesheet" href="css/auth-pages.css">
+  
+  <!-- Google Identity Services SDK -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body class="auth-page-body">
+
+
+
+  <!-- Ambient Light Blue Glows -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- Top Simple Navigation Header -->
+  <header class="auth-top-header">
+    <div class="container auth-header-container">
+      <a href="index.html" class="brand-logo" aria-label="EduPeak Home">
+        <img src="assets/img/edupeak_logo.png" alt="EduPeak Logo" class="site-brand-img">
+      </a>
+
+      <div style="display: flex; align-items: center; gap: 1.25rem;">
+        <a href="index.html" class="auth-back-link">
+          <i class="fa-solid fa-arrow-left"></i> <span>Back to Home</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Registration Container -->
+  <main class="auth-main-container">
+    <div class="auth-card-layout register-layout">
+      
+      <!-- Left Showcase Banner -->
+      <div class="auth-showcase-side">
+        <div class="showcase-content">
+          <div class="showcase-badge">
+            <i class="fa-solid fa-graduation-cap"></i> Student Registration Portal
+          </div>
+          
+          <h1 class="showcase-title">Join Sri Lanka's Largest Hybrid Learning Family</h1>
+          
+          <div style="background: rgba(255, 255, 255, 0.12); padding: 0.85rem 1rem; border-radius: var(--radius-md); border-left: 3px solid #60a5fa; margin-bottom: 1.5rem; font-size: 0.85rem; line-height: 1.5;">
+            🎓 ශ්‍රී ලංකාවේ විශාලතම E-Learning Platform එක සමග සම්බන්ධ වී ඔබේ සිහින යථාර්තයක් කරගන්න
+          </div>
+
+          <p class="showcase-desc">
+            Gain immediate access to island's top lecturers, live streaming auditoriums, speed assessments, and personalized lesson resources.
+          </p>
+
+          <ul class="showcase-features-list">
+            <li class="showcase-feature-item">
+              <div class="showcase-feature-icon"><i class="fa-solid fa-school"></i></div>
+              <span>Victory Higher Educational Institute - Embilipitiya physical & online hybrid classes</span>
+            </li>
+            <li class="showcase-feature-item">
+              <div class="showcase-feature-icon"><i class="fa-solid fa-chalkboard-user"></i></div>
+              <span>Faculty of Senior University Lecturers & Moratuwa Engineers</span>
+            </li>
+            <li class="showcase-feature-item">
+              <div class="showcase-feature-icon"><i class="fa-solid fa-shield-check"></i></div>
+              <span>6-Digit Email OTP verification for guaranteed account security</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="showcase-testimonial">
+          <p class="testimonial-quote">
+            "The hybrid LMS allowed me to participate in Embilipitiya Victory classes from home seamlessly during revisions. Highly recommended!"
+          </p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">N</div>
+            <div class="testimonial-info">
+              <h5>Nethmi Chamathka</h5>
+              <p>Biological Science &bull; 2025 A/L</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Registration Form Area -->
+      <div class="auth-form-side register-side">
+        
+        <div class="auth-form-header">
+          <h2>Create Student Account</h2>
+          <p>Complete your registration profile to get instant access to the LMS portal.</p>
+        </div>
+
+        <!-- Registration Error and Success Banners -->
+        <div class="auth-error-alert" id="regErrorAlert"></div>
+        <div class="auth-success-alert" id="regSuccessAlert"></div>
+
+        <!-- Quick Google Sign Up -->
+        <button type="button" class="btn-google-auth" onclick="handleGoogleSignUp()">
+          <svg class="google-icon-svg" width="20" height="20" viewBox="0 0 24 24" style="width:20px;height:20px;min-width:20px;min-height:20px;flex-shrink:0;">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          Sign Up with Google (Auto-fill Details)
+        </button>
+
+        <div class="auth-divider">
+          <span>OR FILL STUDENT REGISTRATION DETAILS</span>
+        </div>
+
+        <form id="standaloneRegisterForm" onsubmit="handleRegistrationSubmit(event)">
+          
+          <!-- Full Name -->
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-user"></i> Full Student Name <span style="color: #ef4444;">*</span></label>
+            <input type="text" class="form-control" id="regNameInput" placeholder="e.g. Kasun Nuwantha Perera" required>
+          </div>
+
+          <!-- Email & WhatsApp Phone -->
+          <div class="form-row-2col">
+            <div class="form-group">
+              <label class="form-label"><i class="fa-solid fa-envelope"></i> Email Address (For OTP) <span style="color: #ef4444;">*</span></label>
+              <input type="email" class="form-control" id="regEmailInput" placeholder="e.g. kasun.student@gmail.com" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label"><i class="fa-brands fa-whatsapp"></i> WhatsApp Number <span style="color: #ef4444;">*</span></label>
+              <input type="tel" class="form-control" id="regPhoneInput" placeholder="e.g. 077 123 4567" required>
+            </div>
+          </div>
+
+          <!-- Institute Branch Selection (Victory Embilipitiya, Coming Soon) -->
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-school"></i> Select Educational Institute Branch <span style="color: #ef4444;">*</span></label>
+            <select class="form-control" id="regInstituteSelect" required style="font-weight: 600;">
+              <option value="Victory Higher Educational Institute - Embilipitiya" selected style="font-weight: 700; color: #0f172a;">🏫 Victory Higher Educational Institute - Embilipitiya (භෞතික / දෙමුහුන් පන්ති)</option>
+              <option value="EduPeak 24/7 Global Online LMS" disabled style="color: #94a3b8; background: #f8fafc; cursor: not-allowed;">🌐 EduPeak 24/7 Global Online LMS (Coming soon - Disabled)</option>
+              <option value="EduPeak Kandy Royal Center" disabled style="color: #94a3b8; background: #f8fafc; cursor: not-allowed;">🏛️ EduPeak Kandy Royal Center (Coming soon - Disabled)</option>
+              <option value="EduPeak Kurunegala Premier Hub" disabled style="color: #94a3b8; background: #f8fafc; cursor: not-allowed;">🏢 EduPeak Kurunegala Premier Hub (Coming soon - Disabled)</option>
+            </select>
+          </div>
+
+          <!-- Exam Year & Stream Row -->
+          <div class="form-row-2col">
+            <div class="form-group">
+              <label class="form-label"><i class="fa-solid fa-calendar-check"></i> Target Exam Year <span style="color: #ef4444;">*</span></label>
+              <select class="form-control" id="regExamYearSelect" required>
+                <option value="2027 A/L" selected>2027 A/L (2027 උසස් පෙළ කණ්ඩායම)</option>
+                <option value="2028 A/L">2028 A/L (2028 නවක කණ්ඩායම)</option>
+                <option value="2029 A/L">2029 A/L (2029 Foundation Batch)</option>
+                <option value="Professional Degree">Professional Diploma / Degree</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label"><i class="fa-solid fa-book-bookmark"></i> Academic Stream <span style="color: #ef4444;">*</span></label>
+              <select class="form-control" id="regStreamSelect" required>
+                <option value="Physical Science" selected>Physical Science (Maths / Physics / Chemistry / ICT)</option>
+                <option value="Biological Science">Biological Science (Biology / Chemistry / Physics)</option>
+                <option value="Commerce Stream">Commerce Stream (Accounting / Econ / BS)</option>
+                <option value="Technology Stream">Technology Stream (Engineering / Bio-Tech / SFT)</option>
+                <option value="Information Technology">Information Technology & Software</option>
+                <option value="Arts Stream">Arts Stream</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- District -->
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-location-dot"></i> Home District / City</label>
+            <select class="form-control" id="regDistrictSelect">
+              <option value="Ratnapura / Embilipitiya" selected>Ratnapura (Embilipitiya / Kolonna / Godakawela)</option>
+              <option value="Colombo">Colombo</option>
+              <option value="Gampaha">Gampaha</option>
+              <option value="Kandy">Kandy</option>
+              <option value="Galle">Galle</option>
+              <option value="Matara">Matara</option>
+              <option value="Kurunegala">Kurunegala</option>
+              <option value="Badulla">Badulla</option>
+              <option value="Anuradhapura">Anuradhapura</option>
+              <option value="Other / Overseas">Other / Overseas Student</option>
+            </select>
+          </div>
+
+          <!-- Password & Confirm Password -->
+          <div class="form-row-2col">
+            <div class="form-group">
+              <label class="form-label"><i class="fa-solid fa-lock"></i> Create Password <span style="color: #ef4444;">*</span></label>
+              <input type="password" class="form-control" id="regPasswordInput" placeholder="Min. 6 characters" minlength="6" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label"><i class="fa-solid fa-shield-check"></i> Confirm Password <span style="color: #ef4444;">*</span></label>
+              <input type="password" class="form-control" id="regConfirmPasswordInput" placeholder="Re-enter password" minlength="6" required>
+            </div>
+          </div>
+
+          <div style="margin: 0.5rem 0 1.25rem; font-size: 0.8rem; color: var(--text-muted);">
+            <i class="fa-solid fa-circle-info" style="color: var(--primary);"></i> A 6-digit verification code will be sent to your email to verify and activate your student account.
+          </div>
+
+          <button type="submit" class="btn btn-accent" style="width: 100%; font-size: 1rem; padding: 0.85rem;">
+            <i class="fa-solid fa-paper-plane"></i> Proceed to Email Verification (Get OTP)
+          </button>
+
+          <div style="text-align: center; margin-top: 1.5rem; font-size: 0.875rem; color: var(--text-muted);">
+            <span>Already have an account?</span> 
+            <a href="login.html" style="color: var(--primary); font-weight: 700; margin-left: 0.25rem;">
+              Sign In Here ➔
+            </a>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- EMAIL OTP VERIFICATION MODAL ON REGISTER PAGE -->
+  <div class="modal-overlay" id="emailOtpModal">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-body" style="padding: 2.25rem 2rem;">
+        
+        <div class="otp-card-header">
+          <div class="otp-icon-bubble">
+            <i class="fa-solid fa-envelope-circle-check"></i>
+          </div>
+          <h3 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">Verify Your Email Address</h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.4rem;">
+            We sent a 6-digit verification code to:<br>
+            <strong id="otpTargetEmail" style="color: var(--primary); font-size: 0.95rem;">student@gmail.com</strong>
+          </p>
+        </div>
+
+        <!-- Live Dev Helper Banner -->
+        <div class="otp-dev-banner" id="otpDevBanner">
+          <span><i class="fa-solid fa-key"></i> Verification Code: <strong id="otpDevCode">849201</strong></span>
+          <button type="button" class="btn-copy-otp" onclick="fillOtpDevCode()">Auto-Fill</button>
+        </div>
+
+        <!-- Error & Success Alert -->
+        <div class="auth-error-alert" id="otpErrorAlert"></div>
+        <div class="auth-success-alert" id="otpSuccessAlert"></div>
+
+        <!-- 6-Digit OTP Form -->
+        <form onsubmit="handleOtpVerificationSubmit(event)">
+          <div class="otp-input-group">
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit" data-index="0" autofocus required>
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit" data-index="1" required>
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit" data-index="2" required>
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit" data-index="3" required>
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit" data-index="4" required>
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit" data-index="5" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 0.95rem; padding: 0.8rem;" id="btnVerifyOtp">
+            <i class="fa-solid fa-circle-check"></i> Verify Email & Complete Registration
+          </button>
+        </form>
+
+        <!-- Resend Code -->
+        <div class="otp-resend-row">
+          <span id="otpTimerText">Resend code in <strong id="otpCountdown">59s</strong></span>
+          <button type="button" class="otp-resend-btn" id="btnResendOtp" style="display: none;" onclick="resendOtpCode()">
+            Resend New Code
+          </button>
+        </div>
+
+        <div style="text-align: center; margin-top: 1.25rem;">
+          <a href="javascript:void(0)" onclick="closeModal('emailOtpModal')" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">
+            <i class="fa-solid fa-arrow-left"></i> Change Email / Edit Details
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Simple Footer -->
+  <footer class="auth-simple-footer">
+    <p>© 2026 EduPeak Higher Educational Institute & LMS. All Rights Reserved.</p>
+  </footer>
+
+  <!-- Supabase CDN & JS Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/data.js"></script>
+  <script src="js/institutes.js"></script>
+  <script src="js/translations.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/lms.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

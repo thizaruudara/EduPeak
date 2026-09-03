@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Privacy Policy | EduPeak Higher Educational Institute & LMS</title>
+  <meta name="description" content="Privacy Policy for EduPeak Higher Educational Institute & Hybrid LMS. Learn how we safeguard student information, lecture DRM, and academic records.">
+  <link rel="icon" type="image/png" href="assets/img/edupeak_logo.png">
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800;900&family=Noto+Sans+Sinhala:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- CSS Framework -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/lms.css">
+
+  <!-- Supabase Client JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    .legal-hero-section {
+      padding: 5rem 0 3.5rem;
+      background: radial-gradient(circle at 50% 10%, rgba(34, 122, 255, 0.08) 0%, rgba(255, 255, 255, 0) 70%);
+      text-align: center;
+      position: relative;
+    }
+    .legal-badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 0.4rem 1rem;
+      border-radius: var(--radius-full);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 1.25rem;
+    }
+    .legal-page-title {
+      font-family: var(--font-heading);
+      font-size: 2.75rem;
+      font-weight: 900;
+      letter-spacing: -1px;
+      color: var(--text-main);
+      margin-bottom: 0.85rem;
+    }
+    .legal-page-subtitle {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      max-width: 680px;
+      margin: 0 auto 1.5rem;
+      line-height: 1.6;
+    }
+    .legal-meta-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 1.5rem;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      padding: 0.5rem 1.25rem;
+      border-radius: var(--radius-full);
+      font-size: 0.825rem;
+      color: var(--text-dim);
+      box-shadow: var(--shadow-sm);
+    }
+    .legal-content-grid {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 3rem;
+      align-items: start;
+      padding: 3.5rem 0 6rem;
+    }
+    .legal-toc-card {
+      background: #ffffff;
+      border: 1.5px solid rgba(34, 122, 255, 0.15);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      position: sticky;
+      top: 100px;
+    }
+    .legal-toc-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 0.65rem;
+    }
+    .legal-toc-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .legal-toc-link {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-body);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.6rem;
+      border-radius: var(--radius-sm);
+      transition: var(--transition);
+    }
+    .legal-toc-link:hover {
+      background: #eff6ff;
+      color: var(--primary);
+      transform: translateX(3px);
+    }
+    .legal-body-wrap {
+      background: #ffffff;
+      border: 1.5px solid rgba(34, 122, 255, 0.12);
+      border-radius: var(--radius-lg);
+      padding: 2.75rem;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 2.75rem;
+    }
+    .legal-section-block {
+      scroll-margin-top: 120px;
+    }
+    .legal-section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      margin-bottom: 1rem;
+    }
+    .legal-sec-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--gradient-primary);
+      color: #ffffff;
+      font-size: 0.875rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .legal-sec-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+    .legal-text {
+      font-size: 0.975rem;
+      color: #475569;
+      line-height: 1.8;
+      margin-bottom: 1rem;
+    }
+    .legal-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      margin: 1rem 0;
+      padding-left: 0.5rem;
+    }
+    .legal-list li {
+      font-size: 0.95rem;
+      color: #334155;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      line-height: 1.6;
+    }
+    .legal-list li i {
+      color: var(--primary);
+      margin-top: 0.25rem;
+      font-size: 0.85rem;
+    }
+    .legal-highlight-box {
+      background: linear-gradient(135deg, #eff5ff 0%, #f8fafc 100%);
+      border-left: 4px solid var(--primary);
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      padding: 1.15rem 1.35rem;
+      margin: 1.25rem 0;
+      font-size: 0.925rem;
+      color: #1e293b;
+      line-height: 1.65;
+    }
+    @media (max-width: 900px) {
+      .legal-content-grid {
+        grid-template-columns: 1fr;
+      }
+      .legal-toc-card {
+        position: static;
+      }
+      .legal-body-wrap {
+        padding: 1.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Reading Progress Bar -->
+  <div class="page-scroll-progress" id="pageScrollProgress"></div>
+
+  <!-- Header Navigation -->
+  <header class="site-header" id="siteHeader">
+    <div class="container header-container">
+      <a href="index.html" class="brand-logo" aria-label="EduPeak Home">
+        <img src="assets/img/edupeak_logo.png" alt="EduPeak Logo" class="site-brand-img">
+      </a>
+
+      <nav class="main-nav" id="mainNav">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="courses.html" class="nav-link">Courses</a>
+        <a href="index.html#teachers" class="nav-link">Faculty</a>
+        <a href="index.html#institutes" class="nav-link">Institutes</a>
+        <a href="index.html#lms-demo" class="nav-link">LMS System</a>
+        <a href="index.html#support" class="nav-link">Support</a>
+      </nav>
+
+      <div class="header-actions">
+        <div class="guest-actions-group" id="headerGuestActions">
+          <a href="login.html" class="btn btn-ghost btn-sm">
+            <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In
+          </a>
+          <a href="register.html" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-user-plus"></i> Register
+          </a>
+        </div>
+
+        <div class="user-actions-group" id="headerUserActions">
+          <div class="user-profile-dropdown-wrapper" id="userProfileDropdownWrapper">
+            <div class="user-profile-chip" id="userProfileTriggerChip" onclick="toggleProfileDropdown(event)">
+              <div class="user-avatar-badge" id="headerUserAvatarLetter">K</div>
+              <span class="user-name-text" id="headerUserNameDisplay">Kasun</span>
+              <i class="fa-solid fa-chevron-down profile-dropdown-chevron" id="profileDropdownChevron"></i>
+            </div>
+            <div class="user-profile-dropdown-menu" id="userProfileDropdownMenu">
+              <div class="dropdown-user-header">
+                <div class="dropdown-avatar-large" id="dropdownUserAvatar">K</div>
+                <div class="dropdown-user-details">
+                  <h4 class="dropdown-user-fullname" id="dropdownUserName">Kasun Jayasundara</h4>
+                  <div class="dropdown-user-id-pill" id="dropdownUserIdPill">
+                    <i class="fa-solid fa-id-card"></i> <span id="dropdownUserId">EP-2025-001</span>
+                  </div>
+                  <div class="dropdown-user-meta" id="dropdownUserMeta">student@edupeak.lk</div>
+                </div>
+              </div>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-nav-section" id="dropdownNavLinks"></div>
+              <div class="dropdown-divider"></div>
+              <button type="button" class="dropdown-logout-btn" onclick="handleLogout()">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                <span>Sign Out of Account</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle navigation">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Banner -->
+  <section class="legal-hero-section">
+    <div class="container">
+      <div class="legal-badge-pill">
+        <i class="fa-solid fa-shield-halved"></i> Data Protection & Privacy Governance
+      </div>
+      <h1 class="legal-page-title">Privacy Policy</h1>
+      <p class="legal-page-subtitle">
+        At EduPeak Higher Educational Institute and Victory Embilipitiya, we are committed to safeguarding student data, academic privacy, and video classroom integrity with utmost transparency.
+      </p>
+      <div class="legal-meta-bar">
+        <span><i class="fa-regular fa-calendar-check" style="color: var(--primary);"></i> Last Updated: August 2026</span>
+        <span><i class="fa-solid fa-building-columns" style="color: var(--primary);"></i> Victory Embilipitiya & EduPeak Institute</span>
+        <span><i class="fa-solid fa-lock" style="color: #10b981;"></i> 256-bit Encrypted</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Policy Content -->
+  <main class="container">
+    <div class="legal-content-grid">
+      
+      <!-- Sticky Quick Navigation -->
+      <aside class="legal-toc-card">
+        <h3 class="legal-toc-title"><i class="fa-solid fa-list-ul"></i> Policy Table of Contents</h3>
+        <ul class="legal-toc-list">
+          <li><a href="#sec-overview" class="legal-toc-link">1. Overview & Scope</a></li>
+          <li><a href="#sec-collection" class="legal-toc-link">2. Information We Collect</a></li>
+          <li><a href="#sec-usage" class="legal-toc-link">3. How We Use Student Data</a></li>
+          <li><a href="#sec-drm" class="legal-toc-link">4. Video DRM & Anti-Piracy</a></li>
+          <li><a href="#sec-payments" class="legal-toc-link">5. Payments & Tuition Security</a></li>
+          <li><a href="#sec-sharing" class="legal-toc-link">6. Third-Party Integrations</a></li>
+          <li><a href="#sec-retention" class="legal-toc-link">7. Storage & Data Security</a></li>
+          <li><a href="#sec-rights" class="legal-toc-link">8. Student & Parent Rights</a></li>
+          <li><a href="#sec-contact" class="legal-toc-link">9. Contact & Inquiries</a></li>
+        </ul>
+
+        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #f1f5f9; text-align: center;">
+          <a href="terms.html" class="btn btn-ghost btn-sm" style="width: 100%;">
+            <i class="fa-solid fa-file-contract"></i> View Terms of Service
+          </a>
+        </div>
+      </aside>
+
+      <!-- Policy Body -->
+      <article class="legal-body-wrap">
+        
+        <!-- Section 1 -->
+        <section class="legal-section-block" id="sec-overview">
+          <div class="legal-section-header">
+            <span class="legal-sec-num">1</span>
+            <h2 class="legal-sec-title">Overview & Scope</h2>
+          </div>
+          <p class="legal-text">
+            This Privacy Policy governs the manner in which <strong>EduPeak Higher Educational Institute</strong> (referred to as "EduPeak", "we", "us", or "our") collects, uses, maintains, and discloses information collected from students, parents, and visitors across our website (<a href="index.html" style="color: var(--primary); text-decoration: underline;">edupeak.lk</a>), Hybrid LMS platform, and our physical educational branch at <strong>Victory Higher Educational Institute, Embilipitiya</strong>.
+          </p>
+          <p class="legal-text">
+            By registering for an account, accessing Amalsha Wanniarachchi’s A/L Physics classes, or utilizing our 24/7 Cloud LMS, you consent to the data collection and security practices outlined in this policy.
+          </p>
+        </section>
+
+        <!-- Section 2 -->
+        <section class="legal-section-block" id="sec-collection">
+          <div class="legal-section-header">
+            <span class="legal-sec-num">2</span>
+            <h2 class="legal-sec-title">Information We Collect</h2>
+          </div>
+          <p class="legal-text">
+            We collect personal and academic information necessary to provide top-tier G.C.E. Advanced Level Physics tutoring, speed exams, physical class attendance, and LMS access:
+          </p>
+          <ul class="legal-list">
+            <li><i class="fa-solid fa-circle-check"></i> <strong>Identity & Contact Details:</strong> Full name, student identification number (e.g., EP-2025-001), email address, mobile phone number, WhatsApp contact, and postal address for tutorial delivery.</li>
+            <li><i class="fa-solid fa-circle-check"></i> <strong>Academic Profile:</strong> G.C.E. A/L examination year (2025, 2026, 2027), school name, stream (Physical Science), and class medium (Sinhala / English).</li>
+            <li><i class="fa-solid fa-circle-check"></i> <strong>Parent/Guardian Information:</strong> Parent name, contact number for attendance SMS alerts, and emergency contact details.</li>
+            <li><i class="fa-solid fa-circle-check"></i> <strong>LMS Interaction & Exam Telemetry:</strong> Video watch time, live lecture attendance timestamps, speed MCQ exam answers, scores, and homework submission files.</li>
+            <li><i class="fa-solid fa-circle-check"></i> <strong>Device & Security Telemetry:</strong> IP address, device model, operating system, and unique browser fingerprints to ensure single-device streaming compliance.</li>
+          </ul>
+        </section>
+
+        <!-- Section 3 -->
+        <section class="legal-section-block" id="sec-usage">
+          <div class="legal-section-header">
+            <span class="legal-sec-num">3</span>
+            <h2 class="legal-sec-title">How We Use Student Data</h2>
+          </div>
+          <p class="legal-text">
+            Collected data is strictly used for legitimate educational and administrative purposes:
+          </p>
+          <ul class="legal-list">
+            <li><i class="fa-solid fa-circle-check"></i> Generating unique student portal access keys and Victory Embilipitiya physical barcode/QR class passes.</li>
+            <li><i class="fa-solid fa-circle-check"></i> Tracking academic progress, grading speed MCQ papers, and publishing real-time island rank leaderboards.</li>
+            <li><i class="fa-solid fa-circle-check"></i> Sending SMS and WhatsApp notifications regarding class schedules, theory notes dispatch, and fee confirmations.</li>
+            <li><i class="fa-solid fa-circle-check"></i> Delivering personalized lecture recommendations and homework feedback from Amalsha Wanniarachchi.</li>
+          </ul>
+        </section>
+
+        <!-- Section 4 -->
+        <section class="legal-section-block" id="sec-drm">
+          <div class="legal-section-header">
+            <span class="legal-sec-num">4</span>
+            <h2 class="legal-sec-title">Video DRM & Anti-Piracy Watermarking</h2>
+          </div>
+          <p class="legal-text">
+            All lecture recordings, theory discussions, and speed paper explanation videos conducted by <strong>Amalsha Wanniarachchi</strong> are proprietary intellectual property.
+          </p>
+          <div class="legal-highlight-box">
+            <i class="fa-solid fa-triangle-exclamation" style="color: var(--primary); margin-right: 0.4rem;"></i>
+            <strong>Dynamic Video Watermarking Notice:</strong> When viewing lecture streams on the LMS, a dynamic watermark displaying your Student ID, Name, and Timestamp will move across the screen. This is used solely to identify and prevent illegal screen recording and copyright distribution.
+          </div>
+        </section>
+
+        <!-- Section 5 -->
+        <section class="legal-section-block" id="sec-payments">
+          <div class="legal-section-header">
+            <span class="legal-sec-num">5</span>
+            <h2 class="legal-sec-title">Payments & Tuition Security</h2>
+          </div>
+          <p class="legal-text">
+            Tuition fee payments (monthly batch cards, speed paper packs, and revision admissions) processed through our online gateway are handled via PCI-DSS compliant payment processors.
+          </p>
+          <ul class="legal-list">
+            <li><i class="fa-solid fa-circle-check"></i> EduPeak does not store credit or debit card numbers on local institute servers.</li>
+            <li><i class="fa-solid fa-circle-check"></i> Physical fee payments at Victory Embilipitiya are instantly logged with automated digital SMS receipts issued to the registered guardian.</li>
+          </ul>
+        </section>
+
+        <!-- Section 6 -->
+        <section class="legal-section-block" id="sec-sharing">
+          <div class="legal-section-header">
+            <span class="legal-sec-num">6</span>
+            <h2 class="legal-sec-title">Third-Party Integrations</h2>
+          </div>
+          <p class="legal-text">
+            We will never sell, trade, or rent student personal data to third parties or advertising brokers. We only share necessary operational data with trusted infrastructure partners:
+          </p>
+          <ul class="legal-list">
+            <li><i class="fa-solid fa-circle-check"></i> <strong>Cloud Storage & Database:</strong> Supabase and AWS secure cloud infrastructure for database persistence.</li>
+            <li><i class="fa-solid fa-circle-check"></i> <strong>SMS Delivery Gateways:</strong> Licensed Sri Lankan telecom gateways for sending class attendance alerts to parents.</li>
+            <li><i class="fa-solid fa-circle-check"></i> <strong>Postal Delivery Services:</strong> Registered postal and courier services for physical Physics printed tutes and speed paper booklets.</li>
+          </ul>
+        </section>
+
+        <!-- Section 7 -->
+        <section class="legal-section-block" id="sec-retention">
+          <div class="legal-section-header">
+            <span class="legal-sec-num">7</span>
+            <h2 class="legal-sec-title">Storage & Data Security</h2>
+          </div>
+          <p class="legal-text">
+            We adhere to strict data security standards in compliance with the <strong>Sri Lanka Personal Data Protection Act (No. 9 of 2022)</strong>:
+          </p>
+          <ul class="legal-list">
+            <li><i class="fa-solid fa-circle-check"></i> <strong>256-bit SSL/TLS Encryption:</strong> All data transmitted between your browser and our LMS is encrypted in transit.</li>
+            <li><i class="fa-solid fa-circle-check"></i> <strong>Role-Based Access Control:</strong> Only authorized Victory Embilipitiya administrative staff and faculty have access to student records.</li>
+            <li><i class="fa-solid fa-circle-check"></i> <strong>Data Retention:</strong> Academic records and exam marks are retained until the completion of your respective A/L examination cycle.</li>
+          </ul>
+        </section>
+
+        <!-- Section 8 -->
+        <section class="legal-section-block" id="sec-rights">
+          <div class="legal-section-header">
+            <span class="legal-sec-num">8</span>
+            <h2 class="legal-sec-title">Student & Parent Rights</h2>
+          </div>
+          <p class="legal-text">
+            Students and registered guardians have the following rights regarding their personal data:
+          </p>
+          <ul class="legal-list">
+            <li><i class="fa-solid fa-circle-check"></i> Request a copy of all stored personal and academic exam progress records.</li>
+            <li><i class="fa-solid fa-circle-check"></i> Update or rectify incorrect contact, school, or residential delivery addresses via the Student Portal.</li>
+            <li><i class="fa-solid fa-circle-check"></i> Request permanent deletion of account data upon completion of the G.C.E. A/L exam cycle.</li>
+          </ul>
+        </section>
+
+        <!-- Section 9 -->
+        <section class="legal-section-block" id="sec-contact">
+          <div class="legal-section-header">
+            <span class="legal-sec-num">9</span>
+            <h2 class="legal-sec-title">Contact & Inquiries</h2>
+          </div>
+          <p class="legal-text">
+            For questions or privacy concerns regarding this policy, please reach out to our administration team:
+          </p>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 1.25rem;">
+            <p style="margin: 0 0 0.5rem; font-weight: 700; color: var(--text-main);"><i class="fa-solid fa-building-columns" style="color: var(--primary);"></i> Victory College & Higher Educational Institute (Embilipitiya)</p>
+            <p style="margin: 0 0 0.35rem; font-size: 0.9rem; color: #64748b;"><i class="fa-solid fa-location-dot" style="width: 20px; color: var(--primary);"></i> Victory College Embilipitiya, Embilipitiya Pallegama, Sri Lanka, 70200</p>
+            <p style="margin: 0 0 0.35rem; font-size: 0.9rem; color: #64748b;"><i class="fa-solid fa-phone" style="width: 20px; color: var(--primary);"></i> +94 47 226 2808 / +94 71 805 9089 (WhatsApp)</p>
+            <p style="margin: 0 0 0.35rem; font-size: 0.9rem; color: #64748b;"><i class="fa-solid fa-envelope" style="width: 20px; color: var(--primary);"></i> victorycollege.emb@gmail.com / info@edupeak.lk</p>
+            <p style="margin: 0; font-size: 0.9rem; color: #64748b;"><i class="fa-solid fa-globe" style="width: 20px; color: var(--primary);"></i> <a href="https://victorycollegeemb.edu.lk" target="_blank" style="color: inherit;">victorycollegeemb.edu.lk</a></p>
+          </div>
+        </section>
+
+      </article>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer" id="support">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col footer-brand-col">
+          <div class="footer-logo-wrap">
+            <img src="assets/img/edupeak_logo.png" alt="EduPeak Logo" class="footer-brand-img">
+          </div>
+          <p class="footer-description">
+            Sri Lanka's dedicated hybrid education platform for G.C.E. A/L Physics, mentored by <strong>Amalsha Wanniarachchi</strong> at Victory Embilipitiya.
+          </p>
+          <div class="footer-social-links">
+            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+            <a href="https://t.me/edupeakbot" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="Telegram"><i class="fa-brands fa-telegram"></i></a>
+            <a href="https://wa.me/94771234567" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h4>Physics Batches</h4>
+          <ul class="footer-links-list">
+            <li><a href="courses.html"><i class="fa-solid fa-atom"></i> 2025 A/L Physics Theory</a></li>
+            <li><a href="courses.html"><i class="fa-solid fa-atom"></i> 2026 A/L Physics Theory</a></li>
+            <li><a href="courses.html"><i class="fa-solid fa-atom"></i> 2025 A/L Rapid Revision</a></li>
+            <li><a href="courses.html"><i class="fa-solid fa-atom"></i> 50 Speed MCQ Paper Class</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Campuses & Inquiries</h4>
+          <ul class="footer-links-list">
+            <li><i class="fa-solid fa-location-dot" style="color: #38bdf8; margin-right: 0.4rem;"></i> Victory Higher Educational Institute, Main Street, Embilipitiya</li>
+            <li><i class="fa-solid fa-phone" style="color: #38bdf8; margin-right: 0.4rem;"></i> +94 47 223 0000</li>
+            <li><i class="fa-brands fa-whatsapp" style="color: #25d366; margin-right: 0.4rem;"></i> +94 77 123 4567</li>
+            <li><i class="fa-solid fa-envelope" style="color: #38bdf8; margin-right: 0.4rem;"></i> info@edupeak.lk</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>© 2026 EduPeak Higher Educational Institute. All Rights Reserved.</p>
+        <div style="display: flex; gap: 1.25rem;">
+          <a href="privacy.html" style="color: var(--primary); font-weight: 700;">Privacy Policy</a>
+          <a href="terms.html" style="color: #94a3b8;">Terms of LMS Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/translations.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

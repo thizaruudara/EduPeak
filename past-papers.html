@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Past Paper & Top School Model Paper Vault | EduPeak</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/lms.css">
+
+  <style>
+    body {
+      background: #f8fafc;
+      color: #0f172a;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .vault-hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+      color: #ffffff;
+      padding: 3.5rem 1.5rem 2.5rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .vault-hero-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.5rem;
+      font-weight: 900;
+      color: #ffffff !important;
+      margin: 0 0 0.5rem 0;
+      letter-spacing: -0.02em;
+    }
+
+    .vault-container {
+      max-width: 1350px;
+      margin: 2rem auto 4rem;
+      padding: 0 1.5rem;
+    }
+
+    /* Filter Pill Bars */
+    .filter-section {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    }
+
+    .filter-pills-row {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+
+    .filter-pills-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .vault-pill-btn {
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .vault-pill-btn:hover {
+      background: #eff6ff;
+      color: #227aff;
+      border-color: #bfdbfe;
+    }
+
+    .vault-pill-btn.active {
+      background: #227aff;
+      color: #ffffff;
+      border-color: #227aff;
+      box-shadow: 0 2px 8px rgba(34, 122, 255, 0.3);
+    }
+
+    /* Papers Grid */
+    .papers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .paper-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 1.35rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+
+    .paper-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+      border-color: #cbd5e1;
+    }
+
+    .paper-badge-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .paper-type-tag {
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .tag-national { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .tag-school { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .tag-provincial { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+
+    .paper-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 0.5rem 0;
+      line-height: 1.4;
+    }
+
+    .paper-unit-meta {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .paper-actions-bar {
+      display: flex;
+      gap: 0.5rem;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="index.html" class="brand-logo">
+        <img src="assets/img/edupeak_logo.png" alt="EduPeak Logo" class="site-brand-img">
+      </a>
+      <nav class="main-nav">
+        <a href="student-dashboard.html" class="nav-link">Dashboard</a>
+        <a href="courses.html" class="nav-link">Courses</a>
+        <a href="past-papers.html" class="nav-link active">Paper Vault</a>
+        <a href="index.html?openLms=video-classroom" class="nav-link">LMS Player</a>
+      </nav>
+      <div class="header-actions">
+        <a href="student-dashboard.html" class="btn btn-primary btn-sm">
+          <i class="fa-solid fa-gauge-high"></i> My Dashboard
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Header -->
+  <section class="vault-hero">
+    <div style="display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(255,255,255,0.12); padding: 0.35rem 0.9rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 700; color: #93c5fd; margin-bottom: 0.75rem; border: 1px solid rgba(255,255,255,0.15);">
+      <i class="fa-solid fa-file-pdf"></i> G.C.E. Advanced Level Physics Resource Library
+    </div>
+    <h1 class="vault-hero-title">Unit-wise Past Paper & Model Paper Vault</h1>
+    <p style="color: #94a3b8; font-size: 1rem; max-width: 750px; margin: 0 auto;">
+      Access 2015–2024 G.C.E. A/L Past Papers with official marking schemes, top Colombo & island school term test papers, and structured model papers.
+    </p>
+  </section>
+
+  <main class="vault-container">
+
+    <!-- Filter Control Box -->
+    <div class="filter-section">
+      
+      <!-- Category Tabs (All / National / Top Schools / Provincial) -->
+      <div style="font-size: 0.8rem; font-weight: 800; color: #64748b; margin-bottom: 0.5rem; text-transform: uppercase;">
+        <i class="fa-solid fa-layer-group"></i> Paper Category:
+      </div>
+      <div class="filter-pills-row" id="typeFilterPills">
+        <button class="vault-pill-btn active" onclick="setTypeFilter('all', this)">All Papers</button>
+        <button class="vault-pill-btn" onclick="setTypeFilter('national', this)"><i class="fa-solid fa-graduation-cap"></i> G.C.E. A/L Past Papers</button>
+        <button class="vault-pill-btn" onclick="setTypeFilter('school', this)"><i class="fa-solid fa-school"></i> Top School Papers (Royal, Ananda, etc.)</button>
+        <button class="vault-pill-btn" onclick="setTypeFilter('model', this)"><i class="fa-solid fa-award"></i> Victory Embilipitiya Models</button>
+      </div>
+
+      <div style="height: 1px; background: #f1f5f9; margin: 1rem 0;"></div>
+
+      <!-- Unit Filter Pills -->
+      <div style="font-size: 0.8rem; font-weight: 800; color: #64748b; margin-bottom: 0.5rem; text-transform: uppercase;">
+        <i class="fa-solid fa-book-bookmark"></i> Filter by Physics Unit (ඒකක අනුව):
+      </div>
+      <div class="filter-pills-row" id="unitFilterPills">
+        <button class="vault-pill-btn active" onclick="setUnitFilter('all', this)">All Units</button>
+        <button class="vault-pill-btn" onclick="setUnitFilter('mechanics', this)">01. Mechanics (යාන්ත්‍ර විද්‍යාව)</button>
+        <button class="vault-pill-btn" onclick="setUnitFilter('waves', this)">02. Waves & Oscillations (තරංග)</button>
+        <button class="vault-pill-btn" onclick="setUnitFilter('thermal', this)">03. Thermal Physics (තාපය)</button>
+        <button class="vault-pill-btn" onclick="setUnitFilter('fields', this)">04. Gravitational & Electrostatic Fields</button>
+        <button class="vault-pill-btn" onclick="setUnitFilter('electricity', this)">05. Current Electricity (ධාරාව)</button>
+        <button class="vault-pill-btn" onclick="setUnitFilter('electronics', this)">06. Electronics & Modern Physics</button>
+      </div>
+
+    </div>
+
+    <!-- Papers Grid -->
+    <div class="papers-grid" id="papersGridContainer">
+      <!-- Dynamically Populated by JavaScript -->
+    </div>
+
+  </main>
+
+  <!-- PDF Preview Modal -->
+  <div class="modal-overlay" id="pdfPreviewModal">
+    <div class="modal-card" style="max-width: 850px; height: 85vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div>
+          <h3 id="pdfModalTitle" style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #0f172a;">Paper Preview</h3>
+          <span id="pdfModalSubtitle" style="font-size: 0.8rem; color: #227aff; font-weight: 700;">EduPeak Paper Vault</span>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('pdfPreviewModal')">&times;</button>
+      </div>
+      <div class="modal-body" style="flex: 1; padding: 1.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc;">
+        <div style="text-align: center; max-width: 500px;">
+          <i class="fa-solid fa-file-pdf" style="font-size: 4rem; color: #ef4444; margin-bottom: 1rem;"></i>
+          <h4 id="pdfPreviewHeading" style="font-size: 1.2rem; font-weight: 800; margin: 0 0 0.5rem 0;">2024 G.C.E. A/L Physics Structured Essay & MCQ</h4>
+          <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem;">
+            Official Sri Lanka Examination Department past paper PDF with complete structured questions and Sinhala marking scheme.
+          </p>
+          <div style="display: flex; gap: 0.75rem; justify-content: center;">
+            <a href="javascript:void(0)" onclick="alert('📥 Downloading PDF to your device...')" class="btn btn-primary" style="font-weight: 700;">
+              <i class="fa-solid fa-download"></i> Download Full Paper (PDF)
+            </a>
+            <button class="btn btn-ghost" onclick="closeModal('pdfPreviewModal')">
+              Close Preview
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DEFAULT_PAPERS = [
+      {
+        id: "pap-al-2024",
+        title: "2024 G.C.E. A/L Physics Past Paper & Marking Scheme",
+        title_si: "2024 අ.පො.ස. උ/පෙළ භෞතික විද්‍යාව ප්‍රශ්න පත්‍රය සහ ලකුණු දීමේ පටිපාටිය",
+        type: "national",
+        unit: "all",
+        unitName: "Complete Past Paper Examination",
+        year: 2024,
+        size: "4.2 MB",
+        url: "assets/docs/al_physics_2024.pdf"
+      },
+      {
+        id: "pap-al-2023",
+        title: "2023 G.C.E. A/L Physics Past Paper (MCQ & Essay)",
+        title_si: "2023 අ.පො.ස. උ/පෙළ භෞතික විද්‍යාව පසුගිය ප්‍රශ්න පත්‍රය",
+        type: "national",
+        unit: "all",
+        unitName: "Complete Past Paper Examination",
+        year: 2023,
+        size: "3.8 MB",
+        url: "assets/docs/al_physics_2023.pdf"
+      },
+      {
+        id: "pap-royal-2024",
+        title: "Royal College Colombo - 2024 Term Test Physics Paper",
+        title_si: "කොළඹ රාජකීය විද්‍යාලය - 2024 වාර විභාග ප්‍රශ්න පත්‍රය",
+        type: "school",
+        unit: "mechanics",
+        unitName: "Mechanics & Circular Motion",
+        year: 2024,
+        size: "2.9 MB",
+        url: "assets/docs/royal_physics_2024.pdf"
+      },
+      {
+        id: "pap-ananda-2024",
+        title: "Ananda College Colombo - 2024 3rd Term Physics Paper",
+        title_si: "කොළඹ ආනන්ද විද්‍යාලය - 2024 තෙවන වාර භෞතික විද්‍යා ප්‍රශ්න පත්‍රය",
+        type: "school",
+        unit: "waves",
+        unitName: "Waves, Sound & Resonance",
+        year: 2024,
+        size: "3.1 MB",
+        url: "assets/docs/ananda_physics_2024.pdf"
+      },
+      {
+        id: "pap-visakha-2024",
+        title: "Visakha Vidyalaya Colombo - 2024 Term Test Physics",
+        title_si: "විශාඛා විද්‍යාලය කොළඹ - 2024 වාර විභාග ප්‍රශ්න පත්‍රය",
+        type: "school",
+        unit: "thermal",
+        unitName: "Thermal Physics & Gas Laws",
+        year: 2024,
+        size: "2.7 MB",
+        url: "assets/docs/visakha_physics_2024.pdf"
+      },
+      {
+        id: "pap-dharmaraja-2024",
+        title: "Dharmaraja College Kandy - 2024 Model Physics Paper",
+        title_si: "ධර්මරාජ විද්‍යාලය මහනුවර - 2024 ආදර්ශ ප්‍රශ්න පත්‍රය",
+        type: "school",
+        unit: "fields",
+        unitName: "Gravitational & Electrostatic Fields",
+        year: 2024,
+        size: "2.8 MB",
+        url: "assets/docs/dharmaraja_physics_2024.pdf"
+      },
+      {
+        id: "pap-mahinda-2024",
+        title: "Mahinda College Galle - 2024 Physics Term Paper",
+        title_si: "මහින්ද විද්‍යාලය ගාල්ල - 2024 භෞතික විද්‍යා ප්‍රශ්න පත්‍රය",
+        type: "school",
+        unit: "electricity",
+        unitName: "Current Electricity & Circuits",
+        year: 2024,
+        size: "3.4 MB",
+        url: "assets/docs/mahinda_physics_2024.pdf"
+      },
+      {
+        id: "pap-vic-model-01",
+        title: "Victory Embilipitiya - Amalsha Sir Special Speed Paper 01",
+        title_si: "වික්ටරි ඇඹිලිපිටිය - අමල්ෂ සර් විශේෂ වේගවත් ප්‍රශ්න පත්‍රය 01",
+        type: "model",
+        unit: "mechanics",
+        unitName: "Newton's Laws & Hydrodynamics",
+        year: 2025,
+        size: "3.5 MB",
+        url: "assets/docs/victory_model_01.pdf"
+      },
+      {
+        id: "pap-vic-model-02",
+        title: "Victory Embilipitiya - Amalsha Sir Special Speed Paper 02",
+        title_si: "වික්ටරි ඇඹිලිපිටිය - අමල්ෂ සර් විශේෂ වේගවත් ප්‍රශ්න පත්‍රය 02",
+        type: "model",
+        unit: "electronics",
+        unitName: "Semiconductors & Logic Gates",
+        year: 2025,
+        size: "3.2 MB",
+        url: "assets/docs/victory_model_02.pdf"
+      }
+    ];
+
+    function getPapersDatabase() {
+      const saved = localStorage.getItem("edupeak_papers_db");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) {}
+      }
+      try {
+        localStorage.setItem("edupeak_papers_db", JSON.stringify(DEFAULT_PAPERS));
+      } catch(e) {}
+      return DEFAULT_PAPERS;
+    }
+
+    let currentTypeFilter = "all";
+    let currentUnitFilter = "all";
+
+    document.addEventListener("DOMContentLoaded", () => {
+      renderPapers();
+    });
+
+    function setTypeFilter(typeKey, btn) {
+      currentTypeFilter = typeKey;
+      document.querySelectorAll("#typeFilterPills .vault-pill-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderPapers();
+    }
+
+    function setUnitFilter(unitKey, btn) {
+      currentUnitFilter = unitKey;
+      document.querySelectorAll("#unitFilterPills .vault-pill-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderPapers();
+    }
+
+    function renderPapers() {
+      const container = document.getElementById("papersGridContainer");
+      const database = getPapersDatabase();
+
+      const filtered = database.filter(p => {
+        const matchesType = currentTypeFilter === "all" || p.type === currentTypeFilter;
+        const matchesUnit = currentUnitFilter === "all" || p.unit === "all" || p.unit === currentUnitFilter;
+        return matchesType && matchesUnit;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; background: #ffffff; border-radius: 16px; border: 1px dashed #cbd5e1;">
+            <i class="fa-solid fa-folder-open" style="font-size: 3rem; color: #94a3b8; margin-bottom: 0.75rem;"></i>
+            <h3 style="color: #334155; margin: 0 0 0.35rem 0;">No Papers Found for this Filter</h3>
+            <p style="color: #64748b; font-size: 0.85rem; margin: 0;">Try selecting 'All Units' to see all available papers.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(p => {
+        let tagClass = "tag-national";
+        let tagText = "📘 Past Paper";
+        if (p.type === "school") {
+          tagClass = "tag-school";
+          tagText = "🏛️ Top School Paper";
+        } else if (p.type === "model") {
+          tagClass = "tag-provincial";
+          tagText = "⭐ Victory Model";
+        }
+
+        return `
+          <article class="paper-card">
+            <div>
+              <div class="paper-badge-row">
+                <span class="paper-type-tag ${tagClass}">${tagText}</span>
+                <span style="font-size: 0.75rem; font-weight: 700; color: #64748b;">${p.year} Exam</span>
+              </div>
+              <h3 class="paper-title">${p.title}</h3>
+              ${p.title_si ? `<p style="font-size: 0.775rem; color: #64748b; margin: 0.25rem 0 0.5rem; font-family: 'Noto Sans Sinhala', sans-serif;">${p.title_si}</p>` : ''}
+              <div class="paper-unit-meta">
+                <i class="fa-solid fa-tag" style="color: #227aff;"></i> <span>${p.unitName}</span>
+              </div>
+            </div>
+
+            <div class="paper-actions-bar">
+              <button class="btn btn-ghost btn-sm" style="flex: 1;" onclick="openPdfPreview('${p.id}')">
+                <i class="fa-solid fa-eye"></i> View Preview
+              </button>
+              <button class="btn btn-primary btn-sm" style="flex: 1;" onclick="downloadPaper('${p.id}')">
+                <i class="fa-solid fa-download"></i> PDF (${p.size || '3.5 MB'})
+              </button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function downloadPaper(paperId) {
+      const database = getPapersDatabase();
+      const p = database.find(item => item.id === paperId);
+      if (!p) return;
+      if (p.url && (p.url.startsWith("http") || p.url.startsWith("blob:") || p.url.startsWith("data:"))) {
+        window.open(p.url, "_blank");
+      } else {
+        alert(`📥 Initiating download for:\n${p.title} (${p.size || '3.5 MB'})\n\n✓ PDF will save to your downloads folder.`);
+      }
+    }
+
+    function openPdfPreview(paperId) {
+      const database = getPapersDatabase();
+      const p = database.find(item => item.id === paperId) || database[0];
+      document.getElementById("pdfModalTitle").textContent = p.title;
+      document.getElementById("pdfPreviewHeading").textContent = p.title;
+      const downloadBtn = document.querySelector("#pdfPreviewModal .btn-primary");
+      if (downloadBtn) {
+        downloadBtn.onclick = () => downloadPaper(p.id);
+      }
+      document.getElementById("pdfPreviewModal").classList.add("active");
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove("active");
+    }
+  </script>
+</body>
+</html>

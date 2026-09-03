@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Academic Courses & Syllabuses | EduPeak LMS</title>
+  <meta name="description" content="Explore EduPeak's full range of G.C.E. A/L and professional degree courses. Check class schedules, monthly fees, syllabus outlines, and enroll online.">
+  <link rel="icon" type="image/png" href="assets/img/edupeak_logo.png">
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800;900&family=Noto+Sans+Sinhala:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- CSS Framework -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/lms.css">
+
+  <!-- Supabase Client JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <!-- Ambient Light Blue Lighting Effects -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- Main Sticky Header & Navigation -->
+  <header class="site-header" id="siteHeader">
+    <div class="container header-container">
+      
+      <!-- Brand Logo -->
+      <a href="index.html" class="brand-logo" aria-label="EduPeak Home">
+        <img src="assets/img/edupeak_logo.png" alt="EduPeak Logo" class="site-brand-img">
+      </a>
+
+      <!-- Header Navigation Menu -->
+      <nav class="main-nav" id="mainNav">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="courses.html" class="nav-link active">Courses</a>
+        <a href="index.html#teachers" class="nav-link">Faculty</a>
+        <a href="index.html#institutes" class="nav-link">Institutes</a>
+        <a href="index.html#lms-demo" class="nav-link">LMS System</a>
+        <a href="index.html#support" class="nav-link">Support</a>
+      </nav>
+
+      <!-- Header Action Area -->
+      <div class="header-actions">
+        <!-- Guest Mode Actions (When Logged Out) -->
+        <div class="guest-actions-group" id="headerGuestActions">
+          <a href="login.html" class="btn btn-ghost btn-sm">
+            <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In
+          </a>
+          <a href="register.html" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-user-plus"></i> Register
+          </a>
+        </div>
+
+        <!-- Authenticated User Actions (When Logged In) -->
+        <div class="user-actions-group" id="headerUserActions">
+          <div class="user-profile-dropdown-wrapper" id="userProfileDropdownWrapper">
+            <div class="user-profile-chip" id="userProfileTriggerChip" onclick="toggleProfileDropdown(event)" title="My Account & Portals">
+              <div class="user-avatar-badge" id="headerUserAvatarLetter">K</div>
+              <span class="user-name-text" id="headerUserNameDisplay">Kasun</span>
+              <i class="fa-solid fa-chevron-down profile-dropdown-chevron" id="profileDropdownChevron"></i>
+            </div>
+
+            <!-- Dropdown Card -->
+            <div class="user-profile-dropdown-menu" id="userProfileDropdownMenu">
+              <div class="dropdown-user-header">
+                <div class="dropdown-avatar-large" id="dropdownUserAvatar">K</div>
+                <div class="dropdown-user-details">
+                  <h4 class="dropdown-user-fullname" id="dropdownUserName">Kasun Jayasundara</h4>
+                  <div class="dropdown-user-id-pill" id="dropdownUserIdPill">
+                    <i class="fa-solid fa-id-card"></i> <span id="dropdownUserId">EP-2025-001</span>
+                  </div>
+                  <div class="dropdown-user-meta" id="dropdownUserMeta">student@edupeak.lk</div>
+                </div>
+              </div>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-nav-section" id="dropdownNavLinks"></div>
+              <div class="dropdown-divider"></div>
+              <button type="button" class="dropdown-logout-btn" onclick="handleLogout()">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                <span>Sign Out of Account</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Open navigation menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Courses Page Hero Header -->
+  <section class="page-hero-banner" style="padding: 4rem 0 2.5rem; text-align: center; position: relative;">
+    <div class="container" style="max-width: 900px;">
+      <div style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.9rem; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 9999px; font-size: 0.8rem; font-weight: 700; color: #227aff; margin-bottom: 1rem;">
+        <i class="fa-solid fa-graduation-cap"></i> G.C.E. Advanced Level & Professional Programs
+      </div>
+      <h1 style="font-size: 2.75rem; font-weight: 900; color: #0f172a; margin-bottom: 0.85rem; letter-spacing: -0.02em;">
+        Academic Courses, Schedules & Fees
+      </h1>
+      <p style="font-size: 1.05rem; color: #475569; line-height: 1.6; margin-bottom: 2rem;">
+        Filter by your academic stream to explore lecture timetables, comprehensive monthly fees, module breakdowns, and enroll in physical campus or hybrid cloud classes.
+      </p>
+
+      <!-- Instant Search Input -->
+      <div style="max-width: 620px; margin: 0 auto; position: relative;">
+        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1.25rem; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem;"></i>
+        <input type="text" id="courseSearchInput" placeholder="Search by subject, master lecturer, or keyword (e.g. Physics, Biology, Maths)..." class="form-control" style="padding: 0.95rem 1.25rem 0.95rem 3rem; border-radius: var(--radius-full); font-size: 0.95rem; border: 2px solid #bfdbfe; box-shadow: 0 8px 24px -4px rgba(34, 122, 255, 0.15);" oninput="handleCourseSearch(this.value)">
+      </div>
+    </div>
+  </section>
+
+  <!-- Courses Main Directory & Categorization Container -->
+  <section style="padding: 1rem 0 5rem;">
+    <div class="container">
+      
+      <!-- High-End Simplified Category & Filter Bar -->
+      <div class="courses-category-nav-wrapper">
+        
+        <!-- Primary Category Navigation Pills -->
+        <div class="category-pills-bar" id="categoryPillsBar">
+          <button class="category-pill-btn active" onclick="setCategoryFilter('all', this)">
+            <i class="fa-solid fa-layer-group"></i>
+            <span>All Batches</span>
+            <span class="pill-count" id="count-all">5</span>
+          </button>
+          
+          <button class="category-pill-btn" onclick="setCategoryFilter('theory', this)">
+            <i class="fa-solid fa-atom"></i>
+            <span>Theory Classes</span>
+            <span class="pill-count" id="count-theory">3</span>
+          </button>
+          
+          <button class="category-pill-btn" onclick="setCategoryFilter('revision', this)">
+            <i class="fa-solid fa-bolt"></i>
+            <span>Revision Classes</span>
+            <span class="pill-count" id="count-revision">1</span>
+          </button>
+          
+          <button class="category-pill-btn" onclick="setCategoryFilter('papers', this)">
+            <i class="fa-solid fa-stopwatch"></i>
+            <span>Speed Paper Classes</span>
+            <span class="pill-count" id="count-papers">1</span>
+          </button>
+        </div>
+
+        <!-- Secondary Filter Controls: Year & Sorter -->
+        <div class="secondary-filter-row">
+          <div class="filter-select-group">
+            <label style="font-size: 0.8rem; font-weight: 700; color: #64748b;"><i class="fa-solid fa-filter"></i> Exam Batch:</label>
+            
+            <select class="filter-dropdown-select" id="yearFilterSelect" onchange="handleDropdownFilter()">
+              <option value="all">All Exam Batches</option>
+              <option value="2027">2027 A/L Batch</option>
+              <option value="2028">2028 A/L Batch</option>
+              <option value="2029">2029 A/L Batch</option>
+            </select>
+          </div>
+
+          <div class="filter-select-group">
+            <label style="font-size: 0.8rem; font-weight: 700; color: #64748b;"><i class="fa-solid fa-arrow-down-wide-short"></i> Sort by:</label>
+            <select class="filter-dropdown-select" id="sortFilterSelect" onchange="handleDropdownFilter()">
+              <option value="default">Featured & Popular</option>
+              <option value="fee-asc">Monthly Fee: Low to High</option>
+              <option value="fee-desc">Monthly Fee: High to Low</option>
+              <option value="rating">Student Rating</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Rendered Categorized Courses Grid Container -->
+      <div id="categorizedCoursesContainer">
+        <!-- Rendered dynamically by JavaScript -->
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Course Details & Syllabus Modal -->
+  <div class="modal-overlay" id="courseDetailsModal">
+    <div class="modal-card" style="max-width: 650px;">
+      <div class="modal-header">
+        <div>
+          <h3 id="modalCourseTitle" style="font-size: 1.3rem; font-weight: 800; color: #0f172a; margin: 0;">Course Details</h3>
+          <p id="modalCourseStream" style="font-size: 0.8rem; color: #227aff; font-weight: 700; margin: 0.2rem 0 0 0;">Physical Science</p>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('courseDetailsModal')">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem 1.75rem;">
+        
+        <!-- Batch Warning / Notice Banner -->
+        <div id="modalCourseBatchNotice" style="display: none; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; line-height: 1.4; margin-bottom: 1.25rem;"></div>
+
+        <!-- Lecturer & Pricing Highlights -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #eff6ff; padding: 1rem 1.25rem; border-radius: var(--radius-md); border: 1px solid #bfdbfe; margin-bottom: 1.5rem;">
+          <div>
+            <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Conducted by:</div>
+            <strong id="modalCourseTeacher" style="font-size: 1.05rem; color: #0f172a;">Amalsha Wanniarachchi</strong>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Monthly Fee:</div>
+            <strong id="modalCourseFee" style="font-size: 1.25rem; color: #227aff; font-weight: 900;">LKR 4,500</strong>
+          </div>
+        </div>
+
+        <!-- Schedule and Medium Info -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.85rem; margin-bottom: 1.5rem;">
+          <div style="background: #f8fafc; padding: 0.85rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <div style="color: #64748b; font-size: 0.75rem;"><i class="fa-solid fa-clock" style="color: #227aff;"></i> Class Schedule:</div>
+            <strong id="modalCourseSchedule" style="color: #0f172a;">Every Saturday 8:00 AM - 1:30 PM</strong>
+          </div>
+          <div style="background: #f8fafc; padding: 0.85rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <div style="color: #64748b; font-size: 0.75rem;"><i class="fa-solid fa-language" style="color: #10b981;"></i> Medium of Study:</div>
+            <strong id="modalCourseMedium" style="color: #0f172a;">Sinhala with English Terminology</strong>
+          </div>
+        </div>
+
+        <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 0.65rem;">Included in this Course:</h4>
+        <ul style="font-size: 0.85rem; color: #475569; padding-left: 1.25rem; line-height: 1.8; margin-bottom: 1.5rem;">
+          <li>4K Ultra-HD Live Stream + 24/7 Unlimited Lecture Recordings</li>
+          <li>Comprehensive Printed Theory Tute & Summary Pack</li>
+          <li>Weekly Speed MCQ Evaluation with Island Rankings</li>
+          <li>Direct Q&A with Master Lecturer via Cloud LMS Discussion Room</li>
+        </ul>
+
+        <div style="display: flex; gap: 0.75rem;">
+          <button id="modalCourseEnrollBtn" class="btn btn-primary" style="flex: 1; padding: 0.85rem; font-weight: 700; text-align: center;">
+            <i class="fa-solid fa-cart-plus"></i> Enroll in Batch
+          </button>
+          <button class="btn btn-ghost" onclick="closeModal('courseDetailsModal')">
+            Close
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="index.html" class="brand-logo" style="margin-bottom: 0.5rem;" aria-label="EduPeak Home">
+            <div class="footer-logo-wrap">
+              <img src="assets/img/edupeak_logo.png" alt="EduPeak Logo" class="footer-brand-img">
+            </div>
+          </a>
+          <p>
+            Sri Lanka's leading A/L Physics education center combining Victory Higher Educational Institute Embilipitiya campus with state-of-the-art hybrid cloud LMS.
+          </p>
+        </div>
+        <div class="footer-col">
+          <h4>Quick Navigation</h4>
+          <ul class="footer-links-list">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="courses.html">Physics Batches</a></li>
+            <li><a href="index.html#teachers">Master Lecturer</a></li>
+            <li><a href="index.html#institutes">Victory Embilipitiya Campus</a></li>
+            <li><a href="login.html">Student LMS Login</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Physics Batches</h4>
+          <ul class="footer-links-list">
+            <li><a href="courses.html">2025 A/L Complete Theory</a></li>
+            <li><a href="courses.html">2026 A/L Complete Theory</a></li>
+            <li><a href="courses.html">2027 A/L Complete Theory</a></li>
+            <li><a href="courses.html">2025 Rapid Unit Revision</a></li>
+            <li><a href="courses.html">50 Speed MCQ & Paper Class</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Campus & Inquiries</h4>
+          <ul class="footer-links-list">
+            <li><i class="fa-solid fa-location-dot" style="color: #38bdf8; margin-right: 0.4rem;"></i> Victory Higher Educational Institute, Main Street, Embilipitiya</li>
+            <li><i class="fa-solid fa-phone" style="color: #38bdf8; margin-right: 0.4rem;"></i> +94 47 223 0000</li>
+            <li><i class="fa-brands fa-whatsapp" style="color: #25d366; margin-right: 0.4rem;"></i> +94 77 123 4567</li>
+            <li><i class="fa-solid fa-envelope" style="color: #38bdf8; margin-right: 0.4rem;"></i> info@edupeak.lk</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 EduPeak Higher Educational Institute. All Rights Reserved.</p>
+        <div style="display: flex; gap: 1.25rem;">
+          <a href="privacy.html" style="color: #94a3b8; transition: color 0.2s;" onmouseover="this.style.color='#38bdf8'" onmouseout="this.style.color='#94a3b8'">Privacy Policy</a>
+          <a href="terms.html" style="color: #94a3b8; transition: color 0.2s;" onmouseover="this.style.color='#38bdf8'" onmouseout="this.style.color='#94a3b8'">Terms of LMS Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/translations.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/lms.js"></script>
+  
+  <script>
+    let activeStreamCategory = "all";
+    let currentSearchTerm = "";
+
+    // Category Definitions for Amalsha Wanniarachchi's Physics Classes
+    const BATCH_CATEGORIES = {
+      theory: {
+        title: "Physics Comprehensive Theory Batches (සිද්ධාන්ත පන්ති)",
+        desc: "Complete syllabus coverage from fundamentals to advanced mechanics and fields with Amalsha Wanniarachchi.",
+        icon: "fa-atom"
+      },
+      revision: {
+        title: "Physics Rapid Revision & Practical Analysis (පුනරීක්ෂණ පන්ති)",
+        desc: "Intensive unit revisions, laboratory practical setups, and high-yield summary theory points.",
+        icon: "fa-bolt"
+      },
+      papers: {
+        title: "50 Timed Speed MCQ & Model Paper Discussion Arena (ප්‍රශ්න පත්‍ර පන්ති)",
+        desc: "Real-time timed MCQ tests, model structured essays, and detailed marking scheme breakdowns.",
+        icon: "fa-stopwatch"
+      }
+    };
+
+    function getAllCourses() {
+      const stored = localStorage.getItem("edupeak_courses_db");
+      let courses = stored ? JSON.parse(stored) : (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.courses : []);
+
+      // Custom teacher created courses
+      try {
+        const customCourses = JSON.parse(localStorage.getItem("edupeak_custom_courses") || "[]");
+        if (customCourses.length) {
+          customCourses.forEach(c => {
+            if (!courses.find(item => item.id === c.id)) {
+              courses.unshift(c);
+            }
+          });
+        }
+      } catch (e) {}
+
+      return courses;
+    }
+
+    function updateCategoryCounts() {
+      const all = getAllCourses();
+      const counts = {
+        all: all.length,
+        theory: 0,
+        revision: 0,
+        papers: 0
+      };
+
+      all.forEach(c => {
+        const cat = c.category || "theory";
+        if (counts[cat] !== undefined) {
+          counts[cat]++;
+        }
+      });
+
+      for (const [k, v] of Object.entries(counts)) {
+        const el = document.getElementById(`count-${k}`);
+        if (el) el.textContent = v;
+      }
+    }
+
+    function renderCourseCardHTML(course) {
+      const lang = window.currentLang || "en";
+      const title = lang === "si" ? (course.title_si || course.title) : course.title;
+      const stream = lang === "si" ? (course.stream_si || course.stream) : (course.stream || "Physical Science");
+      const medium = lang === "si" ? (course.medium_si || course.medium) : (course.medium || "Sinhala & English Medium");
+      const fee = lang === "si" ? (course.fee_si || course.fee) : (course.fee || "LKR 3,500 / Month");
+      const badge = lang === "si" ? (course.badge_si || course.badge) : (course.badge || "Enrollment Open");
+      const isEnrolled = typeof isCourseEnrolled === "function" ? isCourseEnrolled(course.id) : (window.isCourseEnrolled ? window.isCourseEnrolled(course.id) : false);
+
+      const currentUser = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
+      const userExamYear = currentUser ? (currentUser.examYear || "") : "";
+      const courseBatch = course.examYear || course.level || "2026 A/L";
+      const courseYearNum = (courseBatch.match(/\d{4}/) || [""])[0];
+      const userYearNum = (userExamYear.match(/\d{4}/) || [""])[0];
+      const isBatchMismatch = !!(userYearNum && courseYearNum && userYearNum !== courseYearNum && !courseBatch.toLowerCase().includes("all"));
+
+      return `
+        <article class="course-card ${isEnrolled ? 'course-card-enrolled' : ''}">
+          <div class="course-header-banner">
+            <div class="course-icon-round">
+              <i class="fa-solid ${course.thumbnailIcon || 'fa-atom'}"></i>
+            </div>
+            ${isEnrolled ? `
+              <span class="course-badge-pill" style="background: #10b981; color: #ffffff; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 2px 8px rgba(16,185,129,0.3);">
+                <i class="fa-solid fa-circle-check"></i> ${lang === 'si' ? 'ලියාපදිංචි වී ඇත' : 'Enrolled'}
+              </span>
+            ` : (isBatchMismatch ? `
+              <span class="course-badge-pill" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <i class="fa-solid fa-triangle-exclamation"></i> ${courseBatch}
+              </span>
+            ` : `
+              <span class="course-badge-pill" style="display: inline-flex; align-items: center;">
+                <span class="live-pulse-dot"></span>
+                ${courseBatch}
+              </span>
+            `)}
+          </div>
+
+          <div class="course-body">
+            <span class="course-stream-tag">${(course.level || 'G.C.E. A/L').toUpperCase()}</span>
+            <h3 class="course-title">${title}</h3>
+            <div class="course-lecturer-row">
+              <i class="fa-solid fa-chalkboard-user"></i>
+              <span>${course.teacherName || 'Amalsha Wanniarachchi'}</span>
+            </div>
+
+            <div class="course-details-pills">
+              <span class="detail-pill" style="${isBatchMismatch ? 'background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700;' : 'background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; font-weight: 700;'}">
+                <i class="fa-solid ${isBatchMismatch ? 'fa-triangle-exclamation' : 'fa-calendar-check'}"></i> 
+                ${courseBatch} ${isBatchMismatch ? `(Your Profile: ${userExamYear})` : ''}
+              </span>
+              <span class="detail-pill"><i class="fa-solid fa-language"></i> ${medium}</span>
+              <span class="detail-pill"><i class="fa-regular fa-clock"></i> ${course.liveTime || 'Every Sat 7:30 AM'}</span>
+              <span class="detail-pill"><i class="fa-solid fa-layer-group"></i> ${course.modulesCount || 24} Modules</span>
+            </div>
+
+            <div class="course-footer-row">
+              <div>
+                <span style="font-size: 0.725rem; color: var(--text-dim); display: block;">Monthly Fee:</span>
+                <span class="course-price">${fee}</span>
+              </div>
+              <div style="display: flex; gap: 0.4rem;">
+                <button class="btn btn-ghost btn-sm" onclick="showCourseDetailsModal('${course.id}')" title="View Syllabus">
+                  <i class="fa-solid fa-circle-info"></i> Details
+                </button>
+                ${isEnrolled ? `
+                  <button class="btn btn-sm" style="background: #10b981; color: #ffffff; border: 1px solid #10b981; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem;" onclick="openLMSPortal('video-classroom', '${course.id}')">
+                    <i class="fa-solid fa-circle-play"></i> Enrolled
+                  </button>
+                ` : `
+                  <button class="btn btn-primary btn-sm" onclick="enrollCourse('${course.id}')">
+                    <i class="fa-solid fa-cart-plus"></i> Enroll
+                  </button>
+                `}
+              </div>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderCategorizedCourses() {
+      const container = document.getElementById("categorizedCoursesContainer");
+      if (!container) return;
+
+      let courses = getAllCourses();
+
+      // Filter by Search
+      if (currentSearchTerm.trim()) {
+        const term = currentSearchTerm.toLowerCase();
+        courses = courses.filter(c => 
+          (c.title && c.title.toLowerCase().includes(term)) ||
+          (c.title_si && c.title_si.toLowerCase().includes(term)) ||
+          (c.teacherName && c.teacherName.toLowerCase().includes(term)) ||
+          (c.category && c.category.toLowerCase().includes(term))
+        );
+      }
+
+      // Filter by Exam Year
+      const yearVal = document.getElementById("yearFilterSelect") ? document.getElementById("yearFilterSelect").value : "all";
+      if (yearVal !== "all") {
+        courses = courses.filter(c => (c.examYear === yearVal) || (c.level && c.level.includes(yearVal)) || (c.title && c.title.includes(yearVal)));
+      }
+
+      // Sorting
+      const sortVal = document.getElementById("sortFilterSelect") ? document.getElementById("sortFilterSelect").value : "default";
+      if (sortVal === "fee-asc") {
+        courses.sort((a, b) => parseInt((a.fee || "0").replace(/[^0-9]/g, '')) - parseInt((b.fee || "0").replace(/[^0-9]/g, '')));
+      } else if (sortVal === "fee-desc") {
+        courses.sort((a, b) => parseInt((b.fee || "0").replace(/[^0-9]/g, '')) - parseInt((a.fee || "0").replace(/[^0-9]/g, '')));
+      } else if (sortVal === "rating") {
+        courses.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      }
+
+      if (!courses.length) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 4rem 2rem; background: #ffffff; border-radius: var(--radius-lg); border: 1px dashed #cbd5e1; margin-top: 1.5rem;">
+            <i class="fa-solid fa-magnifying-glass" style="font-size: 2.5rem; color: #94a3b8; margin-bottom: 1rem;"></i>
+            <h3 style="color: #0f172a; margin-bottom: 0.5rem;">No Courses Found</h3>
+            <p style="color: #64748b;">Try adjusting your search keywords or batch filters.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // If specific category is selected, render just that category
+      if (activeStreamCategory !== "all") {
+        const streamCourses = courses.filter(c => (c.category || "theory") === activeStreamCategory);
+        const def = BATCH_CATEGORIES[activeStreamCategory] || { title: "Academic Classes", desc: "Featured Classes", icon: "fa-atom" };
+
+        if (!streamCourses.length) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 4rem 2rem; background: #ffffff; border-radius: var(--radius-lg); border: 1px dashed #cbd5e1; margin-top: 1.5rem;">
+              <i class="fa-solid fa-filter-circle-xmark" style="font-size: 2.5rem; color: #94a3b8; margin-bottom: 1rem;"></i>
+              <h3 style="color: #0f172a; margin-bottom: 0.5rem;">No Courses in this Category matching current filters</h3>
+              <p style="color: #64748b;">Try resetting exam year filters.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = `
+          <div class="stream-group-header">
+            <div class="stream-group-title-wrap">
+              <div class="stream-group-icon">
+                <i class="fa-solid ${def.icon}"></i>
+              </div>
+              <div>
+                <h2 class="stream-group-title">${def.title}</h2>
+                <p class="stream-group-desc">${def.desc}</p>
+              </div>
+            </div>
+            <span style="font-size: 0.85rem; font-weight: 700; color: #227aff; background: #eff6ff; padding: 0.35rem 0.85rem; border-radius: 9999px; border: 1px solid #bfdbfe;">
+              ${streamCourses.length} Batches Available
+            </span>
+          </div>
+
+          <div class="courses-grid">
+            ${streamCourses.map(c => renderCourseCardHTML(c)).join('')}
+          </div>
+        `;
+        return;
+      }
+
+      // If "All Batches" is selected, render grouped sections by category!
+      const catKeys = ["theory", "revision", "papers"];
+      let html = "";
+
+      catKeys.forEach(catKey => {
+        const streamCourses = courses.filter(c => (c.category || "theory") === catKey);
+
+        if (streamCourses.length > 0) {
+          const def = BATCH_CATEGORIES[catKey];
+          html += `
+            <div class="stream-group-header">
+              <div class="stream-group-title-wrap">
+                <div class="stream-group-icon">
+                  <i class="fa-solid ${def.icon}"></i>
+                </div>
+                <div>
+                  <h2 class="stream-group-title">${def.title}</h2>
+                  <p class="stream-group-desc">${def.desc}</p>
+                </div>
+              </div>
+              <span style="font-size: 0.8rem; font-weight: 700; color: #227aff; background: #eff6ff; padding: 0.3rem 0.8rem; border-radius: 9999px; border: 1px solid #bfdbfe;">
+                ${streamCourses.length} Batches
+              </span>
+            </div>
+
+            <div class="courses-grid" style="margin-bottom: 2rem;">
+              ${streamCourses.map(c => renderCourseCardHTML(c)).join('')}
+            </div>
+          `;
+        }
+      });
+
+      container.innerHTML = html;
+    }
+
+    function setCategoryFilter(categoryKey, btnEl) {
+      activeStreamCategory = categoryKey;
+      document.querySelectorAll(".category-pills-bar .category-pill-btn").forEach(btn => btn.classList.remove("active"));
+      if (btnEl) btnEl.classList.add("active");
+      renderCategorizedCourses();
+    }
+
+    function handleDropdownFilter() {
+      renderCategorizedCourses();
+    }
+
+    function handleCourseSearch(val) {
+      currentSearchTerm = val;
+      renderCategorizedCourses();
+    }
+
+    function showCourseDetailsModal(courseId) {
+      const courses = getAllCourses();
+      const c = courses.find(item => item.id === courseId) || courses[0];
+      if (!c) return;
+
+      document.getElementById("modalCourseTitle").textContent = c.title;
+      document.getElementById("modalCourseStream").textContent = c.stream || "A/L Stream";
+      document.getElementById("modalCourseTeacher").textContent = c.teacherName || "Master Lecturer";
+      document.getElementById("modalCourseFee").textContent = c.fee || "LKR 3,500 / Month";
+      document.getElementById("modalCourseSchedule").textContent = c.liveTime || "Every Saturday 8:00 AM - 1:30 PM";
+      document.getElementById("modalCourseMedium").textContent = c.medium || "Sinhala with English Terms";
+
+      // Check student profile batch vs course batch
+      const currentUser = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
+      const userExamYear = currentUser ? (currentUser.examYear || "") : "";
+      const courseBatch = c.examYear || c.level || "2026 A/L";
+      const courseYearNum = (courseBatch.match(/\d{4}/) || [""])[0];
+      const userYearNum = (userExamYear.match(/\d{4}/) || [""])[0];
+      const isBatchMismatch = !!(userYearNum && courseYearNum && userYearNum !== courseYearNum && !courseBatch.toLowerCase().includes("all"));
+
+      const batchNotice = document.getElementById("modalCourseBatchNotice");
+      if (batchNotice) {
+        if (isBatchMismatch) {
+          batchNotice.style.display = "block";
+          batchNotice.style.background = "#fffbeb";
+          batchNotice.style.border = "1px solid #fde68a";
+          batchNotice.style.color = "#92400e";
+          batchNotice.innerHTML = `
+            <div style="font-weight: 700; display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.2rem;">
+              <i class="fa-solid fa-triangle-exclamation" style="color: #f59e0b;"></i> Target Exam Batch Notice
+            </div>
+            <div>This course syllabus is specifically designed for the <strong>${courseBatch}</strong> batch. Your registered student profile is currently set to <strong>${userExamYear}</strong>.</div>
+          `;
+        } else {
+          batchNotice.style.display = "none";
+        }
+      }
+
+      const isEnrolled = typeof isCourseEnrolled === "function" ? isCourseEnrolled(c.id) : (window.isCourseEnrolled ? window.isCourseEnrolled(c.id) : false);
+      const btn = document.getElementById("modalCourseEnrollBtn");
+      if (btn) {
+        if (isEnrolled) {
+          btn.className = "btn btn-success";
+          btn.style.background = "#10b981";
+          btn.style.borderColor = "#10b981";
+          btn.style.color = "#ffffff";
+          btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Already Enrolled • Open LMS';
+          btn.onclick = () => {
+            openLMSPortal("video-classroom", c.id);
+          };
+        } else {
+          btn.className = "btn btn-primary";
+          btn.style.background = "";
+          btn.style.borderColor = "";
+          btn.style.color = "";
+          btn.innerHTML = '<i class="fa-solid fa-cart-plus"></i> Enroll in Batch';
+          btn.onclick = () => {
+            enrollCourse(c.id);
+          };
+        }
+      }
+
+      document.getElementById("courseDetailsModal").classList.add("active");
+    }
+
+    function closeModal(modalId) {
+      const el = document.getElementById(modalId);
+      if (el) el.classList.remove("active");
+    }
+
+    function toggleProfileDropdown(event) {
+      if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+      const wrapper = document.getElementById("userProfileDropdownWrapper");
+      if (wrapper) {
+        wrapper.classList.toggle("open");
+      }
+    }
+
+    function closeProfileDropdown() {
+      const wrapper = document.getElementById("userProfileDropdownWrapper");
+      if (wrapper) wrapper.classList.remove("open");
+    }
+
+    document.addEventListener("click", (e) => {
+      const wrapper = document.getElementById("userProfileDropdownWrapper");
+      if (wrapper && wrapper.classList.contains("open") && !wrapper.contains(e.target)) {
+        closeProfileDropdown();
+      }
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+      if (window.AUTH_SYSTEM) window.AUTH_SYSTEM.init();
+      updateCategoryCounts();
+      renderCategorizedCourses();
+
+      const mobileToggle = document.getElementById("mobileMenuToggle");
+      const mainNav = document.getElementById("mainNav");
+      if (mobileToggle && mainNav) {
+        mobileToggle.addEventListener("click", () => {
+          mainNav.classList.toggle("mobile-active");
+        });
+      }
+    });
+  </script>
+</body>
+</html>

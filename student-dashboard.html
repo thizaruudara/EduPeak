@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Learning Dashboard | EduPeak LMS</title>
+  
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/lms.css">
+
+  <style>
+    :root {
+      --dash-bg: #f8fafc;
+      --dash-card: #ffffff;
+      --dash-border: #e2e8f0;
+      --dash-primary: #227aff;
+      --dash-accent: #00d2ff;
+      --dash-text: #0f172a;
+      --dash-muted: #64748b;
+    }
+
+    .site-header {
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      width: 100%;
+    }
+
+    .site-header .header-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      height: 4.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-sizing: border-box;
+      gap: 1.25rem;
+      position: relative;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+
+    .site-brand-img {
+      height: 38px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    /* Force Desktop Nav Horizontal Row */
+    @media (min-width: 993px) {
+      .site-header .main-nav {
+        display: flex !important;
+        position: static !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        border: none !important;
+        gap: 0.4rem !important;
+      }
+      .mobile-menu-toggle {
+        display: none !important;
+      }
+    }
+
+    @media (max-width: 992px) {
+      .site-header .main-nav {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #ffffff;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 1.25rem 1.5rem;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.1);
+        z-index: 1000;
+      }
+      .site-header .main-nav.mobile-active {
+        display: flex !important;
+      }
+      .mobile-menu-toggle {
+        display: flex !important;
+      }
+    }
+
+    .site-header .nav-link {
+      color: #64748b;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.85rem;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      white-space: nowrap;
+    }
+
+    .site-header .nav-link:hover, .site-header .nav-link.active {
+      color: #227aff;
+      background: #eff6ff;
+      font-weight: 700;
+    }
+
+    .dash-container {
+      max-width: 1400px;
+      margin: 2rem auto;
+      padding: 0 1.5rem 3rem;
+    }
+
+    /* Welcome Hero Card */
+    .welcome-hero-card {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #1e3a8a 100%);
+      color: #ffffff;
+      border-radius: 20px;
+      padding: 2.25rem 2.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .welcome-hero-card::before {
+      content: '';
+      position: absolute;
+      right: -60px;
+      top: -60px;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(34, 122, 255, 0.3) 0%, rgba(34, 122, 255, 0) 70%);
+      pointer-events: none;
+    }
+
+    .student-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .student-badge-pill {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #93c5fd;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      white-space: nowrap;
+    }
+
+    .hero-welcome-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2rem;
+      font-weight: 800;
+      color: #ffffff !important;
+      margin: 0 0 0.35rem 0;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-welcome-subtitle {
+      color: #94a3b8;
+      font-size: 0.95rem;
+      margin: 0;
+      max-width: 650px;
+      line-height: 1.6;
+    }
+
+    /* Grid Layouts */
+    .dash-main-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.75rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 1024px) {
+      .dash-main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .dash-card {
+      background: var(--dash-card);
+      border: 1px solid var(--dash-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    }
+
+    .card-header-flex {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .card-header-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--dash-text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0;
+    }
+
+    /* Exam Countdown Box */
+    .countdown-widget {
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      border: 1px solid #bfdbfe;
+      border-radius: 14px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .countdown-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.6rem;
+      text-align: center;
+      margin-top: 0.75rem;
+    }
+
+    .countdown-box {
+      background: #ffffff;
+      padding: 0.75rem 0.5rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(34, 122, 255, 0.08);
+      border: 1px solid #bfdbfe;
+    }
+
+    .countdown-num {
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: var(--dash-primary);
+      line-height: 1;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .countdown-lbl {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--dash-muted);
+      text-transform: uppercase;
+      margin-top: 0.25rem;
+    }
+
+    /* Quick Action Buttons Grid */
+    .quick-actions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .quick-action-btn {
+      background: #ffffff;
+      border: 1px solid var(--dash-border);
+      border-radius: 14px;
+      padding: 1.25rem 1rem;
+      text-align: center;
+      text-decoration: none;
+      color: var(--dash-text);
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.6rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+
+    .quick-action-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(34, 122, 255, 0.12);
+      border-color: #bfdbfe;
+      color: var(--dash-primary);
+    }
+
+    .quick-action-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+    }
+
+    /* Courses Table / Cards */
+    .enrolled-course-item {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      transition: all 0.2s ease;
+    }
+
+    .enrolled-course-item:hover {
+      border-color: #cbd5e1;
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    }
+
+    /* Courses Grid & Layout for Student Portal */
+    .student-courses-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    @media (max-width: 640px) {
+      .student-courses-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Modal Overlay Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(5px);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      border-radius: 18px;
+      width: 100%;
+      max-width: 640px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+      animation: modalSlideUp 0.22s ease-out;
+    }
+
+    @keyframes modalSlideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.75rem;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8fafc;
+      border-top-left-radius: 18px;
+      border-top-right-radius: 18px;
+    }
+
+    .modal-close-btn {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.25rem;
+      color: #64748b;
+      transition: all 0.2s ease;
+    }
+
+    .modal-close-btn:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #dc2626;
+    }
+
+    /* Toast Container */
+    .toast-container {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      pointer-events: none;
+    }
+
+    .toast-message {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 0.85rem 1.35rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      pointer-events: auto;
+      animation: toastIn 0.3s ease-out;
+    }
+
+    .toast-message.success {
+      background: #065f46;
+      border: 1px solid #059669;
+    }
+
+    .toast-message.info {
+      background: #1e3a8a;
+      border: 1px solid #2563eb;
+    }
+
+    @keyframes toastIn {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="site-header" id="siteHeader">
+    <div class="header-container">
+      <a href="index.html" class="brand-logo" style="display: flex; align-items: center; gap: 0.75rem; text-decoration: none;">
+        <img src="assets/img/edupeak_logo.png" alt="EduPeak Logo" class="site-brand-img">
+        <span style="font-size: 0.7rem; font-weight: 800; color: #227aff; background: #eff6ff; padding: 0.25rem 0.65rem; border-radius: 9999px; border: 1px solid #bfdbfe; white-space: nowrap; letter-spacing: 0.5px;">STUDENT HUB</span>
+      </a>
+
+      <!-- Header Navigation Menu -->
+      <nav class="main-nav" id="mainNav">
+        <a href="#dashboard" class="nav-link active" id="navDashboardBtn" onclick="switchStudentPortalTab('dashboard', event)">
+          <i class="fa-solid fa-gauge-high"></i> Dashboard
+        </a>
+        <a href="#courses" class="nav-link" id="navCoursesBtn" onclick="switchStudentPortalTab('courses', event)">
+          <i class="fa-solid fa-book-open"></i> Courses
+        </a>
+        <a href="past-papers.html" class="nav-link">
+          <i class="fa-solid fa-file-pdf"></i> Paper Vault
+        </a>
+        <a href="index.html?openLms=video-classroom" class="nav-link">
+          <i class="fa-solid fa-circle-play"></i> LMS Classroom
+        </a>
+      </nav>
+
+      <!-- Header Action Area -->
+      <div class="header-actions">
+        <div class="user-actions-group" id="headerUserActions" style="display: flex;">
+          <div class="user-profile-dropdown-wrapper" id="userProfileDropdownWrapper">
+            <div class="user-profile-chip" id="userProfileTriggerChip" onclick="toggleProfileDropdown(event)" title="My Account & Profile">
+              <div class="user-avatar-badge" id="headerUserAvatarLetter">K</div>
+              <span class="user-name-text" id="headerUserNameDisplay">Kasun</span>
+              <i class="fa-solid fa-chevron-down profile-dropdown-chevron" id="profileDropdownChevron"></i>
+            </div>
+
+            <!-- Profile Dropdown Menu -->
+            <div class="user-profile-dropdown-menu" id="userProfileDropdownMenu">
+              <div class="dropdown-user-header">
+                <div class="dropdown-avatar-large" id="dropdownUserAvatar">K</div>
+                <div class="dropdown-user-details">
+                  <h4 class="dropdown-user-fullname" id="dropdownUserName">Kasun Jayasundara</h4>
+                  <div class="dropdown-user-id-pill" id="dropdownUserIdPill">
+                    <i class="fa-solid fa-id-card"></i> <span id="dropdownUserId">EP-2027-001</span>
+                  </div>
+                  <div class="dropdown-user-meta" id="dropdownUserMeta">student@edupeak.lk • 2027 A/L</div>
+                </div>
+              </div>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-nav-section" id="dropdownNavLinks">
+                <a href="student-dashboard.html" class="dropdown-nav-item" onclick="closeProfileDropdown();">
+                  <i class="fa-solid fa-gauge-high" style="color: #227aff;"></i>
+                  <span>Student Dashboard</span>
+                </a>
+                <a href="profile.html" class="dropdown-nav-item" onclick="closeProfileDropdown();">
+                  <i class="fa-solid fa-user-pen" style="color: #8b5cf6;"></i>
+                  <span>My Profile & Avatar</span>
+                </a>
+                <a href="past-papers.html" class="dropdown-nav-item" onclick="closeProfileDropdown();">
+                  <i class="fa-solid fa-file-pdf" style="color: #10b981;"></i>
+                  <span>Past Paper Vault</span>
+                </a>
+                <a href="index.html?openLms=video-classroom" class="dropdown-nav-item" onclick="closeProfileDropdown();">
+                  <i class="fa-solid fa-circle-play" style="color: #06b6d4;"></i>
+                  <span>Video Classroom Replay</span>
+                </a>
+              </div>
+              <div class="dropdown-divider"></div>
+              <button type="button" class="dropdown-logout-btn" onclick="handleLogout()">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                <span>Sign Out of Account</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile Menu Toggle Button -->
+        <button class="mobile-menu-toggle" id="mobileMenuToggle" onclick="toggleMobileNav()" style="display: none; background: #ffffff; border: 1.5px solid #dbeafe; padding: 0.45rem 0.75rem; border-radius: 8px; cursor: pointer; color: #1e3a8a; font-size: 1.15rem; align-items: center; justify-content: center;" aria-label="Toggle Navigation Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>  <main class="dash-container">
+
+    <!-- TAB 1: STUDENT DASHBOARD VIEW -->
+    <div id="studentView_dashboard" class="student-portal-view">
+
+      <!-- Welcome Hero Banner -->
+      <div class="welcome-hero-card">
+        <div>
+          <div class="student-badge-row">
+            <span class="student-badge-pill" id="heroBatchBadge">
+              <i class="fa-solid fa-calendar-check"></i> <span id="dashStudentBatch">2027 A/L</span> Batch
+            </span>
+            <span class="student-badge-pill">
+              <i class="fa-solid fa-school"></i> <span id="dashStudentBranch">Victory Embilipitiya</span>
+            </span>
+            <span class="student-badge-pill" style="color: #34d399;">
+              <i class="fa-solid fa-circle-check"></i> Verified Student
+            </span>
+          </div>
+          <h1 class="hero-welcome-title">
+            Welcome back, <span id="dashStudentName">Kasun</span>! 👋
+          </h1>
+          <p class="hero-welcome-subtitle">
+            Your syllabus milestones, live video classroom recordings, speed tests, and printed tute courier deliveries are active.
+          </p>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <a href="#courses" onclick="switchStudentPortalTab('courses', event)" class="btn btn-outline" style="background: rgba(255,255,255,0.1); color: #ffffff; font-weight: 700; border-color: rgba(255,255,255,0.3);">
+            <i class="fa-solid fa-compass"></i> Explore Courses
+          </a>
+          <a href="index.html?openLms=video-classroom" class="btn btn-accent" style="font-weight: 800; background: #227aff; color: #ffffff; border: none; box-shadow: 0 4px 15px rgba(34,122,255,0.4);">
+            <i class="fa-solid fa-circle-play"></i> Open LMS Player
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Navigation Icons Bar -->
+      <div class="quick-actions-grid">
+        <a href="index.html?openLms=video-classroom" class="quick-action-btn">
+          <div class="quick-action-icon" style="background: #eff6ff; color: #227aff;">
+            <i class="fa-solid fa-video"></i>
+          </div>
+          <strong style="font-size: 0.9rem;">Live & Recorded Videos</strong>
+          <span style="font-size: 0.75rem; color: var(--dash-muted);">24/7 HD Replay</span>
+        </a>
+
+        <a href="past-papers.html" class="quick-action-btn">
+          <div class="quick-action-icon" style="background: #ecfdf5; color: #10b981;">
+            <i class="fa-solid fa-file-pdf"></i>
+          </div>
+          <strong style="font-size: 0.9rem;">Past Paper Vault</strong>
+          <span style="font-size: 0.75rem; color: var(--dash-muted);">Units & Marking Schemes</span>
+        </a>
+
+        <a href="https://t.me/edupeakbot" target="_blank" class="quick-action-btn">
+          <div class="quick-action-icon" style="background: #f0f9ff; color: #0284c7;">
+            <i class="fa-brands fa-telegram"></i>
+          </div>
+          <strong style="font-size: 0.9rem;">@edupeakbot</strong>
+          <span style="font-size: 0.75rem; color: var(--dash-muted);">Telegram Assistant</span>
+        </a>
+
+        <a href="profile.html" class="quick-action-btn">
+          <div class="quick-action-icon" style="background: #f5f3ff; color: #8b5cf6;">
+            <i class="fa-solid fa-user-pen"></i>
+          </div>
+          <strong style="font-size: 0.9rem;">Student Profile</strong>
+          <span style="font-size: 0.75rem; color: var(--dash-muted);">Photo & Delivery Info</span>
+        </a>
+      </div>
+
+      <!-- Main Dashboard Two-Column Grid -->
+      <div class="dash-main-grid">
+        
+        <!-- Left Column: Active Enrolled Courses & Study Progress -->
+        <div>
+
+          <!-- Enrolled Courses Card -->
+          <div class="dash-card">
+            <div class="card-header-flex">
+              <h2 class="card-header-title">
+                <i class="fa-solid fa-book-bookmark" style="color: var(--dash-primary);"></i> My Enrolled Classes & Batches
+              </h2>
+              <a href="#courses" onclick="switchStudentPortalTab('courses', event)" style="font-size: 0.85rem; font-weight: 700; color: var(--dash-primary); text-decoration: none; cursor: pointer;">
+                Browse More <i class="fa-solid fa-arrow-right"></i>
+              </a>
+            </div>
+
+            <div id="dashEnrolledCoursesList">
+              <!-- Dynamically Populated by JavaScript -->
+            </div>
+          </div>
+
+          <!-- Quick Study Resources Card -->
+          <div class="dash-card" style="margin-top: 1.5rem;">
+            <div class="card-header-flex">
+              <h3 class="card-header-title" style="font-size: 1rem;">
+                <i class="fa-solid fa-cloud-arrow-down" style="color: #10b981;"></i> Course Materials & Notes
+              </h3>
+              <a href="past-papers.html" style="font-size: 0.8rem; font-weight: 700; color: #227aff; text-decoration: none;">
+                View Paper Vault ➔
+              </a>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+              <a href="past-papers.html" style="display: flex; align-items: center; gap: 0.6rem; padding: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; text-decoration: none; color: #0f172a;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: #fee2e2; color: #ef4444; display: flex; align-items: center; justify-content: center;">
+                  <i class="fa-solid fa-file-pdf"></i>
+                </div>
+                <div>
+                  <strong style="font-size: 0.8rem; display: block;">2024 G.C.E. A/L Past Paper</strong>
+                  <span style="font-size: 0.7rem; color: #64748b;">With Marking Scheme</span>
+                </div>
+              </a>
+              <a href="past-papers.html" style="display: flex; align-items: center; gap: 0.6rem; padding: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; text-decoration: none; color: #0f172a;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: #fee2e2; color: #ef4444; display: flex; align-items: center; justify-content: center;">
+                  <i class="fa-solid fa-file-pdf"></i>
+                </div>
+                <div>
+                  <strong style="font-size: 0.8rem; display: block;">Royal College Term Test</strong>
+                  <span style="font-size: 0.7rem; color: #64748b;">Mechanics & Dynamics</span>
+                </div>
+              </a>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Column: Exam Countdown, Tute Courier & Notifications -->
+        <div>
+
+          <!-- Live Exam Countdown Card -->
+          <div class="dash-card">
+            <div class="card-header-flex">
+              <h3 class="card-header-title" style="font-size: 1rem;">
+                <i class="fa-solid fa-hourglass-half" style="color: var(--dash-primary);"></i> <span id="countdownBatchLabel">2027 A/L Exam Countdown</span>
+              </h3>
+              <span style="font-size: 0.7rem; font-weight: 800; color: #227aff; background: #eff6ff; padding: 0.2rem 0.6rem; border-radius: 6px; border: 1px solid #bfdbfe;">TARGET AUGUST</span>
+            </div>
+            
+            <div class="countdown-grid">
+              <div class="countdown-box">
+                <div class="countdown-num" id="cdDays">--</div>
+                <div class="countdown-lbl">Days</div>
+              </div>
+              <div class="countdown-box">
+                <div class="countdown-num" id="cdHours">--</div>
+                <div class="countdown-lbl">Hours</div>
+              </div>
+              <div class="countdown-box">
+                <div class="countdown-num" id="cdMins">--</div>
+                <div class="countdown-lbl">Mins</div>
+              </div>
+              <div class="countdown-box">
+                <div class="countdown-num" id="cdSecs">--</div>
+                <div class="countdown-lbl">Secs</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Monthly Tute Courier Delivery Tracker Card -->
+          <div class="dash-card" style="margin-top: 1.5rem;">
+            <div class="card-header-flex">
+              <h3 class="card-header-title" style="font-size: 1rem;">
+                <i class="fa-solid fa-truck-fast" style="color: #10b981;"></i> Monthly Tute Courier
+              </h3>
+              <span class="courier-badge dispatched">DISPATCHED</span>
+            </div>
+            <p style="font-size: 0.8rem; color: #475569; margin-bottom: 0.5rem;">
+              Tracking ID: <strong>PRX-94821038</strong> (Promex Speed Courier)<br>
+              Destination: <span id="dashDeliveryAddress">Ratnapura / Embilipitiya</span>
+            </p>
+            <div style="background: #f1f5f9; height: 6px; border-radius: 9999px; overflow: hidden; margin-bottom: 0.5rem;">
+              <div style="background: #10b981; width: 85%; height: 100%;"></div>
+            </div>
+            <span style="font-size: 0.75rem; color: #64748b;"><i class="fa-solid fa-clock"></i> Estimated Delivery: Tomorrow by 2:00 PM</span>
+          </div>
+
+          <!-- Telegram Support Hotline Card -->
+          <div class="dash-card" style="margin-top: 1.5rem; background: #f0f9ff; border-color: #bae6fd;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div style="width: 40px; height: 40px; border-radius: 50%; background: #0284c7; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                <i class="fa-brands fa-telegram"></i>
+              </div>
+              <div>
+                <strong style="font-size: 0.9rem; color: #0369a1; display: block;">Telegram Student Bot</strong>
+                <span style="font-size: 0.75rem; color: #0284c7;">Manage quizzes & notifications via @edupeakbot</span>
+              </div>
+            </div>
+            <div style="margin-top: 0.75rem;">
+              <a href="https://t.me/edupeakbot" target="_blank" class="btn btn-sm" style="width: 100%; background: #0284c7; color: #ffffff; text-align: center; font-weight: 700; text-decoration: none; display: block; border-radius: 8px; padding: 0.5rem 0;">
+                Open @edupeakbot in Telegram
+              </a>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- TAB 2: STUDENT PORTAL COURSES DIRECTORY VIEW -->
+    <div id="studentView_courses" class="student-portal-view" style="display: none;">
+
+      <!-- Courses Explorer Header Banner -->
+      <div class="welcome-hero-card" style="margin-bottom: 2rem;">
+        <div>
+          <div class="student-badge-row">
+            <span class="student-badge-pill" style="color: #93c5fd;">
+              <i class="fa-solid fa-graduation-cap"></i> G.C.E. Advanced Level Academic Directory
+            </span>
+            <span class="student-badge-pill">
+              <i class="fa-solid fa-school"></i> Victory Embilipitiya Campus
+            </span>
+          </div>
+          <h1 class="hero-welcome-title" style="margin-bottom: 0.5rem;">
+            Academic Courses, Batches & Syllabuses
+          </h1>
+          <p class="hero-welcome-subtitle" style="margin-bottom: 1.25rem; max-width: 800px;">
+            Explore complete theory, revision, and speed paper classes for 2027, 2028, and 2029 A/L batches. Check lesson schedules, module breakdowns, and access lessons instantly.
+          </p>
+          
+          <!-- Instant Search Input -->
+          <div style="max-width: 580px; position: relative;">
+            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1.15rem; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1rem;"></i>
+            <input type="text" id="studentCourseSearchInput" placeholder="Search by subject, master lecturer, or keyword..." class="form-control" style="padding: 0.75rem 1.25rem 0.75rem 2.85rem; border-radius: 9999px; font-size: 0.9rem; border: 2px solid #bfdbfe; background: #ffffff; color: #0f172a; box-shadow: 0 4px 15px rgba(0,0,0,0.06);" oninput="handleStudentCourseSearch(this.value)">
+          </div>
+        </div>
+
+        <div>
+          <button type="button" onclick="switchStudentPortalTab('dashboard', event)" class="btn btn-outline" style="background: rgba(255,255,255,0.1); color: #ffffff; font-weight: 700; border-color: rgba(255,255,255,0.3); cursor: pointer;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+          </button>
+        </div>
+      </div>
+
+      <!-- High-End Category & Filter Bar -->
+      <div class="courses-category-nav-wrapper">
+        <div class="category-pills-bar" id="studentCategoryPillsBar">
+          <button class="category-pill-btn active" onclick="setStudentCategoryFilter('all', this)">
+            <i class="fa-solid fa-layer-group"></i>
+            <span>All Batches</span>
+            <span class="pill-count" id="studentCountAll">0</span>
+          </button>
+          <button class="category-pill-btn" onclick="setStudentCategoryFilter('theory', this)">
+            <i class="fa-solid fa-atom"></i>
+            <span>Theory Classes</span>
+            <span class="pill-count" id="studentCountTheory">0</span>
+          </button>
+          <button class="category-pill-btn" onclick="setStudentCategoryFilter('revision', this)">
+            <i class="fa-solid fa-bolt"></i>
+            <span>Revision Classes</span>
+            <span class="pill-count" id="studentCountRevision">0</span>
+          </button>
+          <button class="category-pill-btn" onclick="setStudentCategoryFilter('papers', this)">
+            <i class="fa-solid fa-stopwatch"></i>
+            <span>Speed Paper Classes</span>
+            <span class="pill-count" id="studentCountPapers">0</span>
+          </button>
+        </div>
+
+        <!-- Secondary Filter Controls -->
+        <div class="secondary-filter-row">
+          <div class="filter-select-group">
+            <label style="font-size: 0.8rem; font-weight: 700; color: #64748b;"><i class="fa-solid fa-filter"></i> Exam Batch:</label>
+            <select class="filter-dropdown-select" id="studentYearFilterSelect" onchange="renderStudentCourses()">
+              <option value="all">All Exam Batches</option>
+              <option value="2027">2027 A/L Batch</option>
+              <option value="2028">2028 A/L Batch</option>
+              <option value="2029">2029 A/L Batch</option>
+            </select>
+          </div>
+
+          <div class="filter-select-group">
+            <label style="font-size: 0.8rem; font-weight: 700; color: #64748b;"><i class="fa-solid fa-arrow-down-wide-short"></i> Sort by:</label>
+            <select class="filter-dropdown-select" id="studentSortFilterSelect" onchange="renderStudentCourses()">
+              <option value="default">Featured & Popular</option>
+              <option value="fee-asc">Monthly Fee: Low to High</option>
+              <option value="fee-desc">Monthly Fee: High to Low</option>
+              <option value="rating">Student Rating</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rendered Categorized Courses Grid Container -->
+      <div id="studentCoursesContainer">
+        <!-- Rendered dynamically by JavaScript -->
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Course Details & Syllabus Modal inside Student Portal -->
+  <div class="modal-overlay" id="studentCourseDetailsModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 id="studentModalCourseTitle" style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">Course Details</h3>
+          <p id="studentModalCourseStream" style="font-size: 0.8rem; color: #227aff; font-weight: 700; margin: 0.2rem 0 0 0;">Physical Science</p>
+        </div>
+        <button class="modal-close-btn" onclick="closeStudentModal('studentCourseDetailsModal')" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem 1.75rem;">
+        
+        <!-- Batch Warning / Notice Banner -->
+        <div id="studentModalBatchNotice" style="display: none; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; line-height: 1.4; margin-bottom: 1.25rem;"></div>
+
+        <!-- Lecturer & Pricing Highlights -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #eff6ff; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid #bfdbfe; margin-bottom: 1.5rem;">
+          <div>
+            <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Conducted by:</div>
+            <strong id="studentModalCourseTeacher" style="font-size: 1.05rem; color: #0f172a;">Amalsha Wanniarachchi</strong>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Monthly Fee:</div>
+            <strong id="studentModalCourseFee" style="font-size: 1.25rem; color: #227aff; font-weight: 900;">LKR 3,500</strong>
+          </div>
+        </div>
+
+        <!-- Schedule and Medium Info -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.85rem; margin-bottom: 1.5rem;">
+          <div style="background: #f8fafc; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <span style="color: #64748b; display: block; font-size: 0.75rem;">Lecture Schedule:</span>
+            <strong id="studentModalCourseSchedule" style="color: #0f172a;">Every Saturday 7:30 AM</strong>
+          </div>
+          <div style="background: #f8fafc; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <span style="color: #64748b; display: block; font-size: 0.75rem;">Delivery & Medium:</span>
+            <strong id="studentModalCourseMedium" style="color: #0f172a;">Sinhala with English Terms</strong>
+          </div>
+        </div>
+
+        <!-- Syllabus Highlights -->
+        <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 0.75rem;">Syllabus Outline & Covered Modules</h4>
+        <ul style="padding-left: 1.25rem; font-size: 0.85rem; color: #475569; line-height: 1.6; margin-bottom: 1.5rem;">
+          <li>Full National Curriculum A/L Syllabus Mastery from Basic to Advanced.</li>
+          <li>In-depth theoretical proofs, experimental demonstrations & mathematical derivations.</li>
+          <li>Comprehensive discussion of past 30 years national A/L exam papers.</li>
+          <li>Monthly printed theory tutes couriered directly to your residential address.</li>
+          <li>Continuous 24/7 unlimited access to HD video classroom replays in the student portal.</li>
+        </ul>
+
+        <!-- Modal Actions -->
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+          <button type="button" class="btn btn-ghost" onclick="closeStudentModal('studentCourseDetailsModal')">Close</button>
+          <button type="button" class="btn btn-primary" id="studentModalEnrollBtn">
+            <i class="fa-solid fa-cart-plus"></i> Enroll in Batch
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div></main>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/translations.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/lms.js"></script>
+
+  <script>
+    let currentUser = null;
+    let currentStudentTab = "dashboard";
+    let activeStudentCategory = "all";
+    let currentStudentSearch = "";
+
+    const STUDENT_BATCH_CATEGORIES = {
+      theory: {
+        title: "Physics Comprehensive Theory Batches (සිද්ධාන්ත පන්ති)",
+        desc: "Complete syllabus coverage from fundamentals to advanced mechanics with Amalsha Wanniarachchi.",
+        icon: "fa-atom"
+      },
+      revision: {
+        title: "Physics Rapid Revision & Practical Analysis (පුනරීක්ෂණ පන්ති)",
+        desc: "Intensive unit revisions, laboratory practical setups, and high-yield summary theory points.",
+        icon: "fa-bolt"
+      },
+      papers: {
+        title: "50 Timed Speed MCQ & Model Paper Discussion Arena (ප්‍රශ්න පත්‍ර පන්ති)",
+        desc: "Real-time timed MCQ tests, model structured essays, and detailed marking scheme breakdowns.",
+        icon: "fa-stopwatch"
+      }
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // 1. Check user session
+      if (window.AUTH_SYSTEM) {
+        currentUser = window.AUTH_SYSTEM.getCurrentUser();
+      }
+
+      if (!currentUser) {
+        // Default sample student if not logged in
+        currentUser = {
+          id: "EP-2027-001",
+          name: "Kasun Jayasundara",
+          role: "student",
+          examYear: "2027 A/L",
+          stream: "Physical Science",
+          branch: "Victory Embilipitiya",
+          email: "kasun.student@edupeak.lk",
+          address: "Victory Embilipitiya, Ratnapura"
+        };
+      }
+
+      // 2. Populate User Profile Info
+      const firstName = currentUser.name.split(" ")[0];
+      const initial = firstName.charAt(0).toUpperCase();
+
+      document.getElementById("dashStudentName").textContent = firstName;
+      document.getElementById("headerUserNameDisplay").textContent = firstName;
+      document.getElementById("dropdownUserName").textContent = currentUser.name;
+      document.getElementById("dropdownUserId").textContent = currentUser.id || "EP-2027-001";
+      document.getElementById("dropdownUserMeta").textContent = `${currentUser.email || 'student@edupeak.lk'} • ${currentUser.examYear || '2027 A/L'}`;
+      
+      const avatarLetterEl = document.getElementById("headerUserAvatarLetter");
+      const dropdownAvatarEl = document.getElementById("dropdownUserAvatar");
+      const savedAvatar = localStorage.getItem("edupeak_user_avatar");
+      if (savedAvatar) {
+        if (avatarLetterEl) avatarLetterEl.innerHTML = `<img src="${savedAvatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+        if (dropdownAvatarEl) dropdownAvatarEl.innerHTML = `<img src="${savedAvatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+      } else {
+        if (avatarLetterEl) avatarLetterEl.textContent = initial;
+        if (dropdownAvatarEl) dropdownAvatarEl.textContent = initial;
+      }
+
+      document.getElementById("dashStudentBatch").textContent = currentUser.examYear || "2027 A/L";
+      document.getElementById("dashStudentBranch").textContent = currentUser.branch || "Victory Embilipitiya";
+      document.getElementById("countdownBatchLabel").textContent = `${currentUser.examYear || '2027 A/L'} Exam Countdown`;
+      if (currentUser.address) {
+        document.getElementById("dashDeliveryAddress").textContent = currentUser.address;
+      }
+
+      // 3. Render Enrolled Courses
+      renderEnrolledCourses();
+
+      // 4. Start Live Exam Countdown Clock
+      initExamCountdown(currentUser.examYear || "2027 A/L");
+
+      // 5. Initialize Courses tab & Category counts
+      updateStudentCategoryCounts();
+      renderStudentCourses();
+
+      // 6. Check URL Hash (e.g. #courses or #dashboard)
+      if (window.location.hash === "#courses") {
+        switchStudentPortalTab("courses");
+      }
+
+      window.addEventListener("hashchange", () => {
+        if (window.location.hash === "#courses") {
+          switchStudentPortalTab("courses");
+        } else if (window.location.hash === "#dashboard" || window.location.hash === "") {
+          switchStudentPortalTab("dashboard");
+        }
+      });
+    });
+
+    // --------------------------------------------------------------------------
+    // TAB SWITCHER: DASHBOARD <-> COURSES (INSIDE STUDENT PORTAL)
+    // --------------------------------------------------------------------------
+    function switchStudentPortalTab(tabId, event) {
+      if (event) event.preventDefault();
+      currentStudentTab = tabId;
+
+      const navDash = document.getElementById("navDashboardBtn");
+      const navCourses = document.getElementById("navCoursesBtn");
+      if (navDash) navDash.classList.toggle("active", tabId === "dashboard");
+      if (navCourses) navCourses.classList.toggle("active", tabId === "courses");
+
+      const viewDash = document.getElementById("studentView_dashboard");
+      const viewCourses = document.getElementById("studentView_courses");
+
+      if (tabId === "courses") {
+        if (viewDash) viewDash.style.display = "none";
+        if (viewCourses) {
+          viewCourses.style.display = "block";
+          updateStudentCategoryCounts();
+          renderStudentCourses();
+        }
+        window.location.hash = "courses";
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        if (viewCourses) viewCourses.style.display = "none";
+        if (viewDash) viewDash.style.display = "block";
+        window.location.hash = "dashboard";
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      const nav = document.getElementById("mainNav");
+      if (nav) nav.classList.remove("mobile-active");
+    }
+
+    // --------------------------------------------------------------------------
+    // STUDENT COURSES CATALOG SYSTEM
+    // --------------------------------------------------------------------------
+    function getAllStudentCourses() {
+      const stored = localStorage.getItem("edupeak_courses_db");
+      let courses = stored ? JSON.parse(stored) : (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.courses : []);
+
+      try {
+        const customCourses = JSON.parse(localStorage.getItem("edupeak_custom_courses") || "[]");
+        if (customCourses.length) {
+          customCourses.forEach(c => {
+            if (!courses.find(item => item.id === c.id)) {
+              courses.unshift(c);
+            }
+          });
+        }
+      } catch (e) {}
+
+      return courses;
+    }
+
+    function updateStudentCategoryCounts() {
+      const all = getAllStudentCourses();
+      const counts = { all: all.length, theory: 0, revision: 0, papers: 0 };
+      all.forEach(c => {
+        const cat = c.category || "theory";
+        if (counts[cat] !== undefined) counts[cat]++;
+      });
+      for (const [k, v] of Object.entries(counts)) {
+        const cap = k.charAt(0).toUpperCase() + k.slice(1);
+        const el = document.getElementById(`studentCount${cap}`);
+        if (el) el.textContent = v;
+      }
+    }
+
+    function renderStudentCourseCardHTML(course) {
+      const title = course.title;
+      const stream = course.stream || "Physical Science";
+      const medium = course.medium || "Sinhala & English Medium";
+      const fee = course.fee || "LKR 3,500 / Month";
+      const badge = course.badge || "Enrollment Open";
+      const isEnrolled = typeof isCourseEnrolled === "function" ? isCourseEnrolled(course.id) : (window.isCourseEnrolled ? window.isCourseEnrolled(course.id) : false);
+
+      const userExamYear = currentUser ? (currentUser.examYear || "") : "";
+      const courseBatch = course.examYear || course.level || "2027 A/L";
+      const courseYearNum = (courseBatch.match(/\d{4}/) || [""])[0];
+      const userYearNum = (userExamYear.match(/\d{4}/) || [""])[0];
+      const isBatchMismatch = !!(userYearNum && courseYearNum && userYearNum !== courseYearNum && !courseBatch.toLowerCase().includes("all"));
+
+      return `
+        <article class="course-card" id="student_course_${course.id}">
+          <div class="course-header-banner">
+            <div class="course-icon-round">
+              <i class="fa-solid ${course.thumbnailIcon || 'fa-atom'}"></i>
+            </div>
+            <span class="course-badge-pill">${badge}</span>
+          </div>
+          <div class="course-body">
+            <span class="course-stream-tag">${stream}</span>
+            <h3 class="course-title" style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin-bottom: 0.6rem; line-height: 1.35;">${title}</h3>
+            <div class="course-lecturer-row" style="display: flex; align-items: center; gap: 0.5rem; color: #475569; font-size: 0.85rem; margin-bottom: 1rem;">
+              <i class="fa-solid fa-chalkboard-user" style="color: #227aff;"></i>
+              <strong>${course.teacherName || 'Amalsha Wanniarachchi'}</strong>
+            </div>
+
+            <div class="course-details-pills" style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.25rem;">
+              <span class="detail-pill" style="${isBatchMismatch ? 'background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700;' : 'background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; font-weight: 700;'}">
+                <i class="fa-solid ${isBatchMismatch ? 'fa-triangle-exclamation' : 'fa-calendar-check'}"></i> 
+                ${courseBatch}
+              </span>
+              <span class="detail-pill" style="font-size: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.2rem 0.6rem; border-radius: 6px;"><i class="fa-solid fa-language"></i> ${medium}</span>
+              <span class="detail-pill" style="font-size: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.2rem 0.6rem; border-radius: 6px;"><i class="fa-regular fa-clock"></i> ${course.liveTime || 'Every Sat 7:30 AM'}</span>
+            </div>
+
+            <div class="course-footer-row" style="margin-top: auto; padding-top: 1rem; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <span style="font-size: 0.7rem; color: #64748b; display: block;">Monthly Fee:</span>
+                <strong style="font-size: 1.1rem; color: #0f172a; font-weight: 800;">${fee}</strong>
+              </div>
+              <div style="display: flex; gap: 0.4rem;">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="showStudentCourseDetailsModal('${course.id}')" title="View Syllabus" style="border: 1px solid #cbd5e1; border-radius: 8px; font-weight: 700; padding: 0.4rem 0.75rem; cursor: pointer;">
+                  <i class="fa-solid fa-circle-info"></i> Details
+                </button>
+                ${isEnrolled ? `
+                  <a href="index.html?openLms=video-classroom&course=${encodeURIComponent(course.id)}" class="btn btn-sm" style="background: #10b981; color: #ffffff; border: 1px solid #10b981; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 8px; padding: 0.4rem 0.85rem; text-decoration: none;">
+                    <i class="fa-solid fa-circle-play"></i> Enrolled
+                  </a>
+                ` : `
+                  <button type="button" class="btn btn-primary btn-sm" onclick="enrollStudentInCourse('${course.id}')" style="font-weight: 700; border-radius: 8px; padding: 0.4rem 0.85rem; cursor: pointer;">
+                    <i class="fa-solid fa-cart-plus"></i> Enroll
+                  </button>
+                `}
+              </div>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderStudentCourses() {
+      const container = document.getElementById("studentCoursesContainer");
+      if (!container) return;
+
+      let courses = getAllStudentCourses();
+
+      // Search Filter
+      if (currentStudentSearch.trim()) {
+        const term = currentStudentSearch.toLowerCase();
+        courses = courses.filter(c => 
+          (c.title && c.title.toLowerCase().includes(term)) ||
+          (c.title_si && c.title_si.toLowerCase().includes(term)) ||
+          (c.teacherName && c.teacherName.toLowerCase().includes(term)) ||
+          (c.category && c.category.toLowerCase().includes(term))
+        );
+      }
+
+      // Year Filter
+      const yearSelect = document.getElementById("studentYearFilterSelect");
+      const yearVal = yearSelect ? yearSelect.value : "all";
+      if (yearVal !== "all") {
+        courses = courses.filter(c => (c.examYear === yearVal) || (c.level && c.level.includes(yearVal)) || (c.title && c.title.includes(yearVal)));
+      }
+
+      // Sort
+      const sortSelect = document.getElementById("studentSortFilterSelect");
+      const sortVal = sortSelect ? sortSelect.value : "default";
+      if (sortVal === "fee-asc") {
+        courses.sort((a, b) => parseInt((a.fee || "0").replace(/[^0-9]/g, '')) - parseInt((b.fee || "0").replace(/[^0-9]/g, '')));
+      } else if (sortVal === "fee-desc") {
+        courses.sort((a, b) => parseInt((b.fee || "0").replace(/[^0-9]/g, '')) - parseInt((a.fee || "0").replace(/[^0-9]/g, '')));
+      } else if (sortVal === "rating") {
+        courses.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      }
+
+      if (!courses.length) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 3.5rem 2rem; background: #ffffff; border-radius: 16px; border: 1px dashed #cbd5e1; margin-top: 1rem;">
+            <i class="fa-solid fa-magnifying-glass" style="font-size: 2.5rem; color: #94a3b8; margin-bottom: 0.75rem;"></i>
+            <h3 style="color: #0f172a; margin-bottom: 0.4rem;">No Courses Found</h3>
+            <p style="color: #64748b;">Try adjusting your search query or exam batch filters.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Single Category View
+      if (activeStudentCategory !== "all") {
+        const streamCourses = courses.filter(c => (c.category || "theory") === activeStudentCategory);
+        const def = STUDENT_BATCH_CATEGORIES[activeStudentCategory] || { title: "Academic Classes", desc: "Featured Classes", icon: "fa-atom" };
+
+        if (!streamCourses.length) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 3.5rem 2rem; background: #ffffff; border-radius: 16px; border: 1px dashed #cbd5e1; margin-top: 1rem;">
+              <i class="fa-solid fa-filter-circle-xmark" style="font-size: 2.5rem; color: #94a3b8; margin-bottom: 0.75rem;"></i>
+              <h3 style="color: #0f172a; margin-bottom: 0.4rem;">No courses in this category match your filters</h3>
+              <p style="color: #64748b;">Try selecting "All Batches".</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = `
+          <div class="stream-group-header" style="margin-top: 0.5rem;">
+            <div class="stream-group-title-wrap">
+              <div class="stream-group-icon">
+                <i class="fa-solid ${def.icon}"></i>
+              </div>
+              <div>
+                <h2 class="stream-group-title" style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">${def.title}</h2>
+                <p class="stream-group-desc" style="font-size: 0.825rem; color: #64748b; margin: 0.2rem 0 0 0;">${def.desc}</p>
+              </div>
+            </div>
+            <span style="font-size: 0.8rem; font-weight: 700; color: #227aff; background: #eff6ff; padding: 0.3rem 0.8rem; border-radius: 9999px; border: 1px solid #bfdbfe;">
+              ${streamCourses.length} Batches
+            </span>
+          </div>
+
+          <div class="student-courses-grid">
+            ${streamCourses.map(c => renderStudentCourseCardHTML(c)).join('')}
+          </div>
+        `;
+        return;
+      }
+
+      // All Batches View (Grouped by Category)
+      const catKeys = ["theory", "revision", "papers"];
+      let html = "";
+
+      catKeys.forEach(catKey => {
+        const streamCourses = courses.filter(c => (c.category || "theory") === catKey);
+
+        if (streamCourses.length > 0) {
+          const def = STUDENT_BATCH_CATEGORIES[catKey];
+          html += `
+            <div class="stream-group-header" style="margin-top: 1.5rem;">
+              <div class="stream-group-title-wrap">
+                <div class="stream-group-icon">
+                  <i class="fa-solid ${def.icon}"></i>
+                </div>
+                <div>
+                  <h2 class="stream-group-title" style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">${def.title}</h2>
+                  <p class="stream-group-desc" style="font-size: 0.825rem; color: #64748b; margin: 0.2rem 0 0 0;">${def.desc}</p>
+                </div>
+              </div>
+              <span style="font-size: 0.8rem; font-weight: 700; color: #227aff; background: #eff6ff; padding: 0.3rem 0.8rem; border-radius: 9999px; border: 1px solid #bfdbfe;">
+                ${streamCourses.length} Batches
+              </span>
+            </div>
+
+            <div class="student-courses-grid">
+              ${streamCourses.map(c => renderStudentCourseCardHTML(c)).join('')}
+            </div>
+          `;
+        }
+      });
+
+      container.innerHTML = html;
+    }
+
+    function setStudentCategoryFilter(categoryKey, btnEl) {
+      activeStudentCategory = categoryKey;
+      document.querySelectorAll("#studentCategoryPillsBar .category-pill-btn").forEach(btn => btn.classList.remove("active"));
+      if (btnEl) btnEl.classList.add("active");
+      renderStudentCourses();
+    }
+
+    function handleStudentCourseSearch(val) {
+      currentStudentSearch = val;
+      renderStudentCourses();
+    }
+
+    function showStudentCourseDetailsModal(courseId) {
+      const courses = getAllStudentCourses();
+      const c = courses.find(item => item.id === courseId) || courses[0];
+      if (!c) return;
+
+      document.getElementById("studentModalCourseTitle").textContent = c.title;
+      document.getElementById("studentModalCourseStream").textContent = c.stream || "A/L Stream";
+      document.getElementById("studentModalCourseTeacher").textContent = c.teacherName || "Master Lecturer";
+      document.getElementById("studentModalCourseFee").textContent = c.fee || "LKR 3,500 / Month";
+      document.getElementById("studentModalCourseSchedule").textContent = c.liveTime || "Every Saturday 7:30 AM";
+      document.getElementById("studentModalCourseMedium").textContent = c.medium || "Sinhala with English Terms";
+
+      const userExamYear = currentUser ? (currentUser.examYear || "") : "";
+      const courseBatch = c.examYear || c.level || "2027 A/L";
+      const courseYearNum = (courseBatch.match(/\d{4}/) || [""])[0];
+      const userYearNum = (userExamYear.match(/\d{4}/) || [""])[0];
+      const isBatchMismatch = !!(userYearNum && courseYearNum && userYearNum !== courseYearNum && !courseBatch.toLowerCase().includes("all"));
+
+      const batchNotice = document.getElementById("studentModalBatchNotice");
+      if (batchNotice) {
+        if (isBatchMismatch) {
+          batchNotice.style.display = "block";
+          batchNotice.style.background = "#fffbeb";
+          batchNotice.style.border = "1px solid #fde68a";
+          batchNotice.style.color = "#92400e";
+          batchNotice.innerHTML = `
+            <div style="font-weight: 700; display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.2rem;">
+              <i class="fa-solid fa-triangle-exclamation" style="color: #f59e0b;"></i> Target Exam Batch Notice
+            </div>
+            <div>This course syllabus is specifically designed for the <strong>${courseBatch}</strong> batch. Your registered student profile is set to <strong>${userExamYear}</strong>.</div>
+          `;
+        } else {
+          batchNotice.style.display = "none";
+        }
+      }
+
+      const isEnrolled = typeof isCourseEnrolled === "function" ? isCourseEnrolled(c.id) : (window.isCourseEnrolled ? window.isCourseEnrolled(c.id) : false);
+      const btn = document.getElementById("studentModalEnrollBtn");
+      if (btn) {
+        if (isEnrolled) {
+          btn.className = "btn btn-success";
+          btn.style.background = "#10b981";
+          btn.style.borderColor = "#10b981";
+          btn.style.color = "#ffffff";
+          btn.innerHTML = '<i class="fa-solid fa-circle-play"></i> Enrolled • Open LMS Player';
+          btn.onclick = () => {
+            window.location.href = `index.html?openLms=video-classroom&course=${encodeURIComponent(c.id)}`;
+          };
+        } else {
+          btn.className = "btn btn-primary";
+          btn.style.background = "";
+          btn.style.borderColor = "";
+          btn.style.color = "";
+          btn.innerHTML = '<i class="fa-solid fa-cart-plus"></i> Enroll in Batch';
+          btn.onclick = () => {
+            enrollStudentInCourse(c.id);
+          };
+        }
+      }
+
+      const modal = document.getElementById("studentCourseDetailsModal");
+      if (modal) modal.classList.add("active");
+    }
+
+    function closeStudentModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) modal.classList.remove("active");
+    }
+
+    function enrollStudentInCourse(courseId) {
+      try {
+        let enrolled = [];
+        const saved = localStorage.getItem("edupeak_enrolled");
+        if (saved) enrolled = JSON.parse(saved);
+
+        if (!enrolled.includes(courseId)) {
+          enrolled.push(courseId);
+          localStorage.setItem("edupeak_enrolled", JSON.stringify(enrolled));
+        }
+
+        // Sync with Supabase if online
+        if (window.SUPABASE_HELPER && currentUser) {
+          window.SUPABASE_HELPER.saveEnrollment({
+            student_id: currentUser.id || "EP-2027-001",
+            course_id: courseId,
+            payment_status: "paid"
+          });
+        }
+
+        showToast("🎉 Successfully enrolled! You now have full access to this course.", "success");
+        closeStudentModal("studentCourseDetailsModal");
+        renderEnrolledCourses();
+        renderStudentCourses();
+      } catch (e) {
+        console.error("Enrollment error:", e);
+        showToast("Could not complete enrollment: " + e.message, "info");
+      }
+    }
+
+    function showToast(message, type = "info") {
+      const container = document.getElementById("toastContainer");
+      if (!container) return;
+      const toast = document.createElement("div");
+      toast.className = `toast-message ${type}`;
+      toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-info'}"></i> <span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(10px)";
+        toast.style.transition = "all 0.3s ease";
+        setTimeout(() => toast.remove(), 350);
+      }, 4000);
+    }
+
+    // --------------------------------------------------------------------------
+    // DASHBOARD WIDGETS (ENROLLED LIST, COUNTDOWN, USER DROPDOWN)
+    // --------------------------------------------------------------------------
+    function renderEnrolledCourses() {
+      const container = document.getElementById("dashEnrolledCoursesList");
+      if (!container) return;
+
+      const allCourses = getAllStudentCourses();
+      let enrolledIds = [];
+      try {
+        const saved = localStorage.getItem("edupeak_enrolled");
+        enrolledIds = saved ? JSON.parse(saved) : [];
+      } catch (e) {
+        enrolledIds = [];
+      }
+
+      let myCourses = allCourses.filter(c => enrolledIds.includes(c.id));
+      if (myCourses.length === 0) {
+        myCourses = [allCourses[0] || {
+          id: "crs-phy-2027-theory",
+          title: "2027 A/L Physics - Complete Theory & Mechanics Masterclass",
+          teacherName: "Amalsha Wanniarachchi",
+          liveTime: "Every Saturday 7:30 AM",
+          level: "2027 A/L",
+          thumbnailIcon: "fa-atom"
+        }];
+      }
+
+      container.innerHTML = myCourses.map(course => `
+        <div class="enrolled-course-item">
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 44px; height: 44px; border-radius: 10px; background: #eff6ff; color: #227aff; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+              <i class="fa-solid ${course.thumbnailIcon || 'fa-atom'}"></i>
+            </div>
+            <div>
+              <h4 style="margin: 0 0 0.25rem 0; font-size: 0.95rem; font-weight: 800; color: #0f172a;">${course.title}</h4>
+              <span style="font-size: 0.8rem; color: #64748b;">
+                <i class="fa-solid fa-user-tie"></i> ${course.teacherName || 'Amalsha Wanniarachchi'} • <i class="fa-regular fa-clock"></i> ${course.liveTime || 'Every Sat 7:30 AM'}
+              </span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <a href="index.html?openLms=video-classroom&course=${encodeURIComponent(course.id)}" class="btn btn-primary btn-sm" style="font-weight: 700; text-decoration: none; border-radius: 8px;">
+              <i class="fa-solid fa-circle-play"></i> Resume Lesson
+            </a>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function initExamCountdown(examYearStr) {
+      let targetYear = 2027;
+      if (examYearStr.includes("2028")) targetYear = 2028;
+      if (examYearStr.includes("2029")) targetYear = 2029;
+
+      const examDate = new Date(`August 01, ${targetYear} 08:30:00`).getTime();
+
+      function updateClock() {
+        const now = new Date().getTime();
+        const diff = examDate - now;
+
+        if (diff <= 0) {
+          document.getElementById("cdDays").textContent = "00";
+          document.getElementById("cdHours").textContent = "00";
+          document.getElementById("cdMins").textContent = "00";
+          document.getElementById("cdSecs").textContent = "00";
+          return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+        document.getElementById("cdDays").textContent = String(days).padStart(2, '0');
+        document.getElementById("cdHours").textContent = String(hours).padStart(2, '0');
+        document.getElementById("cdMins").textContent = String(mins).padStart(2, '0');
+        document.getElementById("cdSecs").textContent = String(secs).padStart(2, '0');
+      }
+
+      updateClock();
+      setInterval(updateClock, 1000);
+    }
+
+    function toggleProfileDropdown(event) {
+      if (event) event.stopPropagation();
+      const menu = document.getElementById("userProfileDropdownMenu");
+      const chevron = document.getElementById("profileDropdownChevron");
+      if (!menu) return;
+
+      const isOpen = menu.classList.contains("active");
+      if (isOpen) {
+        menu.classList.remove("active");
+        if (chevron) chevron.style.transform = "rotate(0deg)";
+      } else {
+        menu.classList.add("active");
+        if (chevron) chevron.style.transform = "rotate(180deg)";
+      }
+    }
+
+    function closeProfileDropdown() {
+      const menu = document.getElementById("userProfileDropdownMenu");
+      const chevron = document.getElementById("profileDropdownChevron");
+      if (menu) menu.classList.remove("active");
+      if (chevron) chevron.style.transform = "rotate(0deg)";
+    }
+
+    document.addEventListener("click", (e) => {
+      const wrapper = document.getElementById("userProfileDropdownWrapper");
+      if (wrapper && !wrapper.contains(e.target)) {
+        closeProfileDropdown();
+      }
+    });
+
+    function toggleMobileNav() {
+      const nav = document.getElementById("mainNav");
+      if (nav) {
+        nav.classList.toggle("mobile-active");
+      }
+    }
+
+    function handleLogout() {
+      if (window.AUTH_SYSTEM) {
+        window.AUTH_SYSTEM.logout();
+      }
+      window.location.href = "login.html";
+    }
+  </script>
+</body>
+</html>
