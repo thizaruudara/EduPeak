@@ -9,11 +9,15 @@ const EDUPEAK_INSTITUTES = {
   storageKey: "edupeak_institutes_db",
 
   getAll() {
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+      const shared = window.SUPABASE_HELPER.getSharedData(this.storageKey);
+      if (shared !== null && Array.isArray(shared) && shared.length > 0) return shared;
+    }
     try {
       const stored = localStorage.getItem(this.storageKey);
       if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {
       console.warn("Error parsing institutes db:", e);
@@ -22,6 +26,9 @@ const EDUPEAK_INSTITUTES = {
   },
 
   saveAll(institutesList) {
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+      window.SUPABASE_HELPER.setSharedData(this.storageKey, institutesList);
+    }
     try {
       localStorage.setItem(this.storageKey, JSON.stringify(institutesList));
     } catch (e) {

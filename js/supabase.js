@@ -97,7 +97,8 @@ const SUPABASE_HELPER = {
       await Promise.allSettled([
         this.syncCourses(),
         this.syncTeachers(),
-        this.syncPapers()
+        this.syncPapers(),
+        this.syncInstitutes()
       ]);
     } catch (e) {
       console.warn("syncAllCloudData warning:", e);
@@ -191,6 +192,34 @@ const SUPABASE_HELPER = {
     return null;
   },
 
+  async syncInstitutes() {
+    if (!this.isConnected || !this.client) return null;
+    try {
+      const { data, error } = await this.client.from("institutes").select("*");
+      if (!error && Array.isArray(data) && data.length > 0) {
+        this.setSharedData("edupeak_institutes_db", data);
+        try { localStorage.setItem("edupeak_institutes_db", JSON.stringify(data)); } catch (e) {}
+        if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = data;
+
+        if (typeof window.dispatchEvent === "function") {
+          window.dispatchEvent(new CustomEvent("edupeak:institutes-synced", { detail: data }));
+        }
+
+        if (typeof window.renderInstitutes === "function") window.renderInstitutes();
+        if (window.EDUPEAK_INSTITUTES && typeof window.EDUPEAK_INSTITUTES.populateDropdowns === "function") {
+          window.EDUPEAK_INSTITUTES.populateDropdowns();
+        }
+        if (window.ADMIN_CONTROLLER && typeof window.ADMIN_CONTROLLER.renderInstitutes === "function") {
+          window.ADMIN_CONTROLLER.renderInstitutes();
+        }
+        return data;
+      }
+    } catch (e) {
+      console.warn("syncInstitutes error:", e);
+    }
+    return null;
+  },
+
   setupRealtimeSubscriptions() {
     if (!this.client || this._realtimeSubscribed) return;
     try {
@@ -205,6 +234,9 @@ const SUPABASE_HELPER = {
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'past_papers' }, () => {
           this.syncPapers();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'institutes' }, () => {
+          this.syncInstitutes();
         })
         .subscribe();
     } catch (e) {
@@ -624,6 +656,49 @@ const SUPABASE_HELPER = {
       localStorage.setItem("edupeak_custom_quizzes", JSON.stringify(customQuizzes));
     } catch (e) {}
 
+    // Cascade delete student course enrollments
+    try {
+      const usersStr = localStorage.getItem("edupeak_users_db");
+      if (usersStr) {
+        let users = JSON.parse(usersStr);
+        users.forEach(u => {
+          if (Array.isArray(u.enrolledCourses)) {
+            u.enrolledCourses = u.enrolledCourses.filter(cid => !matchId(cid, courseId) && courses.some(c => matchId(c.id, cid)));
+          }
+        });
+        localStorage.setItem("edupeak_users_db", JSON.stringify(users));
+      }
+
+      const sessionStr = localStorage.getItem("edupeak_active_session");
+      if (sessionStr) {
+        let session = JSON.parse(sessionStr);
+        if (Array.isArray(session.enrolledCourses)) {
+          session.enrolledCourses = session.enrolledCourses.filter(cid => !matchId(cid, courseId) && courses.some(c => matchId(c.id, cid)));
+          localStorage.setItem("edupeak_active_session", JSON.stringify(session));
+        }
+      }
+
+      const enrolledStr = localStorage.getItem("edupeak_enrolled");
+      if (enrolledStr) {
+        let enrolled = JSON.parse(enrolledStr);
+        enrolled = enrolled.filter(cid => !matchId(cid, courseId) && courses.some(c => matchId(c.id, cid)));
+        localStorage.setItem("edupeak_enrolled", JSON.stringify(enrolled));
+      }
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("edupeak_student_courses_")) {
+          try {
+            let sc = JSON.parse(localStorage.getItem(key) || "[]");
+            if (Array.isArray(sc)) {
+              sc = sc.filter(cid => !matchId(cid, courseId) && courses.some(c => matchId(c.id, cid)));
+              localStorage.setItem(key, JSON.stringify(sc));
+            }
+          } catch (e) {}
+        }
+      }
+    } catch (e) {}
+
     if (typeof window.dispatchEvent === "function") {
       window.dispatchEvent(new CustomEvent("edupeak:courses-synced", { detail: courses }));
     }
@@ -644,6 +719,9 @@ const SUPABASE_HELPER = {
       if (window.TEACHER_CONTROLLER.currentTab === "quizzes" && typeof window.TEACHER_CONTROLLER.renderQuizzes === "function") {
         window.TEACHER_CONTROLLER.renderQuizzes();
       }
+      if (window.TEACHER_CONTROLLER.currentTab === "students" && typeof window.TEACHER_CONTROLLER.renderStudents === "function") {
+        window.TEACHER_CONTROLLER.renderStudents();
+      }
       if (typeof window.TEACHER_CONTROLLER.populateCourseDropdowns === "function") {
         window.TEACHER_CONTROLLER.populateCourseDropdowns();
       }
@@ -651,6 +729,7 @@ const SUPABASE_HELPER = {
     if (window.ADMIN_CONTROLLER) {
       if (typeof window.ADMIN_CONTROLLER.renderCourses === "function") window.ADMIN_CONTROLLER.renderCourses();
       if (typeof window.ADMIN_CONTROLLER.renderOverview === "function") window.ADMIN_CONTROLLER.renderOverview();
+      if (typeof window.ADMIN_CONTROLLER.renderStudents === "function") window.ADMIN_CONTROLLER.renderStudents();
     }
     return true;
   },
@@ -818,14 +897,6 @@ const SUPABASE_HELPER = {
   },
 
   async saveInstitute(instData) {
-    if (this.isConnected && this.client) {
-      try {
-        const { data, error } = await this.client.from("institutes").upsert([instData]).select();
-        if (!error && data) return data[0];
-      } catch (e) {
-        console.warn("Supabase upsert institute error:", e);
-      }
-    }
     const institutes = await this.getInstitutes();
     const existingIndex = institutes.findIndex(i => i.id === instData.id);
     if (existingIndex >= 0) {
@@ -834,33 +905,51 @@ const SUPABASE_HELPER = {
       institutes.push(instData);
     }
     this.setSharedData("edupeak_institutes_db", institutes);
+    try { localStorage.setItem("edupeak_institutes_db", JSON.stringify(institutes)); } catch (e) {}
     if (window.EDUPEAK_DATA) {
       window.EDUPEAK_DATA.institutes = institutes;
-      if (window.renderInstitutes) window.renderInstitutes();
     }
-    if (window.EDUPEAK_INSTITUTES && window.EDUPEAK_INSTITUTES.populateDropdowns) {
+    if (typeof window.renderInstitutes === "function") window.renderInstitutes();
+    if (window.EDUPEAK_INSTITUTES && typeof window.EDUPEAK_INSTITUTES.populateDropdowns === "function") {
       window.EDUPEAK_INSTITUTES.populateDropdowns();
+    }
+    if (window.ADMIN_CONTROLLER && typeof window.ADMIN_CONTROLLER.renderInstitutes === "function") {
+      window.ADMIN_CONTROLLER.renderInstitutes();
+    }
+
+    if (this.isConnected && this.client) {
+      try {
+        const { data, error } = await this.client.from("institutes").upsert([instData]).select();
+        if (!error && data && data.length > 0) return data[0];
+      } catch (e) {
+        console.warn("Supabase upsert institute error:", e);
+      }
     }
     return instData;
   },
 
   async deleteInstitute(instId) {
+    let institutes = await this.getInstitutes();
+    institutes = institutes.filter(i => i.id !== instId);
+    this.setSharedData("edupeak_institutes_db", institutes);
+    try { localStorage.setItem("edupeak_institutes_db", JSON.stringify(institutes)); } catch (e) {}
+    if (window.EDUPEAK_DATA) {
+      window.EDUPEAK_DATA.institutes = institutes;
+    }
+    if (typeof window.renderInstitutes === "function") window.renderInstitutes();
+    if (window.EDUPEAK_INSTITUTES && typeof window.EDUPEAK_INSTITUTES.populateDropdowns === "function") {
+      window.EDUPEAK_INSTITUTES.populateDropdowns();
+    }
+    if (window.ADMIN_CONTROLLER && typeof window.ADMIN_CONTROLLER.renderInstitutes === "function") {
+      window.ADMIN_CONTROLLER.renderInstitutes();
+    }
+
     if (this.isConnected && this.client) {
       try {
         await this.client.from("institutes").delete().eq("id", instId);
       } catch (e) {
         console.warn("Supabase delete institute error:", e);
       }
-    }
-    let institutes = await this.getInstitutes();
-    institutes = institutes.filter(i => i.id !== instId);
-    this.setSharedData("edupeak_institutes_db", institutes);
-    if (window.EDUPEAK_DATA) {
-      window.EDUPEAK_DATA.institutes = institutes;
-      if (window.renderInstitutes) window.renderInstitutes();
-    }
-    if (window.EDUPEAK_INSTITUTES && window.EDUPEAK_INSTITUTES.populateDropdowns) {
-      window.EDUPEAK_INSTITUTES.populateDropdowns();
     }
     return true;
   },

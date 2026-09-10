@@ -35,162 +35,8 @@ const AUTH_SYSTEM = {
       address: "Victory College, Embilipitiya Pallegama, Sri Lanka",
       email_verified: true,
       avatarLetter: "K",
-      enrolledCourses: ["crs-phy-2027-theory", "crs-phy-2027-revision"],
+      enrolledCourses: [],
       joinedDate: "2025-01-10"
-    },
-    {
-      id: "EP-2026-042",
-      name: "Malith Sandeepa",
-      name_si: "මලිත් සන්දීප",
-      email: "malith.sandeepa@gmail.com",
-      phone: "0714589231",
-      nic: "200512345678",
-      password: "student123",
-      role: "student",
-      institute: "EduPeak Colombo & Victory",
-      examYear: "2026 A/L",
-      stream: "Physical Science",
-      stream_si: "භෞතික විද්‍යා අංශය",
-      branch: "Colombo Central",
-      school: "Ananda College Colombo",
-      district: "Colombo",
-      address: "Colombo, Sri Lanka",
-      email_verified: true,
-      avatarLetter: "M",
-      enrolledCourses: [],
-      joinedDate: "2024-05-18"
-    },
-    {
-      id: "EP-2026-088",
-      name: "Sewwandi Jayasinghe",
-      name_si: "සෙව්වන්දි ජයසිංහ",
-      email: "sewwandi.j@outlook.com",
-      phone: "0789123450",
-      nic: "200512345678",
-      password: "student123",
-      role: "student",
-      institute: "Victory Embilipitiya",
-      examYear: "2026 A/L",
-      stream: "Biological Science",
-      stream_si: "ජීව විද්‍යා අංශය",
-      branch: "Victory Embilipitiya",
-      school: "Victory College Embilipitiya",
-      district: "Ratnapura",
-      address: "Embilipitiya, Sri Lanka",
-      email_verified: true,
-      avatarLetter: "S",
-      enrolledCourses: [],
-      joinedDate: "2024-06-22"
-    },
-    {
-      id: "EP-2027-112",
-      name: "Dilshan Wickramasinghe",
-      name_si: "දිල්ෂාන් වික්‍රමසිංහ",
-      email: "dilshan.wick@gmail.com",
-      phone: "0703456789",
-      nic: "200512345678",
-      password: "student123",
-      role: "student",
-      institute: "Victory Embilipitiya",
-      examYear: "2027 A/L",
-      stream: "Physical Science",
-      stream_si: "භෞතික විද්‍යා අංශය",
-      branch: "Victory Embilipitiya",
-      school: "Rahula College Matara",
-      district: "Matara / Embilipitiya",
-      address: "Matara, Sri Lanka",
-      email_verified: true,
-      avatarLetter: "D",
-      enrolledCourses: [],
-      joinedDate: "2025-02-01"
-    },
-    {
-      id: "EP-2026-173",
-      name: "Tharindu Prabhashwara",
-      name_si: "තරිඳු ප්‍රභාෂ්වර",
-      email: "tharindu.p@yahoo.com",
-      phone: "0765543210",
-      nic: "200512345678",
-      password: "student123",
-      role: "student",
-      institute: "EduPeak Online LMS",
-      examYear: "2026 A/L",
-      stream: "Physical Science",
-      stream_si: "භෞතික විද්‍යා අංශය",
-      branch: "Island-wide Virtual",
-      school: "Maliyadeva College Kurunegala",
-      district: "Kurunegala",
-      address: "Kurunegala, Sri Lanka",
-      email_verified: true,
-      avatarLetter: "T",
-      enrolledCourses: [],
-      joinedDate: "2024-08-14"
-    },
-    {
-      id: "EP-2027-204",
-      name: "Nethmi Kavindya",
-      name_si: "නෙත්මි කවින්ද්‍යා",
-      email: "nethmi.kavi@gmail.com",
-      phone: "0723344556",
-      nic: "200512345678",
-      password: "student123",
-      role: "student",
-      institute: "Victory Embilipitiya",
-      examYear: "2027 A/L",
-      stream: "Biological Science",
-      stream_si: "ජීව විද්‍යා අංශය",
-      branch: "Victory Embilipitiya",
-      school: "Visakha Vidyalaya Colombo",
-      district: "Colombo",
-      address: "Colombo, Sri Lanka",
-      email_verified: true,
-      avatarLetter: "N",
-      enrolledCourses: [],
-      joinedDate: "2025-02-15"
-    },
-    {
-      id: "EP-2028-019",
-      name: "Chathura Senarathne",
-      name_si: "චතුර සෙනරත්න",
-      email: "chathura.s@gmail.com",
-      phone: "0758899001",
-      nic: "200512345678",
-      password: "student123",
-      role: "student",
-      institute: "Victory Embilipitiya",
-      examYear: "2028 A/L",
-      stream: "Physical Science",
-      stream_si: "භෞතික විද්‍යා අංශය",
-      branch: "Victory Embilipitiya",
-      school: "Richmond College Galle",
-      district: "Galle",
-      address: "Galle, Sri Lanka",
-      email_verified: true,
-      avatarLetter: "C",
-      enrolledCourses: [],
-      joinedDate: "2025-03-01"
-    },
-    {
-      id: "EP-2027-055",
-      name: "Dinuka Fernando",
-      name_si: "දිනුක ප්‍රනාන්දු",
-      email: "dinuka.f@gmail.com",
-      phone: "0718877665",
-      nic: "200512345678",
-      password: "student123",
-      role: "student",
-      institute: "Victory Embilipitiya",
-      examYear: "2027 A/L",
-      stream: "Physical Science",
-      stream_si: "භෞතික විද්‍යා අංශය",
-      branch: "Victory Embilipitiya",
-      school: "St. Thomas' College Mount Lavinia",
-      district: "Colombo",
-      address: "Mount Lavinia, Sri Lanka",
-      email_verified: true,
-      avatarLetter: "D",
-      enrolledCourses: [],
-      joinedDate: "2025-01-28"
     },
     {
       id: "tch-amalsha",
@@ -245,16 +91,19 @@ const AUTH_SYSTEM = {
 
   init() {
     // Sync clean canonical users if db version updated
-    const DB_VERSION = "v8_unified_student_roster";
+    const DB_VERSION = "v10_clean_course_enrollments";
     if (localStorage.getItem("edupeak_db_ver") !== DB_VERSION) {
-      const existing = this.getUsers();
-      // Retroactively ensure all existing students have valid NIC and enrolled courses
+      let existing = this.getUsers();
+      // Keep only student@edupeak.lk as the single student, purging other mock students
+      existing = existing.filter(u => u.role !== "student" || (u.email && u.email.toLowerCase() === "student@edupeak.lk") || u.id === "EP-2027-001");
+
+      // Retroactively ensure student@edupeak.lk has valid NIC and clean enrolled courses
       existing.forEach(u => {
         if (u.role === "student" && !u.nic) {
-          u.nic = u.id === "EP-2027-001" ? "200512345678" : ("2005" + Math.floor(10000000 + Math.random() * 90000000));
+          u.nic = "200512345678";
         }
-        if (u.id === "EP-2027-001" && (!Array.isArray(u.enrolledCourses) || u.enrolledCourses.length === 0)) {
-          u.enrolledCourses = ["crs-phy-2027-theory", "crs-phy-2027-revision"];
+        if (!Array.isArray(u.enrolledCourses)) {
+          u.enrolledCourses = [];
         }
       });
       this.defaultUsers.forEach(def => {
@@ -263,23 +112,20 @@ const AUTH_SYSTEM = {
           existing.push(def);
         } else {
           if (def.nic && !found.nic) found.nic = def.nic;
-          if (def.id === "EP-2027-001" && (!Array.isArray(found.enrolledCourses) || found.enrolledCourses.length === 0)) {
-            found.enrolledCourses = def.enrolledCourses;
-          }
         }
       });
       localStorage.setItem(this.storageKeys.users, JSON.stringify(existing));
       localStorage.setItem("edupeak_db_ver", DB_VERSION);
 
-      // Ensure active session student has nic & enrolled courses populated
+      // Ensure active session student has nic & clean courses
       const curUser = this.getCurrentUser();
       if (curUser && curUser.role === "student") {
         if (!curUser.nic) {
           const dbUser = existing.find(u => u.id === curUser.id);
           curUser.nic = dbUser?.nic || "200512345678";
         }
-        if (curUser.id === "EP-2027-001" && (!Array.isArray(curUser.enrolledCourses) || curUser.enrolledCourses.length === 0)) {
-          curUser.enrolledCourses = ["crs-phy-2027-theory", "crs-phy-2027-revision"];
+        if (!Array.isArray(curUser.enrolledCourses)) {
+          curUser.enrolledCourses = [];
         }
         localStorage.setItem(this.storageKeys.session, JSON.stringify(curUser));
       }
@@ -501,7 +347,43 @@ const AUTH_SYSTEM = {
       }
     } catch (e) {}
 
-    return Array.from(new Set(courses));
+    let uniqueCourses = Array.from(new Set(courses));
+
+    // 5. Cross-validate with active course catalog:
+    // If courses exist in the system, ensure we only return active/non-deleted courses.
+    // If the entire course catalog has been deleted (0 courses), then student has 0 enrolled courses.
+    let activeCatalog = null;
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+      activeCatalog = window.SUPABASE_HELPER.getSharedData("edupeak_courses_db");
+    }
+    if (!activeCatalog && typeof window.getLMSCourses === "function") {
+      activeCatalog = window.getLMSCourses();
+    }
+    if (!activeCatalog) {
+      try {
+        const stored = localStorage.getItem("edupeak_courses_db");
+        if (stored !== null) activeCatalog = JSON.parse(stored);
+      } catch (e) {}
+    }
+    if (!activeCatalog && window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.courses)) {
+      activeCatalog = window.EDUPEAK_DATA.courses;
+    }
+
+    if (Array.isArray(activeCatalog)) {
+      if (activeCatalog.length === 0) {
+        return [];
+      }
+      const matchCourse = (cid, cat) => cat.some(c => {
+        if (c.id === cid) return true;
+        if (typeof window.matchCourseId === "function") return window.matchCourseId(c.id, cid);
+        const s1 = String(c.id).toLowerCase().replace(/^crs-|^course-|^cls-|^ep-/gi, '').replace(/[^a-z0-9]/gi, '');
+        const s2 = String(cid).toLowerCase().replace(/^crs-|^course-|^cls-|^ep-/gi, '').replace(/[^a-z0-9]/gi, '');
+        return s1 && s2 && s1 === s2;
+      });
+      uniqueCourses = uniqueCourses.filter(cid => matchCourse(cid, activeCatalog));
+    }
+
+    return uniqueCourses;
   },
 
   // Set and synchronize granted course access for a specific student
@@ -897,55 +779,6 @@ const AUTH_SYSTEM = {
 
     this.updateUIForAuthState();
     return { success: true, user: fullUserRecord };
-  },
-
-  // Retrieve enrolled courses for a student with robust fallback
-  getStudentEnrolledCourses(studentId) {
-    if (!studentId) return [];
-    try {
-      const stored = localStorage.getItem(`edupeak_student_courses_${studentId}`);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {}
-
-    const users = this.getUsers();
-    const student = users.find(u => u.id === studentId || (u.email && u.email.toLowerCase() === String(studentId).toLowerCase()));
-    if (student && Array.isArray(student.enrolledCourses) && student.enrolledCourses.length > 0) {
-      return student.enrolledCourses;
-    }
-
-    if (studentId === "EP-2027-001" || (student && student.id === "EP-2027-001")) {
-      return ["crs-phy-2027-theory", "crs-phy-2027-revision"];
-    }
-
-    return [];
-  },
-
-  // Set and persist student course access permissions across storage and cloud
-  setStudentEnrolledCourses(studentId, courseIds) {
-    if (!studentId || !Array.isArray(courseIds)) return;
-    try {
-      localStorage.setItem(`edupeak_student_courses_${studentId}`, JSON.stringify(courseIds));
-    } catch (e) {}
-
-    const users = this.getUsers();
-    const index = users.findIndex(u => u.id === studentId || (u.email && u.email.toLowerCase() === String(studentId).toLowerCase()));
-    if (index !== -1) {
-      users[index].enrolledCourses = courseIds;
-      localStorage.setItem(this.storageKeys.users, JSON.stringify(users));
-    }
-
-    const current = this.getCurrentUser();
-    if (current && (current.id === studentId || (current.email && current.email.toLowerCase() === String(studentId).toLowerCase()))) {
-      current.enrolledCourses = courseIds;
-      localStorage.setItem(this.storageKeys.session, JSON.stringify(current));
-    }
-
-    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
-      window.SUPABASE_HELPER.setSharedData(`edupeak_student_courses_${studentId}`, courseIds);
-    }
   },
 
   logout() {

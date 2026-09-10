@@ -2357,10 +2357,7 @@ const TEACHER_CONTROLLER = {
     if (!tbody) return;
 
     const sampleSubmissions = [
-      { id: "SUB-801", name: "Kasun Jayasundara", indexNo: "EP-2025-001", exam: "2026 A/L Physics Paper 01", score: "92 / 100", grade: "A (Distinction)", date: "Today 08:30 AM" },
-      { id: "SUB-802", name: "Malith Sandeepa", indexNo: "EP-2025-084", exam: "2026 A/L Physics Paper 01", score: "88 / 100", grade: "A (Distinction)", date: "Today 08:15 AM" },
-      { id: "SUB-803", name: "Dilshan Wickramasinghe", indexNo: "EP-2025-112", exam: "2026 A/L Physics Paper 01", score: "74 / 100", grade: "B (Very Good)", date: "Yesterday" },
-      { id: "SUB-804", name: "Sewwandi Jayasinghe", indexNo: "EP-2025-245", exam: "2026 A/L Physics Paper 01", score: "68 / 100", grade: "C (Credit)", date: "Yesterday" }
+      { id: "SUB-801", name: "Kasun Jayasundara", indexNo: "EP-2027-001", exam: "2027 A/L Physics Complete Theory", score: "92 / 100", grade: "A (Distinction)", date: "Today 08:30 AM" }
     ];
 
     tbody.innerHTML = sampleSubmissions.map(s => `
@@ -2411,104 +2408,6 @@ const TEACHER_CONTROLLER = {
         branch: "Victory Embilipitiya",
         enrolledModule: "2027 A/L Complete Theory & Mechanics Masterclass",
         joinedDate: "2025-01-10",
-        status: "Active & Enrolled"
-      },
-      {
-        id: "EP-2026-042",
-        name: "Malith Sandeepa",
-        name_si: "මලිත් සන්දීප",
-        email: "malith.sandeepa@gmail.com",
-        phone: "0714589231",
-        stream: "Physical Science",
-        examYear: "2026 A/L",
-        institute: "EduPeak Colombo & Victory",
-        branch: "Colombo Central",
-        enrolledModule: "2026 A/L Physics Speed Revision & Paper Class",
-        joinedDate: "2024-05-18",
-        status: "Active & Enrolled"
-      },
-      {
-        id: "EP-2026-088",
-        name: "Sewwandi Jayasinghe",
-        name_si: "සෙව්වන්දි ජයසිංහ",
-        email: "sewwandi.j@outlook.com",
-        phone: "0789123450",
-        stream: "Biological Science",
-        examYear: "2026 A/L",
-        institute: "Victory Embilipitiya",
-        branch: "Victory Embilipitiya",
-        enrolledModule: "2026 A/L Advanced Physics Theory & MCQ Revision",
-        joinedDate: "2024-06-22",
-        status: "Active & Enrolled"
-      },
-      {
-        id: "EP-2027-112",
-        name: "Dilshan Wickramasinghe",
-        name_si: "දිල්ෂාන් වික්‍රමසිංහ",
-        email: "dilshan.wick@gmail.com",
-        phone: "0703456789",
-        stream: "Physical Science",
-        examYear: "2027 A/L",
-        institute: "Victory Embilipitiya",
-        branch: "Victory Embilipitiya",
-        enrolledModule: "2027 A/L Complete Theory & Mechanics Masterclass",
-        joinedDate: "2025-02-01",
-        status: "Active & Enrolled"
-      },
-      {
-        id: "EP-2026-173",
-        name: "Tharindu Prabhashwara",
-        name_si: "තරිඳු ප්‍රභාෂ්වර",
-        email: "tharindu.p@yahoo.com",
-        phone: "0765543210",
-        stream: "Physical Science",
-        examYear: "2026 A/L",
-        institute: "EduPeak Online LMS",
-        branch: "Island-wide Virtual",
-        enrolledModule: "2026 A/L Physics Speed Revision & Paper Class",
-        joinedDate: "2024-08-14",
-        status: "Active & Enrolled"
-      },
-      {
-        id: "EP-2027-204",
-        name: "Nethmi Kavindya",
-        name_si: "නෙත්මි කවින්ද්‍යා",
-        email: "nethmi.kavi@gmail.com",
-        phone: "0723344556",
-        stream: "Biological Science",
-        examYear: "2027 A/L",
-        institute: "Victory Embilipitiya",
-        branch: "Victory Embilipitiya",
-        enrolledModule: "2027 A/L Complete Theory & Mechanics Masterclass",
-        joinedDate: "2025-02-15",
-        status: "Active & Enrolled"
-      },
-      {
-        id: "EP-2028-019",
-        name: "Chathura Senarathne",
-        name_si: "චතුර සෙනරත්න",
-        email: "chathura.s@gmail.com",
-        phone: "0758899001",
-        stream: "Physical Science",
-        examYear: "2028 A/L",
-        institute: "Victory Embilipitiya",
-        branch: "Victory Embilipitiya",
-        enrolledModule: "2028 A/L Physics Fundamentals Masterclass",
-        joinedDate: "2025-03-01",
-        status: "Active & Enrolled"
-      },
-      {
-        id: "EP-2027-055",
-        name: "Dinuka Fernando",
-        name_si: "දිනුක ප්‍රනාන්දු",
-        email: "dinuka.f@gmail.com",
-        phone: "0718877665",
-        stream: "Physical Science",
-        examYear: "2027 A/L",
-        institute: "Victory Embilipitiya",
-        branch: "Victory Embilipitiya",
-        enrolledModule: "2027 A/L Complete Theory & Mechanics Masterclass",
-        joinedDate: "2025-01-28",
         status: "Active & Enrolled"
       }
     ];

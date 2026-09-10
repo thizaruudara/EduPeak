@@ -120,11 +120,19 @@ function findChromePath() {
       throw new Error(`Mismatch! Admin has ${adminStudentRows.count} students but Teacher has ${teacherStudentRows.count} students.`);
     }
 
-    if (adminStudentRows.count !== 8) {
-      throw new Error(`Expected 8 registered students, got ${adminStudentRows.count}`);
+    if (adminStudentRows.count !== 1) {
+      throw new Error(`Expected exactly 1 registered student (student@edupeak.lk), got ${adminStudentRows.count}`);
     }
 
-    console.log("🎉 SUCCESS: Both Admin and Teacher portals now show the exact same 8 registered students!");
+    if (!adminStudentRows.studentIds.includes("EP-2027-001")) {
+      throw new Error(`Expected EP-2027-001 in admin students, got: ${JSON.stringify(adminStudentRows.studentIds)}`);
+    }
+
+    if (!teacherStudentRows.studentIds.includes("EP-2027-001")) {
+      throw new Error(`Expected EP-2027-001 in teacher students, got: ${JSON.stringify(teacherStudentRows.studentIds)}`);
+    }
+
+    console.log("🎉 SUCCESS: Both Admin and Teacher portals show exactly 1 registered student: student@edupeak.lk (EP-2027-001)!");
   } finally {
     await browser.close();
     server.close();
