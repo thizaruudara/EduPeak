@@ -966,7 +966,8 @@ const EDUPEAK_LIVE_PLAYER = (function() {
               // Force muted play immediately — browsers always allow muted autoplay
               liveYtPlayer.mute();
               liveYtPlayer.setVolume(0);
-              if (currentElapsed > 0) {
+              const curTime = typeof liveYtPlayer.getCurrentTime === "function" ? liveYtPlayer.getCurrentTime() : 0;
+              if (currentElapsed > 0 && Math.abs(curTime - currentElapsed) > 10) {
                 liveYtPlayer.seekTo(currentElapsed, true);
               }
               liveYtPlayer.playVideo();
@@ -1023,6 +1024,16 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     }
     const startSec = getElapsedSeconds();
 
+    // If player already exists and is already playing this video ID, DO NOT interrupt or reload playback!
+    if (liveYtPlayer && typeof liveYtPlayer.getVideoData === "function") {
+      const currentVideoData = liveYtPlayer.getVideoData();
+      const curState = typeof liveYtPlayer.getPlayerState === "function" ? liveYtPlayer.getPlayerState() : -1;
+      if (currentVideoData && currentVideoData.video_id === videoId && (isLivePlaying || curState === 1 || curState === 3)) {
+        updateLiveWatermark();
+        return;
+      }
+    }
+
     if (liveYtPlayer && liveYtPlayer.loadVideoById) {
       try {
         if (startSec > 0) {
@@ -1050,26 +1061,42 @@ const EDUPEAK_LIVE_PLAYER = (function() {
 
   function _showUnmutePrompt() {
     let btn = document.getElementById("liveUnmutePromptBtn");
+    const container = document.getElementById("edupeakLivePlayerViewport")
+                   || document.getElementById("edupeakLivePlayerWrapper")
+                   || document.getElementById("liveCustomPlayerContainer")
+                   || document.body;
+
     if (!btn) {
-      btn = document.createElement("div");
+      btn = document.createElement("button");
+      btn.type = "button";
       btn.id = "liveUnmutePromptBtn";
-      btn.style.cssText = [
-        "position:absolute","bottom:56px","left:50%","transform:translateX(-50%)",
-        "z-index:999","background:rgba(220,38,38,0.92)","color:#fff",
-        "padding:10px 22px","border-radius:50px","font-size:15px","font-weight:700",
-        "cursor:pointer","display:flex","align-items:center","gap:8px",
-        "box-shadow:0 4px 20px rgba(0,0,0,0.4)","animation:pulse 1.5s infinite",
-        "white-space:nowrap"
-      ].join(";");
-      btn.innerHTML = "🔴 LIVE &nbsp;&#8226;&nbsp; 🔊 Tap to Unmute";
-      btn.onclick = () => _unmute();
-      const container = document.getElementById("edupeakLiveYTPlayerMount")?.parentElement
-                     || document.getElementById("liveCustomPlayerContainer")
-                     || document.body;
-      container.style.position = container.style.position || "relative";
+      btn.className = "edupeak-live-unmute-btn";
+      btn.innerHTML = '<span class="live-pulse-dot" style="width:8px;height:8px;background:#fff;box-shadow:none;display:inline-block;"></span> LIVE &nbsp;&#8226;&nbsp; <i class="fa-solid fa-volume-high"></i> Tap to Unmute';
+      
+      const handleUnmuteClick = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        _unmute();
+      };
+      btn.onclick = handleUnmuteClick;
+      btn.ontouchend = handleUnmuteClick;
+      
       container.appendChild(btn);
+    } else {
+      if (btn.parentElement !== container) {
+        container.appendChild(btn);
+      }
+      btn.onclick = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        _unmute();
+      };
     }
-    btn.style.display = "flex";
+    btn.style.display = "inline-flex";
   }
 
   function _hideUnmutePrompt() {
@@ -1082,9 +1109,15 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     try {
       if (liveYtPlayer) {
         liveYtPlayer.unMute();
-        liveYtPlayer.setVolume(liveVolume || 100);
+        const targetVol = (liveVolume && liveVolume > 0) ? liveVolume : 100;
+        liveVolume = targetVol;
+        liveYtPlayer.setVolume(targetVol);
         liveYtPlayer.playVideo();
       }
+      const icon = document.getElementById("livePlayerVolumeIcon");
+      if (icon) icon.className = (liveVolume < 50 ? "fa-solid fa-volume-low" : "fa-solid fa-volume-high");
+      const slider = document.getElementById("livePlayerVolumeSlider");
+      if (slider) slider.value = liveVolume || 100;
       _hideUnmutePrompt();
       const bigPlayBtn = document.getElementById("livePlayerBigPlayBtn");
       if (bigPlayBtn) bigPlayBtn.classList.add("hidden");
@@ -1121,7 +1154,12 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       joinStream();
       return;
     }
-    // If stream is active, pulse controls overlay briefly for volume/quality adjustment without pausing.
+    // If player is currently muted, clicking anywhere on the video immediately unmutes it!
+    if (_isMuted()) {
+      _unmute();
+      return;
+    }
+    // If stream is active and unmuted, pulse controls overlay briefly for volume/quality adjustment without pausing.
     const overlay = document.getElementById("livePlayerControlsOverlay");
     if (overlay) {
       overlay.style.opacity = "1";
@@ -1155,8 +1193,14 @@ const EDUPEAK_LIVE_PLAYER = (function() {
 
   function setVolume(val) {
     liveVolume = parseInt(val, 10);
-    if (liveYtPlayer && liveYtPlayer.setVolume) {
-      liveYtPlayer.setVolume(liveVolume);
+    if (liveYtPlayer) {
+      if (liveVolume > 0 && liveYtPlayer.isMuted && liveYtPlayer.isMuted()) {
+        try { liveYtPlayer.unMute(); } catch (e) {}
+        _hideUnmutePrompt();
+      }
+      if (liveYtPlayer.setVolume) {
+        liveYtPlayer.setVolume(liveVolume);
+      }
     }
     const icon = document.getElementById("livePlayerVolumeIcon");
     if (icon) {
@@ -1167,12 +1211,13 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   function toggleMute() {
     if (!liveYtPlayer) return;
     if (liveYtPlayer.isMuted()) {
-      liveYtPlayer.unMute();
-      setVolume(liveVolume || 80);
+      _unmute();
     } else {
       liveYtPlayer.mute();
       const icon = document.getElementById("livePlayerVolumeIcon");
       if (icon) icon.className = "fa-solid fa-volume-xmark";
+      const slider = document.getElementById("livePlayerVolumeSlider");
+      if (slider) slider.value = 0;
     }
   }
 
@@ -1290,6 +1335,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     loadLiveStream: loadLiveStream,
     loadStream: loadLiveStream,
     joinStream: joinStream,
+    unmute: _unmute,
     onShieldClick: onShieldClick,
     togglePlayPause: togglePlayPause,
     play: play,

@@ -863,3 +863,45 @@
   }
 }
 
+/* Floating Tap to Unmute Button for Live Streams */
+#liveUnmutePromptBtn,
+.edupeak-live-unmute-btn {
+  position: absolute !important;
+  bottom: 68px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 45 !important;
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  padding: 10px 24px !important;
+  border-radius: 50px !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  box-shadow: 0 6px 25px rgba(239, 68, 68, 0.55), 0 2px 10px rgba(0, 0, 0, 0.6) !important;
+  animation: pulse 1.6s infinite !important;
+  white-space: nowrap !important;
+  pointer-events: auto !important;
+  user-select: none !important;
+  outline: none !important;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, background 0.2s ease !important;
+}
+
+#liveUnmutePromptBtn:hover,
+.edupeak-live-unmute-btn:hover {
+  transform: translateX(-50%) scale(1.06) !important;
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
+  box-shadow: 0 8px 30px rgba(239, 68, 68, 0.75), 0 4px 14px rgba(0, 0, 0, 0.7) !important;
+}
+
+#liveUnmutePromptBtn:active,
+.edupeak-live-unmute-btn:active {
+  transform: translateX(-50%) scale(0.96) !important;
+}
+
+

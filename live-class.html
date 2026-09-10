@@ -1049,6 +1049,11 @@
               <!-- Transparent Click Shield (Intercepts clicks: clicking joins/unmutes stream, DOES NOT pause live broadcast) -->
               <div class="edupeak-player-click-shield" id="livePlayerClickShield" onclick="EDUPEAK_LIVE_PLAYER.onShieldClick()"></div>
 
+              <!-- Floating Tap to Unmute Button (Click or Tap to Unmute Stream) -->
+              <button type="button" class="edupeak-live-unmute-btn" id="liveUnmutePromptBtn" style="display: none;" onclick="EDUPEAK_LIVE_PLAYER.unmute()">
+                <span class="live-pulse-dot" style="width: 8px; height: 8px; background: #fff; box-shadow: none; display: inline-block;"></span> LIVE &nbsp;&#8226;&nbsp; <i class="fa-solid fa-volume-high"></i> Tap to Unmute
+              </button>
+
               <!-- Floating Anti-Piracy Watermark (Student Verified NIC Only) -->
               <div class="edupeak-drm-watermark" id="livePlayerDrmWatermark" style="display: none;">
                 <span id="livePlayerWatermarkText">200512345678</span>
@@ -1246,7 +1251,7 @@
             <div class="broadcast-stats-chips">
               <div class="stat-chip"><i class="fa-solid fa-calendar-day" style="color: #60a5fa;"></i> <span id="infoScheduleDate">Today</span></div>
               <div class="stat-chip"><i class="fa-solid fa-clock" style="color: #f59e0b;"></i> <span id="infoScheduleTime">08:30 AM - 12:30 PM</span></div>
-              <div class="stat-chip"><i class="fa-solid fa-users" style="color: #10b981;"></i> <span id="infoViewersCount">342 Live Viewers</span></div>
+              <div class="stat-chip" id="infoViewersChip" style="display: none;"><i class="fa-solid fa-users" style="color: #10b981;"></i> <span id="infoViewersCount">0 Live Viewers</span></div>
               <div class="stat-chip"><i class="fa-solid fa-shield-halved" style="color: #a855f7;"></i> <span>Watermark DRM Active</span></div>
             </div>
           </div>
@@ -1458,8 +1463,11 @@
         // 1. Same-window broadcast event listener
         window.addEventListener("edupeak-live-sessions-updated", (e) => {
           this.renderStreamsList();
-          if (this.activeSessionId && e.detail && e.detail.session && e.detail.session.id === this.activeSessionId) {
-            this.loadSession(e.detail.session.id, false);
+          const sess = e.detail?.session;
+          if (sess && this.activeSessionId === sess.id) {
+            if (!this.activeSession || this.activeSession.status !== sess.status) {
+              this.loadSession(sess.id, false);
+            }
           }
         });
 
@@ -1476,7 +1484,8 @@
                 this.renderStreamsList();
               }
               if (this.activeSessionId && (data.sessionId === this.activeSessionId || !data.sessionId)) {
-                if (data.status === "live") {
+                const isStatusChange = !this.activeSession || this.activeSession.status !== data.status;
+                if (data.status === "live" && isStatusChange) {
                   if (this.countdownTimer) {
                     clearInterval(this.countdownTimer);
                     this.countdownTimer = null;
@@ -1488,8 +1497,10 @@
                   if (window.showToast) {
                     window.showToast("🔴 Broadcaster is NOW LIVE! Connecting you to the stream...", "success");
                   }
+                  await this.loadSession(this.activeSessionId, false);
+                } else if (data.status === "ended" && isStatusChange) {
+                  await this.loadSession(this.activeSessionId, false);
                 }
-                await this.loadSession(this.activeSessionId, false);
               }
             };
           } catch(e) {}
@@ -1510,20 +1521,25 @@
             this.renderStreamsList(all);
             if (this.activeSessionId) {
               const active = all.find(s => s.id === this.activeSessionId);
-              if (active && active.status === "live" && this.activeSession && this.activeSession.status !== "live") {
-                if (this.countdownTimer) {
-                  clearInterval(this.countdownTimer);
-                  this.countdownTimer = null;
-                }
-                if (this.standbyWatchTimer) {
-                  clearInterval(this.standbyWatchTimer);
-                  this.standbyWatchTimer = null;
-                }
-                if (window.showToast) {
-                  window.showToast("🔴 Broadcaster is NOW LIVE! Connecting you to the stream...", "success");
+              if (active) {
+                const isStatusChange = !this.activeSession || this.activeSession.status !== active.status;
+                if (active.status === "live" && isStatusChange) {
+                  if (this.countdownTimer) {
+                    clearInterval(this.countdownTimer);
+                    this.countdownTimer = null;
+                  }
+                  if (this.standbyWatchTimer) {
+                    clearInterval(this.standbyWatchTimer);
+                    this.standbyWatchTimer = null;
+                  }
+                  if (window.showToast) {
+                    window.showToast("🔴 Broadcaster is NOW LIVE! Connecting you to the stream...", "success");
+                  }
+                  await this.loadSession(this.activeSessionId, false);
+                } else if (active.status === "ended" && isStatusChange) {
+                  await this.loadSession(this.activeSessionId, false);
                 }
               }
-              await this.loadSession(this.activeSessionId, false);
             }
           }
         });
@@ -1612,6 +1628,15 @@
         this.currentUser = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
         this.renderUserBadge();
         this.initWatermarkDrift();
+        this.updateViewersVisibility();
+      },
+
+      updateViewersVisibility() {
+        const isStaff = this.currentUser && (this.currentUser.role === "admin" || this.currentUser.role === "teacher");
+        const viewersChip = document.getElementById("infoViewersChip");
+        if (viewersChip) {
+          viewersChip.style.display = isStaff ? "inline-flex" : "none";
+        }
       },
 
       renderUserBadge() {
@@ -1743,11 +1768,15 @@
         const subjectBadge = document.getElementById("infoSubjectBadge");
         const dateEl = document.getElementById("infoScheduleDate");
         const timeEl = document.getElementById("infoScheduleTime");
+        const viewersChip = document.getElementById("infoViewersChip");
         const viewersEl = document.getElementById("infoViewersCount");
         const descEl = document.getElementById("infoDescriptionText");
         const lecturerEl = document.getElementById("infoLecturerName");
         const avatarEl = document.getElementById("infoLecturerAvatar");
         const statusPill = document.getElementById("infoStatusPill");
+
+        const isStaff = this.currentUser && (this.currentUser.role === "admin" || this.currentUser.role === "teacher");
+        if (viewersChip) viewersChip.style.display = isStaff ? "inline-flex" : "none";
 
         if (topicEl) topicEl.textContent = "EduPeak Live Studio Hub";
         if (topicSiEl) topicSiEl.textContent = "සජීවී විකාශන මැදිරිය";
@@ -1824,6 +1853,8 @@
           return;
         }
 
+        const isStaff = this.currentUser && (this.currentUser.role === "admin" || this.currentUser.role === "teacher");
+
         grid.innerHTML = filtered.map(s => {
           const isActive = s.id === this.activeSessionId;
           const isLive = s.status === "live";
@@ -1851,7 +1882,10 @@
                   <span>${s.teacherName || 'Faculty Lecturer'}</span>
                 </div>
                 <div>
-                  ${isLive ? `<strong style="color: #ef4444;"><i class="fa-solid fa-users"></i> ${s.viewersCount !== undefined && s.viewersCount !== null ? s.viewersCount : (s.viewers_count !== undefined && s.viewers_count !== null ? s.viewers_count : 0)}</strong>` : `<i class="fa-solid fa-calendar-day"></i> ${s.scheduleTime || 'Today'}`}
+                  ${isStaff
+                    ? (isLive ? `<strong style="color: #ef4444;"><i class="fa-solid fa-users"></i> ${s.viewersCount !== undefined && s.viewersCount !== null ? s.viewersCount : (s.viewers_count !== undefined && s.viewers_count !== null ? s.viewers_count : 0)}</strong>` : `<i class="fa-solid fa-calendar-day"></i> ${s.scheduleTime || 'Today'}`)
+                    : `<i class="fa-solid fa-calendar-day"></i> ${s.scheduleTime || 'Today'}`
+                  }
                 </div>
               </div>
             </div>
@@ -2016,7 +2050,19 @@
         const rawSchedTime = session.scheduleTime || "";
         const cleanSchedTime = rawSchedTime.replace(/^\d{4}-\d{2}-\d{2}\s*[•·]\s*/, "").trim();
         document.getElementById("infoScheduleTime").textContent = cleanSchedTime || (session.scheduleStartTime && session.scheduleEndTime ? `${session.scheduleStartTime} - ${session.scheduleEndTime}` : "Time TBA");
-        document.getElementById("infoViewersCount").textContent = `${session.viewersCount || 240} Live Viewers`;
+        
+        const isStaff = this.currentUser && (this.currentUser.role === "admin" || this.currentUser.role === "teacher");
+        const viewersChip = document.getElementById("infoViewersChip");
+        if (viewersChip) {
+          viewersChip.style.display = isStaff ? "inline-flex" : "none";
+        }
+        const vCount = (session.viewersCount !== undefined && session.viewersCount !== null)
+          ? session.viewersCount
+          : ((session.viewers_count !== undefined && session.viewers_count !== null) ? session.viewers_count : 0);
+        const viewersEl = document.getElementById("infoViewersCount");
+        if (viewersEl) {
+          viewersEl.textContent = `${vCount} Live Viewers`;
+        }
         document.getElementById("infoDescriptionText").textContent = session.description || "Comprehensive live interactive masterclass with live doubt resolution.";
         document.getElementById("infoLecturerName").innerHTML = `${session.teacherName || 'Faculty Lecturer'} <i class="fa-solid fa-circle-check" style="color: #227aff; font-size: 0.8rem;"></i>`;
         document.getElementById("infoLecturerAvatar").textContent = (session.teacherName || "L").charAt(0).toUpperCase();
@@ -2272,7 +2318,7 @@
         if (!sessionId) return;
         const nowIso = new Date().toISOString();
         if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
-          await window.SUPABASE_HELPER.updateLiveSessionStatus(sessionId, "live", { viewersCount: 342, startedAt: nowIso });
+          await window.SUPABASE_HELPER.updateLiveSessionStatus(sessionId, "live", { viewersCount: 0, startedAt: nowIso });
         } else {
           try {
             let scheds = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
