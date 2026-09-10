@@ -750,6 +750,7 @@ window.EDUPEAK_PLAYER = EDUPEAK_PLAYER;
 const EDUPEAK_LIVE_PLAYER = (function() {
   let liveYtPlayer = null;
   let isLivePlaying = false;
+  let isSessionEnded = false;   // once true, no replay allowed
   let liveVolume = 100;
   let liveQuality = "auto";
   let isWatermarkEnabled = false;
@@ -788,11 +789,23 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   }
 
   function triggerLiveEnded() {
+    if (isSessionEnded) return;   // prevent double-fire
+    isSessionEnded = true;
     stopDurationWatchdog();
-    if (liveYtPlayer && typeof liveYtPlayer.pauseVideo === "function") {
-      try { liveYtPlayer.pauseVideo(); } catch(e) {}
+    isLivePlaying = false;
+    _hideUnmutePrompt();
+
+    // Destroy player immediately — prevents any replay
+    if (liveYtPlayer) {
+      try { liveYtPlayer.stopVideo(); } catch(e) {}
+      try { liveYtPlayer.destroy(); } catch(e) {}
+      liveYtPlayer = null;
     }
-    const sessionId = (activeSessionData && (activeSessionData.id || activeSessionData.scheduleId)) 
+    // Hide big play btn — session is over, no replay
+    const bigPlayBtn = document.getElementById("livePlayerBigPlayBtn");
+    if (bigPlayBtn) bigPlayBtn.style.display = "none";
+
+    const sessionId = (activeSessionData && (activeSessionData.id || activeSessionData.scheduleId))
       || (window.LIVE_APP ? window.LIVE_APP.activeSessionId : null);
 
     try {
@@ -964,14 +977,13 @@ const EDUPEAK_LIVE_PLAYER = (function() {
               // Keep showing unmute prompt if still muted
               if (_isMuted()) _showUnmutePrompt();
             } else if (event.data === PAUSED) {
+              if (isSessionEnded) return; // don't try to resume an ended session
               isLivePlaying = false;
               // Don't show big play btn — try to resume muted playback automatically
               try { liveYtPlayer.mute(); liveYtPlayer.playVideo(); } catch(e) {}
               _showUnmutePrompt();
             } else if (event.data === ENDED) {
-              isLivePlaying = false;
-              if (bigPlayBtn) bigPlayBtn.classList.remove("hidden");
-              triggerLiveEnded();
+              if (!isSessionEnded) triggerLiveEnded();
             }
           }
         }
@@ -1043,6 +1055,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   }
 
   function _unmute() {
+    if (isSessionEnded) return;   // session over — no replay
     try {
       if (liveYtPlayer) {
         liveYtPlayer.unMute();
@@ -1057,6 +1070,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   // ─────────────────────────────────────────────────────────────────────────
 
   function joinStream() {
+    if (isSessionEnded) return;   // session over — no replay allowed
     _unmute();
     if (liveYtPlayer && typeof liveYtPlayer.playVideo === "function") {
       try {

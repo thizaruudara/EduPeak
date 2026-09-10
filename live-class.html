@@ -2330,6 +2330,19 @@
         if (window.showToast) {
           window.showToast("⏹️ Live broadcast has finished and concluded.", "info");
         }
+
+        // Broadcast ended status to ALL open student tabs instantly
+        try {
+          if (typeof BroadcastChannel !== "undefined") {
+            const ch = new BroadcastChannel("edupeak_live_sessions_channel");
+            ch.postMessage({ type: "LIVE_SESSION_UPDATED", sessionId, status: "ended" });
+            ch.close();
+          }
+          localStorage.setItem("edupeak_live_session_event", JSON.stringify({
+            type: "LIVE_SESSION_UPDATED", sessionId, status: "ended", timestamp: Date.now()
+          }));
+        } catch(e) {}
+
         await this.loadSession(sessionId, false);
       },
 
