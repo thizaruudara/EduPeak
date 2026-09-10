@@ -66,7 +66,7 @@
   display: block !important;
 }
 
-/* Startup / Reload Watermark Mask (Hides initial YouTube title, avatar & bottom watermarks for ~5.5s until YouTube auto-hides them) */
+/* Startup / Reload Watermark Mask (Hides initial YouTube title & avatar for ~5.5s until YouTube auto-hides them) */
 .edupeak-startup-mask {
   position: absolute;
   left: 0;
@@ -115,64 +115,34 @@
   font-weight: 600;
 }
 
-.edupeak-startup-mask.bottom-mask {
-  bottom: 0;
-  height: 56px;
-  background: linear-gradient(0deg, #090d16 0%, rgba(9, 13, 22, 0.92) 65%, transparent 100%);
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 0 1.25rem;
+/* Live Broadcast Solid Opaque Footer Bar (100% physically blocks YouTube bottom bar, "More videos", and YouTube logo with ZERO duplicate text) */
+.live-player-wrapper .edupeak-player-controls-overlay {
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  max-height: 52px !important;
+  background: #080c16 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.85) !important;
+  padding: 0 1.25rem !important;
+  z-index: 25 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  opacity: 1 !important;
+  transform: none !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
 }
 
-.edupeak-startup-mask.bottom-mask .veil-bottom-content {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: #cbd5e1;
-  letter-spacing: 0.04em;
-}
-
-/* Studio Broadcast Bug (Bottom-Right Corner Brand Mask covering YouTube watermark cleanly without cropping) */
-.edupeak-broadcast-bug {
-  position: absolute;
-  bottom: 8px;
-  right: 10px;
-  z-index: 18;
-  pointer-events: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  background: #0b1120;
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  color: #f8fafc;
-  padding: 0.35rem 0.85rem;
-  border-radius: 9999px;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.85);
-  transition: opacity 0.3s ease;
-  min-width: 145px;
-  justify-content: center;
-}
-
-.edupeak-broadcast-bug .bug-label {
-  color: #ffffff;
-  font-weight: 800;
-}
-
-.edupeak-broadcast-bug .bug-divider {
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.edupeak-broadcast-bug .bug-quality {
-  color: #38bdf8;
-  font-weight: 700;
+.live-player-wrapper .edupeak-player-controls-overlay.fade-out {
+  opacity: 1 !important;
+  transform: none !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
 }
 
 /* Cross-Platform Fullscreen / iOS Safari Viewport Breakout */

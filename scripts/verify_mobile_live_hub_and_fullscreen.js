@@ -114,7 +114,7 @@ function startServer() {
       return {
         videoTop: videoBox ? videoBox.top : null,
         headerTop: headerBox ? headerBox.top : null,
-        hasBroadcastBug: Boolean(document.getElementById('livePlayerBroadcastBug')),
+        hasControlsBar: Boolean(document.getElementById('livePlayerControlsOverlay')),
         hasUnmuteBtn: Boolean(document.getElementById('liveUnmutePromptBtn'))
       };
     });
@@ -126,10 +126,10 @@ function startServer() {
       throw new Error(`FAIL: Video player top (${layoutPositions.videoTop}) should be above hub header (${layoutPositions.headerTop})`);
     }
 
-    if (layoutPositions.hasBroadcastBug) {
-      console.log('✓ PASS: Studio Broadcast Bug is present in viewport to mask YouTube watermark cleanly!');
+    if (layoutPositions.hasControlsBar) {
+      console.log('✓ PASS: Solid Live Controls Bar is present in viewport to mask YouTube bottom controls cleanly!');
     } else {
-      throw new Error('FAIL: Broadcast Bug not found in DOM');
+      throw new Error('FAIL: Live Controls Bar not found in DOM');
     }
 
     console.log('\n--- 2. Testing Mobile Fullscreen Toggle ---');
@@ -157,13 +157,17 @@ function startServer() {
     });
 
     console.log('Mobile Fullscreen Test:', fsTestResult);
-    console.log('\n--- 3. Testing Startup Mask & Anti-Piracy Link Removal ---');
+    console.log('\n--- 3. Testing Top Startup Mask, Solid Opaque Footer & Zero Duplicate Clutter ---');
     const maskAndLinkTest = await page.evaluate(() => {
       const topMask = document.getElementById('livePlayerTopMask');
+      const bottomControls = document.querySelector('.live-player-wrapper .edupeak-player-controls-overlay');
+      const broadcastBug = document.getElementById('livePlayerBroadcastBug');
       const bottomMask = document.getElementById('livePlayerBottomMask');
       const extLink = document.getElementById('livePlayerExternalStreamLink');
+
       const hasTop = Boolean(topMask);
-      const hasBottom = Boolean(bottomMask);
+      const hasSolidFooter = Boolean(bottomControls);
+      const noDuplicateBug = !broadcastBug && !bottomMask;
       const noExtLink = !extLink || extLink.style.display === 'none' || extLink.offsetParent === null;
 
       // Trigger startup mask
@@ -174,20 +178,24 @@ function startServer() {
 
       return {
         hasTop,
-        hasBottom,
+        hasSolidFooter,
+        noDuplicateBug,
         noExtLink,
         isVisibleOnTrigger
       };
     });
 
-    console.log('Mask & Link Test:', maskAndLinkTest);
-    if (!maskAndLinkTest.hasTop || !maskAndLinkTest.hasBottom) {
-      throw new Error('FAIL: Startup watermark masks missing');
+    console.log('Mask, Solid Footer & Clean Clutter Test:', maskAndLinkTest);
+    if (!maskAndLinkTest.hasTop || !maskAndLinkTest.hasSolidFooter) {
+      throw new Error('FAIL: Top mask or solid controls footer missing');
+    }
+    if (!maskAndLinkTest.noDuplicateBug) {
+      throw new Error('FAIL: Duplicate EduPeak broadcast bugs or masks still present');
     }
     if (!maskAndLinkTest.noExtLink) {
       throw new Error('FAIL: External YouTube link must be completely removed');
     }
-    console.log('✓ PASS: Startup watermark masks active and external YouTube navigation link permanently removed!');
+    console.log('✓ PASS: Top startup mask active, solid opaque footer masks YouTube bottom controls, zero duplicate texts, and external link removed!');
 
     console.log('\n======================================================');
     console.log('🎉 ALL MOBILE UI, FULLSCREEN & WATERMARK TESTS PASSED 100%!');

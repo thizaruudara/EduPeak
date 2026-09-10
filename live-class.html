@@ -1085,14 +1085,6 @@
               <!-- Transparent Click Shield (Intercepts clicks: clicking joins/unmutes stream, DOES NOT pause live broadcast) -->
               <div class="edupeak-player-click-shield" id="livePlayerClickShield" onclick="EDUPEAK_LIVE_PLAYER.onShieldClick()"></div>
 
-              <!-- Studio Broadcast Bug (Bottom Right Corner Branding to cover YouTube Logo cleanly without cropping) -->
-              <div class="edupeak-broadcast-bug" id="livePlayerBroadcastBug">
-                <span class="live-pulse-dot" style="width: 7px; height: 7px; background: #ef4444; box-shadow: 0 0 8px #ef4444; display: inline-block;"></span>
-                <span class="bug-label">EDUPEAK LIVE</span>
-                <span class="bug-divider">•</span>
-                <span class="bug-quality">1080p HD</span>
-              </div>
-
               <!-- Floating Tap to Unmute Button (Click or Tap to Unmute Stream) -->
               <button type="button" class="edupeak-live-unmute-btn hidden" id="liveUnmutePromptBtn" style="display: none !important;" onclick="EDUPEAK_LIVE_PLAYER.unmute()">
                 <span class="live-pulse-dot" style="width: 8px; height: 8px; background: #fff; box-shadow: none; display: inline-block;"></span> LIVE &nbsp;&#8226;&nbsp; <i class="fa-solid fa-volume-high"></i> Tap to Unmute
@@ -1103,7 +1095,7 @@
                 <span id="livePlayerWatermarkText">200512345678</span>
               </div>
 
-              <!-- Startup / Reload Watermark Mask (Hides initial YouTube title, avatar & bottom watermarks for ~5.5s until YouTube auto-hides them) -->
+              <!-- Startup / Reload Watermark Mask (Hides initial YouTube title & avatar for ~5.5s until YouTube auto-hides them) -->
               <div class="edupeak-startup-mask top-mask" id="livePlayerTopMask">
                 <div class="veil-left">
                   <span class="live-pulse-dot" style="background: #ef4444; box-shadow: 0 0 10px #ef4444;"></span>
@@ -1111,13 +1103,6 @@
                 </div>
                 <div class="veil-right">
                   <i class="fa-solid fa-graduation-cap" style="color: #38bdf8;"></i> Amalsha Wanniarachchi • Physics
-                </div>
-              </div>
-
-              <div class="edupeak-startup-mask bottom-mask" id="livePlayerBottomMask">
-                <div class="veil-bottom-content">
-                  <span class="live-pulse-dot" style="background: #ef4444;"></span>
-                  <span>EDUPEAK LIVE CLASSROOM • 1080p HD</span>
                 </div>
               </div>
 

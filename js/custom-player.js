@@ -1428,9 +1428,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   let startupMaskTimer = null;
   function triggerStartupMask() {
     const topMask = document.getElementById("livePlayerTopMask");
-    const bottomMask = document.getElementById("livePlayerBottomMask");
     if (topMask) topMask.classList.remove("mask-faded");
-    if (bottomMask) bottomMask.classList.remove("mask-faded");
 
     const topicEl = document.getElementById("veilTopicTitle");
     if (topicEl && activeSessionData && activeSessionData.topic) {
@@ -1440,7 +1438,6 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     clearTimeout(startupMaskTimer);
     startupMaskTimer = setTimeout(() => {
       if (topMask) topMask.classList.add("mask-faded");
-      if (bottomMask) bottomMask.classList.add("mask-faded");
     }, 5500); // Fades away once YouTube has auto-hidden its native overlay!
   }
 
