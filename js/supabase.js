@@ -1553,7 +1553,8 @@ const SUPABASE_HELPER = {
     };
 
     // Resolve the combined scheduleTime string
-    const resolvedScheduleTime = sched.scheduleTime || sched.schedule_time || "";
+    // NOTE: Supabase returns column as lowercase "scheduletime" — must check all variants
+    const resolvedScheduleTime = sched.scheduleTime || sched.schedule_time || sched.scheduletime || "";
 
     // Resolve start/end times:
     // Priority: (1) explicit 24h field, (2) snake_case column, (3) parsed from scheduleTime string
