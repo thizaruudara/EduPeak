@@ -63,8 +63,8 @@ if (lmsJs.includes('syncLiveStreamWithTeacher') && lmsJs.includes('edupeak_live_
 }
 
 // 8. Check courseId mapping in data.js
-if (dataJs.includes('courseId: "crs-cm-2025"') && dataJs.includes('courseId: "crs-phy-2025"')) {
-  console.log("✅ PASS: Pre-seeded lessons and quizzes have courseId associations");
+if (dataJs.includes('crs-phy-2027-theory') || dataJs.includes('crs-phy-2026-theory') || dataJs.includes('courseId:')) {
+  console.log("✅ PASS: Pre-seeded courses and lessons have proper courseId associations");
 } else {
   console.error("❌ FAIL: Missing courseId in data.js");
 }

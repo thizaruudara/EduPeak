@@ -563,14 +563,14 @@
 .btn-zoom-launch {
   background: #2d8cff !important;
   border-color: #2d8cff !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 0.45rem !important;
-  font-weight: 700 !important;
-  padding: 0.55rem 1.1rem !important;
-  border-radius: var(--radius-md) !important;
-  white-space: nowrap !important;
-  box-shadow: 0 4px 12px rgba(45, 140, 255, 0.25) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 700;
+  padding: 0.55rem 1.1rem;
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(45, 140, 255, 0.25);
 }
 
 .btn-zoom-launch:hover {
@@ -620,7 +620,101 @@
   align-items: center;
   position: relative;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+}
+
+/* Live Studio Standby & Scheduled State */
+.edupeak-live-standby-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+  border-radius: 14px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.live-standby-glow {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(34, 122, 255, 0.18) 0%, rgba(0, 0, 0, 0) 70%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.live-standby-icon-box {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(34, 122, 255, 0.12);
+  border: 2px solid rgba(96, 165, 250, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.85rem;
+  box-shadow: 0 0 24px rgba(34, 122, 255, 0.25);
+  position: relative;
+}
+
+.live-standby-badge {
+  background: rgba(100, 116, 139, 0.25);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #cbd5e1;
+  font-size: 0.725rem;
+  font-weight: 800;
+  padding: 0.25rem 0.8rem;
+  border-radius: 9999px;
+  margin-bottom: 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.live-standby-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 0.35rem 0;
+  letter-spacing: -0.01em;
+}
+
+.live-standby-desc {
+  font-size: 0.825rem;
+  color: #94a3b8;
+  max-width: 440px;
+  line-height: 1.5;
+  margin: 0 0 1.1rem 0;
+}
+
+.live-standby-tags {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.live-standby-tag {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .live-teacher-cam {

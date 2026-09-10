@@ -195,33 +195,48 @@ const ADMIN_CONTROLLER = {
   // 1. OVERVIEW TAB
   // --------------------------------------------------------------------------
   async renderOverview() {
-    const users = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getUsers() : [];
-    const students = users.filter(u => u.role === "student");
-    const teachers = window.SUPABASE_HELPER ? await window.SUPABASE_HELPER.getTeachers() : (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.teachers : []);
-    const courses = window.SUPABASE_HELPER ? await window.SUPABASE_HELPER.getCourses() : (typeof window.getLMSCourses === "function" ? window.getLMSCourses() : (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.courses : []));
-
-    const totalStudentsEl = document.getElementById("adminStatTotalStudents");
-    const activeCoursesEl = document.getElementById("adminStatActiveCourses");
-    const totalTeachersEl = document.getElementById("adminStatTotalTeachers");
-    const liveClassesEl = document.getElementById("adminStatLiveClasses");
-    const pendingOrdersEl = document.getElementById("adminStatPendingOrders");
-
-    let orders = [];
     try {
-      orders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
-    } catch (e) {
-      orders = [];
-    }
-    const pendingOnly = orders.filter(o => o.status === "Pending Approval");
-    const pendingCount = pendingOnly.length;
+      const users = (window.AUTH_SYSTEM && typeof window.AUTH_SYSTEM.getUsers === "function") ? window.AUTH_SYSTEM.getUsers() : [];
+      const students = users.filter(u => u.role === "student");
 
-    if (totalStudentsEl) totalStudentsEl.textContent = students.length.toLocaleString();
-    if (activeCoursesEl) activeCoursesEl.textContent = courses.length.toString();
-    if (totalTeachersEl) totalTeachersEl.textContent = teachers.length.toString();
-    if (liveClassesEl) liveClassesEl.textContent = "Protected";
-    if (pendingOrdersEl) pendingOrdersEl.textContent = `${pendingCount} Pending`;
+      let teachers = [];
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getTeachers === "function") {
+        try { teachers = await window.SUPABASE_HELPER.getTeachers(); } catch (e) {}
+      }
+      if (!Array.isArray(teachers) || teachers.length === 0) {
+        teachers = (window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.teachers)) ? window.EDUPEAK_DATA.teachers : [];
+      }
 
-    this.updatePendingBadges(pendingCount);
+      let courses = [];
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getCourses === "function") {
+        try { courses = await window.SUPABASE_HELPER.getCourses(); } catch (e) {}
+      }
+      if (!Array.isArray(courses) || courses.length === 0) {
+        courses = (typeof window.getLMSCourses === "function") ? window.getLMSCourses() : ((window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.courses)) ? window.EDUPEAK_DATA.courses : []);
+      }
+
+      const totalStudentsEl = document.getElementById("adminStatTotalStudents");
+      const activeCoursesEl = document.getElementById("adminStatActiveCourses");
+      const totalTeachersEl = document.getElementById("adminStatTotalTeachers");
+      const liveClassesEl = document.getElementById("adminStatLiveClasses");
+      const pendingOrdersEl = document.getElementById("adminStatPendingOrders");
+
+      let orders = [];
+      try {
+        orders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
+      } catch (e) {
+        orders = [];
+      }
+      const pendingOnly = orders.filter(o => o.status === "Pending Approval");
+      const pendingCount = pendingOnly.length;
+
+      if (totalStudentsEl) totalStudentsEl.textContent = students.length.toLocaleString();
+      if (activeCoursesEl) activeCoursesEl.textContent = courses.length.toString();
+      if (totalTeachersEl) totalTeachersEl.textContent = teachers.length.toString();
+      if (liveClassesEl) liveClassesEl.textContent = "Protected";
+      if (pendingOrdersEl) pendingOrdersEl.textContent = `${pendingCount} Pending`;
+
+      this.updatePendingBadges(pendingCount);
 
     // 1. Render Inline Pending Queue in Overview
     const overviewPendingTbody = document.getElementById("adminOverviewPendingOrdersTbody");
@@ -343,7 +358,10 @@ const ADMIN_CONTROLLER = {
         }).join("");
       }
     }
-  },
+  } catch (err) {
+    console.warn("renderOverview error:", err);
+  }
+},
 
   // --------------------------------------------------------------------------
   // 2. STUDENTS MANAGEMENT & PENDING ORDERS

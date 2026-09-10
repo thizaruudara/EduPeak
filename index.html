@@ -1190,7 +1190,7 @@
           </div>
 
           <div class="live-banner-actions">
-            <a href="https://zoom.us" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm btn-zoom-launch">
+            <a href="https://zoom.us" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm btn-zoom-launch" id="lmsLiveZoomBtn" style="display: none;">
               <i class="fa-solid fa-video"></i> Launch Zoom Room
             </a>
           </div>
@@ -1199,7 +1199,32 @@
         <div class="live-room-grid">
           <!-- Live EduPeak Custom Player (Masked YouTube, Click Shield, Quality, NIC Watermark) -->
           <div class="live-whiteboard-feed" style="position: relative; padding: 0; aspect-ratio: 16 / 9; overflow: hidden; background: #000; border-radius: 14px; width: 100%;">
-            <div class="edupeak-player-wrapper live-player-wrapper" id="edupeakLivePlayerWrapper" style="width: 100%; height: 100%; aspect-ratio: unset;">
+            
+            <!-- Live Studio Standby & Scheduled Card -->
+            <div class="edupeak-live-standby-wrapper" id="edupeakLiveStandbyWrapper" style="display: flex;">
+              <div class="live-standby-glow"></div>
+              <div class="live-standby-icon-box" id="liveStandbyIconBox">
+                <i class="fa-solid fa-satellite-dish" id="liveStandbyIcon" style="font-size: 1.85rem; color: #60a5fa;"></i>
+              </div>
+              <div class="live-standby-badge" id="liveStandbyBadgePill">
+                <i class="fa-solid fa-signal"></i> <span id="liveStandbyBadgeText">STUDIO STANDBY</span>
+              </div>
+              <h3 class="live-standby-title" id="liveStandbyTitle">No Live Broadcast in Session</h3>
+              <p class="live-standby-desc" id="liveStandbyDesc">
+                There is currently no live class being broadcasted. Upcoming masterclasses and live revisions will automatically connect here when scheduled by the faculty.
+              </p>
+              <div class="live-standby-tags">
+                <div class="live-standby-tag">
+                  <i class="fa-solid fa-chalkboard-user" style="color: #60a5fa;"></i> <span id="liveStandbyTeacherTag">Amalsha Wanniarachchi (MBBS UG)</span>
+                </div>
+                <div class="live-standby-tag">
+                  <i class="fa-solid fa-shield-halved" style="color: #10b981;"></i> EduPeak DRM Protected
+                </div>
+              </div>
+            </div>
+
+            <!-- Active Video Player Wrapper -->
+            <div class="edupeak-player-wrapper live-player-wrapper" id="edupeakLivePlayerWrapper" style="display: none; width: 100%; height: 100%; aspect-ratio: unset;">
               <div class="edupeak-player-viewport" id="edupeakLivePlayerViewport">
                 
                 <!-- Cropper -->

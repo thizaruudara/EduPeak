@@ -82,38 +82,36 @@ function syncLiveStreamWithTeacher() {
     const topicEl = document.getElementById("lmsLiveTopicTitle");
     const statusTextEl = document.getElementById("lmsLiveStatusText");
     const badgeEl = document.getElementById("lmsLiveBadgePill");
+    const zoomBtn = document.getElementById("lmsLiveZoomBtn") || document.querySelector(".btn-zoom-launch");
+    const playerWrapper = document.getElementById("edupeakLivePlayerWrapper");
+    const standbyWrapper = document.getElementById("edupeakLiveStandbyWrapper");
+    const standbyTitle = document.getElementById("liveStandbyTitle");
+    const standbyDesc = document.getElementById("liveStandbyDesc");
+    const standbyIcon = document.getElementById("liveStandbyIcon");
+    const standbyBadge = document.getElementById("liveStandbyBadgeText");
+    const standbyTag = document.getElementById("liveStandbyTeacherTag");
+    const chatInput = document.getElementById("liveChatInputField");
 
-    let liveStreamUrl = "https://www.youtube.com/embed/dQw4w9WgXcQ";
-    let isWatermarkEnabled = false;
+    const isLive = Boolean(
+      cfg && 
+      cfg.status === "live" && 
+      (cfg.embedUrl || cfg.streamUrl || cfg.rawUrl) && 
+      cfg.topic !== "No Live Broadcast Scheduled" &&
+      cfg.embedUrl !== "about:blank"
+    );
 
-    if (cfg) {
-      if (cfg.embedUrl || cfg.streamUrl || cfg.rawUrl) {
-        liveStreamUrl = cfg.embedUrl || cfg.streamUrl || cfg.rawUrl;
-      }
-      isWatermarkEnabled = Boolean(cfg.watermarkEnabled);
-      if (topicEl && cfg.topic) {
-        topicEl.textContent = cfg.topic;
-      }
-      if (statusTextEl && cfg.status) {
-        statusTextEl.textContent = cfg.status === "live" ? "🔴 LIVE NOW" : (cfg.status === "ended" ? "⏹️ CONCLUDED" : "⏳ SCHEDULED");
-        statusTextEl.style.color = cfg.status === "live" ? "#ef4444" : (cfg.status === "ended" ? "#64748b" : "#b45309");
-      }
-      if (badgeEl && cfg.status) {
-        if (cfg.status === "live") {
-          badgeEl.className = "video-live-pill status-live";
-          badgeEl.innerHTML = '<i class="fa-solid fa-circle"></i> <span>BROADCASTING LIVE</span>';
-        } else if (cfg.status === "scheduled") {
-          badgeEl.className = "video-live-pill status-scheduled";
-          badgeEl.innerHTML = '<i class="fa-solid fa-clock"></i> <span>SCHEDULED CLASS</span>';
-        } else {
-          badgeEl.className = "video-live-pill status-ended";
-          badgeEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> <span>CONCLUDED</span>';
-        }
-      }
-    } else {
-      if (topicEl) {
-        topicEl.textContent = "2025/2026 A/L Physics - Live Interactive Masterclass";
-      }
+    const isScheduled = Boolean(
+      cfg && 
+      cfg.status === "scheduled" && 
+      cfg.topic !== "No Live Broadcast Scheduled"
+    );
+
+    if (isLive) {
+      // 1. LIVE STREAM ACTIVE
+      let liveStreamUrl = cfg.embedUrl || cfg.streamUrl || cfg.rawUrl;
+      const isWatermarkEnabled = Boolean(cfg.watermarkEnabled);
+
+      if (topicEl) topicEl.textContent = cfg.topic || "2025/2026 A/L Physics - Live Interactive Masterclass";
       if (statusTextEl) {
         statusTextEl.textContent = "🔴 LIVE NOW";
         statusTextEl.style.color = "#ef4444";
@@ -122,11 +120,95 @@ function syncLiveStreamWithTeacher() {
         badgeEl.className = "video-live-pill status-live";
         badgeEl.innerHTML = '<i class="fa-solid fa-circle"></i> <span>BROADCASTING LIVE</span>';
       }
-    }
 
-    if (window.EDUPEAK_LIVE_PLAYER) {
-      window.EDUPEAK_LIVE_PLAYER.loadStream(liveStreamUrl);
-      window.EDUPEAK_LIVE_PLAYER.setWatermarkEnabled(isWatermarkEnabled);
+      if (zoomBtn) {
+        const isZoom = cfg.provider === "zoom" || (cfg.rawUrl && cfg.rawUrl.includes("zoom"));
+        if (isZoom || cfg.zoomUrl) {
+          zoomBtn.style.setProperty("display", "inline-flex", "important");
+          zoomBtn.href = cfg.zoomUrl || cfg.rawUrl || "https://zoom.us";
+        } else {
+          zoomBtn.style.setProperty("display", "none", "important");
+        }
+      }
+
+      if (playerWrapper) playerWrapper.style.display = "block";
+      if (standbyWrapper) standbyWrapper.style.display = "none";
+
+      if (window.EDUPEAK_LIVE_PLAYER) {
+        window.EDUPEAK_LIVE_PLAYER.loadStream(liveStreamUrl);
+        window.EDUPEAK_LIVE_PLAYER.setWatermarkEnabled(isWatermarkEnabled);
+      }
+
+      if (chatInput) {
+        chatInput.disabled = false;
+        chatInput.placeholder = "Ask sir a question or physics doubt...";
+      }
+
+    } else if (isScheduled) {
+      // 2. BROADCAST SCHEDULED
+      if (topicEl) topicEl.textContent = cfg.topic || "Upcoming Masterclass";
+      if (statusTextEl) {
+        statusTextEl.textContent = "⏳ SCHEDULED";
+        statusTextEl.style.color = "#b45309";
+      }
+      if (badgeEl) {
+        badgeEl.className = "video-live-pill status-scheduled";
+        badgeEl.innerHTML = '<i class="fa-solid fa-clock"></i> <span>SCHEDULED CLASS</span>';
+      }
+      if (zoomBtn) zoomBtn.style.setProperty("display", "none", "important");
+
+      if (playerWrapper) playerWrapper.style.display = "none";
+      if (standbyWrapper) {
+        standbyWrapper.style.display = "flex";
+        if (standbyIcon) {
+          standbyIcon.className = "fa-solid fa-calendar-check";
+          standbyIcon.style.color = "#f59e0b";
+        }
+        if (standbyBadge) standbyBadge.textContent = "BROADCAST SCHEDULED";
+        if (standbyTitle) standbyTitle.textContent = cfg.topic || "Masterclass Scheduled";
+        if (standbyDesc) {
+          standbyDesc.textContent = (cfg.scheduleTime ? `Scheduled Time: ${cfg.scheduleTime}. ` : "") + 
+            "The live video player and interactive whiteboard will automatically connect here as soon as the lecture begins.";
+        }
+        if (standbyTag && cfg.teacherName) standbyTag.textContent = cfg.teacherName;
+      }
+
+      if (chatInput) {
+        chatInput.disabled = false;
+        chatInput.placeholder = "Leave a question in advance for the upcoming class...";
+      }
+
+    } else {
+      // 3. NO BROADCAST SCHEDULED / CONCLUDED / STANDBY
+      if (topicEl) topicEl.textContent = "No Live Broadcast Scheduled";
+      if (statusTextEl) {
+        statusTextEl.textContent = "⏹️ OFFLINE";
+        statusTextEl.style.color = "#64748b";
+      }
+      if (badgeEl) {
+        badgeEl.className = "video-live-pill status-ended";
+        badgeEl.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> <span>NO ACTIVE BROADCAST</span>';
+      }
+      if (zoomBtn) zoomBtn.style.setProperty("display", "none", "important");
+
+      if (playerWrapper) playerWrapper.style.display = "none";
+      if (standbyWrapper) {
+        standbyWrapper.style.display = "flex";
+        if (standbyIcon) {
+          standbyIcon.className = "fa-solid fa-satellite-dish";
+          standbyIcon.style.color = "#60a5fa";
+        }
+        if (standbyBadge) standbyBadge.textContent = "STUDIO STANDBY";
+        if (standbyTitle) standbyTitle.textContent = "No Live Broadcast in Session";
+        if (standbyDesc) {
+          standbyDesc.textContent = "There is currently no live class being broadcasted. Upcoming masterclasses and live revisions will automatically connect here when scheduled by the faculty.";
+        }
+      }
+
+      if (chatInput) {
+        chatInput.disabled = true;
+        chatInput.placeholder = "Live chat activates during broadcasts...";
+      }
     }
   } catch (e) {
     console.warn("Live stream sync notice:", e);
