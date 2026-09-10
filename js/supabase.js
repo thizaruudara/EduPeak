@@ -265,15 +265,17 @@ const SUPABASE_HELPER = {
       const json = JSON.stringify(data);
       localStorage.setItem(key, json);
       // Write to shared domain cookie for cross-subdomain synchronization
-      const hostname = window.location.hostname;
+      const hostname = (window.location && window.location.hostname) ? window.location.hostname : "";
       let domainStr = "";
-      if (hostname.includes(".")) {
+      if (hostname && hostname.includes(".")) {
         const parts = hostname.split(".");
         if (parts.length >= 2 && !hostname.startsWith("127.") && !hostname.startsWith("localhost")) {
           domainStr = `; domain=.${parts.slice(-2).join(".")}`;
         }
       }
-      document.cookie = `${key}=${encodeURIComponent(json)}; path=/${domainStr}; max-age=31536000; SameSite=Lax`;
+      if (typeof document !== "undefined") {
+        document.cookie = `${key}=${encodeURIComponent(json)}; path=/${domainStr}; max-age=31536000; SameSite=Lax`;
+      }
     } catch (e) {
       console.warn("setSharedData error:", e);
     }

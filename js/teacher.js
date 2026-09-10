@@ -14,6 +14,7 @@ const TEACHER_CONTROLLER = {
     customQuizzes: "edupeak_custom_quizzes",
     quizzesDb: "edupeak_quizzes_db",
     schedulesDb: "edupeak_schedules_db",
+    papers: "edupeak_papers_db",
     liveStream: "edupeak_live_stream_config",
     submissions: "edupeak_quiz_submissions"
   },
@@ -113,6 +114,7 @@ const TEACHER_CONTROLLER = {
     if (tabId === "courses") this.renderCourses();
     if (tabId === "lessons") this.renderLessons();
     if (tabId === "quizzes") this.renderQuizzes();
+    if (tabId === "papers") this.renderPapers();
     if (tabId === "live") this.renderLiveStudio();
     if (tabId === "students") this.renderStudents();
     if (tabId === "gradebook") this.renderGradebook();
@@ -124,14 +126,32 @@ const TEACHER_CONTROLLER = {
     const quizzes = this.getAllQuizzes ? this.getAllQuizzes() : (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.quizQuestions || [] : []);
     const students = this.getRegisteredStudents ? this.getRegisteredStudents() : [];
 
+    let paperCount = 0;
+    try {
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+        const sharedPapers = window.SUPABASE_HELPER.getSharedData("edupeak_papers_db");
+        if (sharedPapers !== null && Array.isArray(sharedPapers)) {
+          paperCount = sharedPapers.length;
+        }
+      }
+      if (paperCount === 0) {
+        const localPapers = JSON.parse(localStorage.getItem("edupeak_papers_db") || "null");
+        if (localPapers !== null && Array.isArray(localPapers)) {
+          paperCount = localPapers.length;
+        }
+      }
+    } catch (e) {}
+
     const mCourses = document.getElementById("metricTotalCourses");
     const mLessons = document.getElementById("metricTotalLessons");
     const mQuizzes = document.getElementById("metricTotalQuizzes");
+    const mPapers = document.getElementById("metricTotalPapers");
     const mStudents = document.getElementById("metricTotalStudents");
 
     if (mCourses) mCourses.textContent = courses.length;
     if (mLessons) mLessons.textContent = lessons.length;
     if (mQuizzes) mQuizzes.textContent = quizzes.length;
+    if (mPapers) mPapers.textContent = paperCount;
     if (mStudents) mStudents.textContent = students.length > 0 ? `${students.length} Active` : "4,250+";
   },
 
@@ -1332,6 +1352,399 @@ const TEACHER_CONTROLLER = {
 
     this.renderQuizzes();
     this.renderMetrics();
+  },
+
+  // --------------------------------------------------------------------------
+  // 3.5. PAST PAPERS & PDF VAULT MANAGEMENT (Connected with Supabase & Students)
+  // --------------------------------------------------------------------------
+  async getPapers() {
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getPapers === "function") {
+      return await window.SUPABASE_HELPER.getPapers();
+    }
+    const saved = localStorage.getItem(this.storageKeys.papers || "edupeak_papers_db");
+    if (saved !== null) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {}
+    }
+    return [];
+  },
+
+  parsePdfCloudUrl(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== "string") {
+      return {
+        type: "local",
+        label: "Local PDF Asset",
+        icon: "fa-solid fa-file-pdf",
+        badgeClass: "local",
+        previewUrl: rawUrl || "assets/docs/physics_sample.pdf",
+        downloadUrl: rawUrl || "assets/docs/physics_sample.pdf",
+        viewUrl: rawUrl || "assets/docs/physics_sample.pdf",
+        rawUrl: rawUrl || ""
+      };
+    }
+
+    const url = rawUrl.trim();
+
+    // 1. Google Drive Links: /file/d/{id}, id={id}, /d/{id}
+    const gDriveFileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/i) || 
+                            url.match(/[?&]id=([a-zA-Z0-9_-]+)/i) ||
+                            url.match(/\/d\/([a-zA-Z0-9_-]+)/i);
+
+    if (url.includes("drive.google.com") || url.includes("docs.google.com") || (url.startsWith("http") && gDriveFileMatch)) {
+      const fileId = gDriveFileMatch ? gDriveFileMatch[1] : null;
+      if (fileId) {
+        return {
+          type: "gdrive",
+          label: "Google Drive Cloud",
+          icon: "fa-brands fa-google-drive",
+          badgeClass: "gdrive",
+          fileId: fileId,
+          previewUrl: `https://drive.google.com/file/d/${fileId}/preview`,
+          downloadUrl: `https://drive.google.com/uc?export=download&id=${fileId}`,
+          viewUrl: `https://drive.google.com/file/d/${fileId}/view?usp=sharing`,
+          rawUrl: url
+        };
+      }
+    }
+
+    // 2. Google Cloud Storage (GCS) Links
+    if (url.startsWith("gs://") || url.includes("storage.googleapis.com") || url.includes("storage.cloud.google.com")) {
+      let httpUrl = url;
+      if (url.startsWith("gs://")) {
+        const gcsPath = url.replace("gs://", "");
+        httpUrl = `https://storage.googleapis.com/${gcsPath}`;
+      } else if (url.includes("storage.cloud.google.com")) {
+        httpUrl = url.replace("storage.cloud.google.com", "storage.googleapis.com");
+      }
+
+      return {
+        type: "gcs",
+        label: "Google Cloud Storage",
+        icon: "fa-brands fa-google",
+        badgeClass: "gcs",
+        previewUrl: `https://docs.google.com/viewer?url=${encodeURIComponent(httpUrl)}&embedded=true`,
+        directEmbedUrl: httpUrl,
+        downloadUrl: httpUrl,
+        viewUrl: httpUrl,
+        rawUrl: httpUrl
+      };
+    }
+
+    // 3. Supabase / Firebase / Cloud Storage URLs
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      let isSupabase = url.includes("supabase.co/storage");
+      let isFirebase = url.includes("firebasestorage.googleapis.com");
+      let label = isSupabase ? "Supabase Storage" : (isFirebase ? "Firebase Cloud" : "Cloud PDF URL");
+      let icon = isSupabase ? "fa-solid fa-database" : (isFirebase ? "fa-solid fa-fire" : "fa-solid fa-cloud");
+
+      return {
+        type: "cloud",
+        label: label,
+        icon: icon,
+        badgeClass: "cloud",
+        previewUrl: `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`,
+        directEmbedUrl: url,
+        downloadUrl: url,
+        viewUrl: url,
+        rawUrl: url
+      };
+    }
+
+    // 4. Local Relative Path or Blob
+    return {
+      type: "local",
+      label: "Local Asset PDF",
+      icon: "fa-solid fa-file-pdf",
+      badgeClass: "local",
+      previewUrl: url,
+      downloadUrl: url,
+      viewUrl: url,
+      rawUrl: url
+    };
+  },
+
+  onPaperUrlInput(input) {
+    const badge = document.getElementById("teacherPaperCloudDetectBadge");
+    if (!badge) return;
+    const val = (input.value || "").trim();
+    if (!val) {
+      badge.style.display = "none";
+      return;
+    }
+
+    const cloudInfo = this.parsePdfCloudUrl(val);
+    badge.style.display = "inline-flex";
+    badge.className = `pdf-cloud-badge ${cloudInfo.badgeClass}`;
+    badge.innerHTML = `<i class="${cloudInfo.icon}"></i> ${cloudInfo.label} Detected`;
+  },
+
+  fillSampleGoogleDriveLink() {
+    const urlInput = document.getElementById("teacherPaperFormUrl");
+    if (!urlInput) return;
+    urlInput.value = "https://drive.google.com/file/d/1w3A6i3bWkY4d_sample_edupeak_al_physics_2025/view?usp=sharing";
+    this.onPaperUrlInput(urlInput);
+    const sizeInput = document.getElementById("teacherPaperFormSize");
+    if (sizeInput && !sizeInput.value) sizeInput.value = "4.2 MB";
+    if (window.showToast) {
+      window.showToast("✓ Sample Google Drive PDF link inserted!", "info");
+    }
+  },
+
+  async renderPapers() {
+    const tbody = document.getElementById("teacherPapersTableBody");
+    if (!tbody) return;
+
+    let papers = await this.getPapers();
+
+    const searchTerm = (document.getElementById("teacherPaperSearchInput") ? document.getElementById("teacherPaperSearchInput").value : "").toLowerCase().trim();
+    const catFilter = document.getElementById("teacherPaperCategoryFilter") ? document.getElementById("teacherPaperCategoryFilter").value : "all";
+    const unitFilter = document.getElementById("teacherPaperUnitFilter") ? document.getElementById("teacherPaperUnitFilter").value : "all";
+
+    if (searchTerm) {
+      papers = papers.filter(p => 
+        (p.title && p.title.toLowerCase().includes(searchTerm)) ||
+        (p.title_si && p.title_si.toLowerCase().includes(searchTerm)) ||
+        (p.unitName && p.unitName.toLowerCase().includes(searchTerm)) ||
+        String(p.year).includes(searchTerm)
+      );
+    }
+
+    if (catFilter !== "all") {
+      papers = papers.filter(p => p.type === catFilter);
+    }
+
+    if (unitFilter !== "all") {
+      papers = papers.filter(p => p.unit === "all" || p.unit === unitFilter);
+    }
+
+    this.renderMetrics();
+
+    if (papers.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" style="text-align: center; padding: 2.5rem; color: #64748b;">
+            <i class="fa-solid fa-folder-open" style="font-size: 2rem; color: #cbd5e1; display: block; margin-bottom: 0.5rem;"></i>
+            No PDF papers found matching your search or filter.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = papers.map(p => {
+      let badgeHtml = '<span class="status-tag active" style="background:#eff6ff; color:#1d4ed8; border: 1px solid #bfdbfe;"><i class="fa-solid fa-graduation-cap"></i> Past Paper</span>';
+      if (p.type === "school") {
+        badgeHtml = '<span class="status-tag active" style="background:#ecfdf5; color:#065f46; border: 1px solid #bbf7d0;"><i class="fa-solid fa-school"></i> Top School</span>';
+      } else if (p.type === "model") {
+        badgeHtml = '<span class="status-tag active" style="background:#fef3c7; color:#92400e; border: 1px solid #fde68a;"><i class="fa-solid fa-award"></i> Victory Model</span>';
+      }
+
+      const cloudInfo = this.parsePdfCloudUrl(p.url || p.pdfUrl);
+
+      return `
+        <tr>
+          <td>
+            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+              <div>${badgeHtml}</div>
+              <strong style="font-size: 0.85rem; color: #0f172a; margin-top: 0.2rem;">${p.year} Exam</strong>
+            </div>
+          </td>
+          <td>
+            <strong style="font-size: 0.95rem; color: #0f172a; display: block;">${p.title}</strong>
+            ${p.title_si ? `<span style="font-size: 0.775rem; color: #64748b; font-family: 'Noto Sans Sinhala', sans-serif;">${p.title_si}</span>` : ''}
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.35rem; flex-wrap: wrap;">
+              <span class="pdf-cloud-badge ${cloudInfo.badgeClass}">
+                <i class="${cloudInfo.icon}"></i> ${cloudInfo.label}
+              </span>
+              ${p.url || p.pdfUrl ? `<span style="font-size: 0.72rem; color: #64748b; font-family: monospace;" title="${p.url || p.pdfUrl}"><i class="fa-solid fa-link"></i> ${(p.url || p.pdfUrl).substring(0, 38)}${(p.url || p.pdfUrl).length > 38 ? '...' : ''}</span>` : ''}
+            </div>
+          </td>
+          <td>
+            <span style="font-size: 0.8rem; font-weight: 700; color: #475569; background: #f8fafc; padding: 0.25rem 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0; display: inline-block;">
+              <i class="fa-solid fa-tag" style="color: #227aff;"></i> ${p.unitName || p.unit}
+            </span>
+          </td>
+          <td>
+            <span style="font-size: 0.825rem; font-weight: 800; color: #ef4444; background: #fee2e2; padding: 0.25rem 0.6rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.3rem;">
+              <i class="fa-solid fa-file-pdf"></i> ${p.size || p.fileSize || '3.5 MB'}
+            </span>
+          </td>
+          <td>
+            <div style="display: flex; gap: 0.35rem; justify-content: flex-end;">
+              <button class="btn btn-ghost btn-sm" title="Preview PDF" onclick="TEACHER_CONTROLLER.previewPaper('${p.id}')" style="background:#eff6ff; color:#227aff; border:1px solid #bfdbfe; font-size: 0.75rem; padding: 0.35rem 0.65rem;">
+                <i class="fa-solid fa-eye"></i> View
+              </button>
+              <button class="btn btn-outline btn-sm" title="Edit Paper Details" onclick="TEACHER_CONTROLLER.openEditPaperModal('${p.id}')" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;">
+                <i class="fa-solid fa-pen-to-square"></i> Edit
+              </button>
+              <button class="btn btn-ghost btn-sm" title="Delete Paper" onclick="TEACHER_CONTROLLER.deletePaper('${p.id}')" style="color:#dc2626; border:1px solid #fecaca; font-size: 0.75rem; padding: 0.35rem 0.65rem;">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  },
+
+  openAddPaperModal() {
+    const modal = document.getElementById("teacherPaperDrawerModal");
+    if (!modal) return;
+    document.getElementById("teacherPaperModalTitle").innerHTML = '<i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> Add New Cloud PDF Paper';
+    document.getElementById("teacherPaperFormId").value = "";
+    document.getElementById("teacherPaperFormTitle").value = "";
+    document.getElementById("teacherPaperFormTitleSi").value = "";
+    document.getElementById("teacherPaperFormType").value = "national";
+    document.getElementById("teacherPaperFormYear").value = new Date().getFullYear();
+    document.getElementById("teacherPaperFormUnit").value = "all";
+    document.getElementById("teacherPaperFormUnitName").value = "Complete Past Paper Examination";
+    document.getElementById("teacherPaperFormSize").value = "";
+    const urlInput = document.getElementById("teacherPaperFormUrl");
+    if (urlInput) {
+      urlInput.value = "";
+      this.onPaperUrlInput(urlInput);
+    }
+
+    modal.classList.add("active");
+  },
+
+  async openEditPaperModal(paperId) {
+    const modal = document.getElementById("teacherPaperDrawerModal");
+    if (!modal) return;
+    const papers = await this.getPapers();
+    const p = papers.find(item => item.id === paperId);
+    if (!p) return;
+
+    document.getElementById("teacherPaperModalTitle").innerHTML = '<i class="fa-solid fa-file-pen" style="color: #227aff;"></i> Edit & Rename PDF Paper';
+    document.getElementById("teacherPaperFormId").value = p.id;
+    document.getElementById("teacherPaperFormTitle").value = p.title || "";
+    document.getElementById("teacherPaperFormTitleSi").value = p.title_si || "";
+    document.getElementById("teacherPaperFormType").value = p.type || "national";
+    document.getElementById("teacherPaperFormYear").value = p.year || 2024;
+    document.getElementById("teacherPaperFormUnit").value = p.unit || "all";
+    document.getElementById("teacherPaperFormUnitName").value = p.unitName || "";
+    document.getElementById("teacherPaperFormSize").value = p.size || p.fileSize || "";
+    const urlInput = document.getElementById("teacherPaperFormUrl");
+    if (urlInput) {
+      urlInput.value = p.url || p.pdfUrl || "";
+      this.onPaperUrlInput(urlInput);
+    }
+
+    modal.classList.add("active");
+  },
+
+  async handleSavePaperSubmit(event) {
+    event.preventDefault();
+    const id = document.getElementById("teacherPaperFormId").value.trim() || `pap-${Date.now()}`;
+    const title = document.getElementById("teacherPaperFormTitle").value.trim();
+    const title_si = document.getElementById("teacherPaperFormTitleSi").value.trim();
+    const type = document.getElementById("teacherPaperFormType").value;
+    const year = parseInt(document.getElementById("teacherPaperFormYear").value) || 2024;
+    const unit = document.getElementById("teacherPaperFormUnit").value;
+    const unitName = document.getElementById("teacherPaperFormUnitName").value.trim() || "Physics Unit";
+    const size = document.getElementById("teacherPaperFormSize").value.trim() || "Cloud PDF";
+    const url = document.getElementById("teacherPaperFormUrl").value.trim() || `assets/docs/paper_${year}.pdf`;
+
+    const paperObj = {
+      id,
+      title,
+      title_si,
+      type,
+      year,
+      unit,
+      unitName,
+      size,
+      fileSize: size,
+      url,
+      pdfUrl: url,
+      updated_at: new Date().toISOString()
+    };
+
+    if (window.SUPABASE_HELPER) {
+      await window.SUPABASE_HELPER.savePaper(paperObj);
+    } else {
+      let papers = await this.getPapers();
+      const existingIndex = papers.findIndex(item => item.id === id);
+      if (existingIndex >= 0) {
+        papers[existingIndex] = { ...papers[existingIndex], ...paperObj };
+      } else {
+        papers.unshift(paperObj);
+      }
+      localStorage.setItem("edupeak_papers_db", JSON.stringify(papers));
+    }
+
+    this.closeModal("teacherPaperDrawerModal");
+
+    if (window.showToast) {
+      window.showToast(`✓ PDF Paper "${title}" saved and synced across LMS!`, "success");
+    }
+
+    await this.renderPapers();
+  },
+
+  async deletePaper(paperId) {
+    const papers = await this.getPapers();
+    const p = papers.find(item => item.id === paperId);
+    const title = p ? p.title : "this paper";
+
+    if (!confirm(`Are you sure you want to delete "${title}"? This will remove it from the Student Paper Vault and Faculty Studio.`)) {
+      return;
+    }
+
+    if (window.SUPABASE_HELPER) {
+      await window.SUPABASE_HELPER.deletePaper(paperId);
+    } else {
+      const updated = papers.filter(item => item.id !== paperId);
+      localStorage.setItem("edupeak_papers_db", JSON.stringify(updated));
+    }
+
+    if (window.showToast) {
+      window.showToast("✓ Paper successfully removed from Paper Vault.", "info");
+    }
+
+    await this.renderPapers();
+  },
+
+  async previewPaper(paperId) {
+    const papers = await this.getPapers();
+    const p = papers.find(item => item.id === paperId);
+    if (!p) return;
+
+    const cloudInfo = this.parsePdfCloudUrl(p.url || p.pdfUrl);
+    const viewerModal = document.getElementById("teacherPdfViewerModal");
+    
+    if (viewerModal) {
+      const titleEl = document.getElementById("teacherPdfPreviewTitle");
+      const metaEl = document.getElementById("teacherPdfPreviewMeta");
+      const badgeEl = document.getElementById("teacherPdfCloudBadge");
+      const openDirectBtn = document.getElementById("teacherPdfOpenDirectBtn");
+      const downloadBtn = document.getElementById("teacherPdfDownloadBtn");
+      const iframe = document.getElementById("teacherPdfPreviewIframe");
+
+      if (titleEl) titleEl.textContent = p.title;
+      if (metaEl) metaEl.textContent = `${p.year} Exam • ${p.unitName} • ${p.size || p.fileSize || 'PDF Document'}`;
+      if (badgeEl) {
+        badgeEl.className = `pdf-cloud-badge ${cloudInfo.badgeClass}`;
+        badgeEl.innerHTML = `<i class="${cloudInfo.icon}"></i> ${cloudInfo.label}`;
+      }
+      if (openDirectBtn) {
+        openDirectBtn.href = cloudInfo.viewUrl || cloudInfo.rawUrl || "#";
+      }
+      if (downloadBtn) {
+        downloadBtn.href = cloudInfo.downloadUrl || cloudInfo.rawUrl || "#";
+      }
+      if (iframe) {
+        iframe.src = cloudInfo.previewUrl || cloudInfo.rawUrl;
+      }
+
+      viewerModal.classList.add("active");
+    } else if (p.url && (p.url.startsWith("http") || p.url.startsWith("blob:") || p.url.startsWith("data:"))) {
+      window.open(cloudInfo.viewUrl || p.url, "_blank");
+    } else {
+      alert(`📄 PDF Document Preview:\n\nTitle: ${p.title}\nCategory: ${p.type.toUpperCase()}\nExam Year: ${p.year}\nUnit: ${p.unitName}\nFile: ${p.url || 'assets/docs/paper.pdf'}\nSize: ${p.size}\n\n✓ File is active and accessible in the Paper Vault!`);
+    }
   },
 
   // --------------------------------------------------------------------------

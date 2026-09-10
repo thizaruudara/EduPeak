@@ -425,6 +425,42 @@
   }
 }
 
+/* PDF Cloud Badges & Status Tags */
+.pdf-cloud-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.725rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  text-transform: capitalize;
+}
+
+.pdf-cloud-badge.gdrive {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.pdf-cloud-badge.gcs {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.pdf-cloud-badge.cloud {
+  background: #fdf4ff;
+  color: #86198f;
+  border: 1px solid #f5d0fe;
+}
+
+.pdf-cloud-badge.local {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
 @media (max-width: 480px) {
   #teacherProfileName {
     max-width: 70px;
@@ -442,3 +478,4 @@
     gap: 0.4rem;
   }
 }
+
