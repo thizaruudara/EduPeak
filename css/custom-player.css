@@ -1022,5 +1022,31 @@
   }
 }
 
+/* YouTube Anti-Bot / Network Fallback Modal Overlay */
+.edupeak-botcheck-fallback {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  background: rgba(10, 15, 30, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.edupeak-botcheck-fallback .botcheck-modal-box {
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+  border-radius: 14px;
+  max-width: 440px;
+  width: 100%;
+  padding: 1.6rem 1.4rem;
+}
+
+
 
 
