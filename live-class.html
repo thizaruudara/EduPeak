@@ -2012,7 +2012,10 @@
         document.getElementById("infoBatchBadge").textContent = session.examYear || "2027 A/L";
         document.getElementById("infoSubjectBadge").innerHTML = `<i class="fa-solid fa-atom" style="color: #227aff;"></i> ${session.subject || 'Physics'}`;
         document.getElementById("infoScheduleDate").textContent = session.scheduleDate || "Today";
-        document.getElementById("infoScheduleTime").textContent = session.scheduleTime || "08:30 AM - 12:30 PM";
+        // Show the full stored scheduleTime; strip a leading date prefix ("YYYY-MM-DD • ") if present
+        const rawSchedTime = session.scheduleTime || "";
+        const cleanSchedTime = rawSchedTime.replace(/^\d{4}-\d{2}-\d{2}\s*[•·]\s*/, "").trim();
+        document.getElementById("infoScheduleTime").textContent = cleanSchedTime || (session.scheduleStartTime && session.scheduleEndTime ? `${session.scheduleStartTime} - ${session.scheduleEndTime}` : "Time TBA");
         document.getElementById("infoViewersCount").textContent = `${session.viewersCount || 240} Live Viewers`;
         document.getElementById("infoDescriptionText").textContent = session.description || "Comprehensive live interactive masterclass with live doubt resolution.";
         document.getElementById("infoLecturerName").innerHTML = `${session.teacherName || 'Faculty Lecturer'} <i class="fa-solid fa-circle-check" style="color: #227aff; font-size: 0.8rem;"></i>`;
@@ -2615,8 +2618,36 @@
           editIdInput.readOnly = true;
         }
         document.getElementById("formDate").value = s.scheduleDate || new Date().toISOString().split("T")[0];
-        document.getElementById("formStartTime").value = s.scheduleStartTime || "08:30";
-        document.getElementById("formEndTime").value = s.scheduleEndTime || "12:30";
+
+        // If separate start/end time fields are missing (schedules from teacher portal only
+        // store a combined scheduleTime string), parse them out so the form shows the real time.
+        let parsedStart = s.scheduleStartTime || "";
+        let parsedEnd   = s.scheduleEndTime   || "";
+        if ((!parsedStart || !parsedEnd) && s.scheduleTime) {
+          // Extract time tokens like "7:30 AM", "13:30", "1:30 PM" from the string
+          const timeTokens = Array.from(
+            s.scheduleTime.matchAll(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)/gi)
+          ).map(m => m[0].trim());
+          const to24 = (t) => {
+            if (!t) return "";
+            const m = t.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+            if (!m) return t;
+            let h = parseInt(m[1], 10);
+            const min = m[2];
+            const ap = m[3] ? m[3].toUpperCase() : null;
+            if (ap === "PM" && h < 12) h += 12;
+            if (ap === "AM" && h === 12) h = 0;
+            return `${String(h).padStart(2,"0")}:${min}`;
+          };
+          if (timeTokens.length >= 2) {
+            parsedStart = parsedStart || to24(timeTokens[0]);
+            parsedEnd   = parsedEnd   || to24(timeTokens[1]);
+          } else if (timeTokens.length === 1) {
+            parsedStart = parsedStart || to24(timeTokens[0]);
+          }
+        }
+        document.getElementById("formStartTime").value = parsedStart || "08:30";
+        document.getElementById("formEndTime").value   = parsedEnd   || "12:30";
         document.getElementById("formProvider").value = s.provider || "youtube";
         document.getElementById("formStatus").value = s.status || "scheduled";
         document.getElementById("formStreamUrl").value = s.rawUrl || s.embedUrl || "";
