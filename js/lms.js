@@ -185,9 +185,16 @@ function loadSavedLMSData() {
   }
 }
 
-// Helper: Get dynamic courses database synced with Teacher Studio
+// Helper: Get dynamic courses database synced with Teacher Studio & Admin
 function getLMSCourses() {
   try {
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+      const shared = window.SUPABASE_HELPER.getSharedData("edupeak_courses_db");
+      if (shared !== null && Array.isArray(shared)) {
+        if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = shared;
+        return shared;
+      }
+    }
     const stored = localStorage.getItem("edupeak_courses_db");
     if (stored !== null) {
       const parsed = JSON.parse(stored);

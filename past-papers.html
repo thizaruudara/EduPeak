@@ -269,111 +269,15 @@
     </div>
   </div>
 
-  <script>
-    const DEFAULT_PAPERS = [
-      {
-        id: "pap-al-2024",
-        title: "2024 G.C.E. A/L Physics Past Paper & Marking Scheme",
-        title_si: "2024 අ.පො.ස. උ/පෙළ භෞතික විද්‍යාව ප්‍රශ්න පත්‍රය සහ ලකුණු දීමේ පටිපාටිය",
-        type: "national",
-        unit: "all",
-        unitName: "Complete Past Paper Examination",
-        year: 2024,
-        size: "4.5 MB",
-        url: "https://drive.google.com/file/d/1w3A6i3bWkY4d_sample_edupeak_al_physics_2025/view?usp=sharing"
-      },
-      {
-        id: "pap-al-2023",
-        title: "2023 G.C.E. A/L Physics Past Paper (MCQ & Essay)",
-        title_si: "2023 අ.පො.ස. උ/පෙළ භෞතික විද්‍යාව පසුගිය ප්‍රශ්න පත්‍රය",
-        type: "national",
-        unit: "all",
-        unitName: "Complete Past Paper Examination",
-        year: 2023,
-        size: "3.8 MB",
-        url: "https://storage.googleapis.com/edupeak-cloud-vault/papers/physics_al_2023.pdf"
-      },
-      {
-        id: "pap-royal-2024",
-        title: "Royal College Colombo - 2024 Term Test Physics Paper",
-        title_si: "කොළඹ රාජකීය විද්‍යාලය - 2024 වාර විභාග ප්‍රශ්න පත්‍රය",
-        type: "school",
-        unit: "mechanics",
-        unitName: "Mechanics & Circular Motion",
-        year: 2024,
-        size: "2.9 MB",
-        url: "assets/docs/royal_physics_2024.pdf"
-      },
-      {
-        id: "pap-ananda-2024",
-        title: "Ananda College Colombo - 2024 3rd Term Physics Paper",
-        title_si: "කොළඹ ආනන්ද විද්‍යාලය - 2024 තෙවන වාර භෞතික විද්‍යා ප්‍රශ්න පත්‍රය",
-        type: "school",
-        unit: "waves",
-        unitName: "Waves, Sound & Resonance",
-        year: 2024,
-        size: "3.1 MB",
-        url: "assets/docs/ananda_physics_2024.pdf"
-      },
-      {
-        id: "pap-visakha-2024",
-        title: "Visakha Vidyalaya Colombo - 2024 Term Test Physics",
-        title_si: "විශාඛා විද්‍යාලය කොළඹ - 2024 වාර විභාග ප්‍රශ්න පත්‍රය",
-        type: "school",
-        unit: "thermal",
-        unitName: "Thermal Physics & Gas Laws",
-        year: 2024,
-        size: "2.7 MB",
-        url: "assets/docs/visakha_physics_2024.pdf"
-      },
-      {
-        id: "pap-dharmaraja-2024",
-        title: "Dharmaraja College Kandy - 2024 Model Physics Paper",
-        title_si: "ධර්මරාජ විද්‍යාලය මහනුවර - 2024 ආදර්ශ ප්‍රශ්න පත්‍රය",
-        type: "school",
-        unit: "fields",
-        unitName: "Gravitational & Electrostatic Fields",
-        year: 2024,
-        size: "2.8 MB",
-        url: "assets/docs/dharmaraja_physics_2024.pdf"
-      },
-      {
-        id: "pap-mahinda-2024",
-        title: "Mahinda College Galle - 2024 Physics Term Paper",
-        title_si: "මහින්ද විද්‍යාලය ගාල්ල - 2024 භෞතික විද්‍යා ප්‍රශ්න පත්‍රය",
-        type: "school",
-        unit: "electricity",
-        unitName: "Current Electricity & Circuits",
-        year: 2024,
-        size: "3.4 MB",
-        url: "assets/docs/mahinda_physics_2024.pdf"
-      },
-      {
-        id: "pap-vic-model-01",
-        title: "Victory Embilipitiya - Amalsha Sir Special Speed Paper 01",
-        title_si: "වික්ටරි ඇඹිලිපිටිය - අමල්ෂ සර් විශේෂ වේගවත් ප්‍රශ්න පත්‍රය 01",
-        type: "model",
-        unit: "mechanics",
-        unitName: "Newton's Laws & Hydrodynamics",
-        year: 2025,
-        size: "3.5 MB",
-        url: "assets/docs/victory_model_01.pdf"
-      },
-      {
-        id: "pap-vic-model-02",
-        title: "Victory Embilipitiya - Amalsha Sir Special Speed Paper 02",
-        title_si: "වික්ටරි ඇඹිලිපිටිය - අමල්ෂ සර් විශේෂ වේගවත් ප්‍රශ්න පත්‍රය 02",
-        type: "model",
-        unit: "electronics",
-        unitName: "Semiconductors & Logic Gates",
-        year: 2025,
-        size: "3.2 MB",
-        url: "assets/docs/victory_model_02.pdf"
-      }
-    ];
+  <!-- Core JavaScript & Cloud Sync -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/data.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
 
+  <script>
     async function getPapersDatabase() {
-      if (window.SUPABASE_HELPER) {
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getPapers === "function") {
         return await window.SUPABASE_HELPER.getPapers();
       }
       const saved = localStorage.getItem("edupeak_papers_db");
@@ -389,8 +293,8 @@
     let currentTypeFilter = "all";
     let currentUnitFilter = "all";
 
-    document.addEventListener("DOMContentLoaded", () => {
-      renderPapers();
+    document.addEventListener("DOMContentLoaded", async () => {
+      await renderPapers();
     });
 
     function setTypeFilter(typeKey, btn) {
@@ -622,12 +526,6 @@
       }
     }
   </script>
-
-  <!-- Core JavaScript & Cloud Sync -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/data.js"></script>
-  <script src="js/supabase.js"></script>
-  <script src="js/auth.js"></script>
 
   <!-- Floating Direct WhatsApp Button -->
   <a href="https://wa.me/94760687578" target="_blank" rel="noopener noreferrer" class="floating-help-btn" title="Contact EduPeak WhatsApp Hotline (+94 76 068 7578)">

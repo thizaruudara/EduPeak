@@ -64,11 +64,18 @@ const SUPABASE_HELPER = {
     try {
       // Simple health query to 'profiles' or public schema
       const { data, error } = await this.client.from("profiles").select("count", { count: "exact", head: true });
-      if (error && error.code !== "PGRST116" && !error.message.includes("does not exist")) {
-        // Connected to Supabase instance even if table is not created yet
-        this.isConnected = true;
-        this.updateStatusBadge(true, "Connected to Supabase Cloud");
-        return { success: true, message: "Successfully connected to Supabase!" };
+      if (error) {
+        if (error.code === "PGRST116" || (error.message && error.message.includes("does not exist"))) {
+          // Connected to Supabase instance, table not created yet
+          this.isConnected = true;
+          this.updateStatusBadge(true, "Connected to Supabase Cloud");
+          return { success: true, message: "Connected to Supabase project!" };
+        } else {
+          // Real error (invalid URL, network failure, bad API key)
+          this.isConnected = false;
+          this.updateStatusBadge(false, "Offline / Connection Failed");
+          return { success: false, message: error.message || "Failed to connect to Supabase" };
+        }
       }
       this.isConnected = true;
       this.updateStatusBadge(true, "Connected to Supabase Cloud");
@@ -230,12 +237,54 @@ const SUPABASE_HELPER = {
   },
 
   // 2. TEACHERS
+  // Cross-subdomain shared storage (*.edupeak.lk) helper
+  getSharedData(key) {
+    // 1. Check shared root domain cookie (shares between admin.edupeak.lk, edupeak.lk, teacher.edupeak.lk)
+    try {
+      const match = document.cookie.match(new RegExp('(?:^|;\\s*)' + key + '=([^;]*)'));
+      if (match && match[1]) {
+        const decoded = decodeURIComponent(match[1]);
+        const parsed = JSON.parse(decoded);
+        localStorage.setItem(key, decoded);
+        return parsed;
+      }
+    } catch (e) {}
+
+    // 2. Check localStorage
+    try {
+      const local = localStorage.getItem(key);
+      if (local !== null) {
+        return JSON.parse(local);
+      }
+    } catch (e) {}
+    return null;
+  },
+
+  setSharedData(key, data) {
+    try {
+      const json = JSON.stringify(data);
+      localStorage.setItem(key, json);
+      // Write to shared domain cookie for cross-subdomain synchronization
+      const hostname = window.location.hostname;
+      let domainStr = "";
+      if (hostname.includes(".")) {
+        const parts = hostname.split(".");
+        if (parts.length >= 2 && !hostname.startsWith("127.") && !hostname.startsWith("localhost")) {
+          domainStr = `; domain=.${parts.slice(-2).join(".")}`;
+        }
+      }
+      document.cookie = `${key}=${encodeURIComponent(json)}; path=/${domainStr}; max-age=31536000; SameSite=Lax`;
+    } catch (e) {
+      console.warn("setSharedData error:", e);
+    }
+  },
+
   async getTeachers() {
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("teachers").select("*");
         if (!error && Array.isArray(data)) {
-          localStorage.setItem("edupeak_teachers_db", JSON.stringify(data));
+          this.setSharedData("edupeak_teachers_db", data);
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.teachers = data;
           return data;
         }
@@ -243,15 +292,10 @@ const SUPABASE_HELPER = {
         console.warn("Supabase fetch teachers error, using local:", e);
       }
     }
-    const local = localStorage.getItem("edupeak_teachers_db");
-    if (local !== null) {
-      try {
-        const parsed = JSON.parse(local);
-        if (Array.isArray(parsed)) {
-          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.teachers = parsed;
-          return parsed;
-        }
-      } catch (e) {}
+    const shared = this.getSharedData("edupeak_teachers_db");
+    if (shared !== null && Array.isArray(shared)) {
+      if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.teachers = shared;
+      return shared;
     }
     return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.teachers) ? window.EDUPEAK_DATA.teachers : [];
   },
@@ -273,7 +317,7 @@ const SUPABASE_HELPER = {
     } else {
       teachers.push(teacherData);
     }
-    localStorage.setItem("edupeak_teachers_db", JSON.stringify(teachers));
+    this.setSharedData("edupeak_teachers_db", teachers);
     if (window.EDUPEAK_DATA) {
       window.EDUPEAK_DATA.teachers = teachers;
       if (window.renderTeachers) window.renderTeachers();
@@ -291,7 +335,7 @@ const SUPABASE_HELPER = {
     }
     let teachers = await this.getTeachers();
     teachers = teachers.filter(t => t.id !== teacherId);
-    localStorage.setItem("edupeak_teachers_db", JSON.stringify(teachers));
+    this.setSharedData("edupeak_teachers_db", teachers);
     if (window.EDUPEAK_DATA) {
       window.EDUPEAK_DATA.teachers = teachers;
       if (window.renderTeachers) window.renderTeachers();
@@ -305,7 +349,7 @@ const SUPABASE_HELPER = {
       try {
         const { data, error } = await this.client.from("courses").select("*");
         if (!error && Array.isArray(data)) {
-          localStorage.setItem("edupeak_courses_db", JSON.stringify(data));
+          this.setSharedData("edupeak_courses_db", data);
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = data;
           return data;
         }
@@ -313,15 +357,10 @@ const SUPABASE_HELPER = {
         console.warn("Supabase fetch courses error, using local:", e);
       }
     }
-    const local = localStorage.getItem("edupeak_courses_db");
-    if (local !== null) {
-      try {
-        const parsed = JSON.parse(local);
-        if (Array.isArray(parsed)) {
-          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = parsed;
-          return parsed;
-        }
-      } catch (e) {}
+    const shared = this.getSharedData("edupeak_courses_db");
+    if (shared !== null && Array.isArray(shared)) {
+      if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = shared;
+      return shared;
     }
     return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
   },
@@ -342,7 +381,7 @@ const SUPABASE_HELPER = {
     } else {
       courses.push(courseData);
     }
-    localStorage.setItem("edupeak_courses_db", JSON.stringify(courses));
+    this.setSharedData("edupeak_courses_db", courses);
     if (window.EDUPEAK_DATA) {
       window.EDUPEAK_DATA.courses = courses;
       if (window.renderCourses) window.renderCourses();
@@ -360,7 +399,7 @@ const SUPABASE_HELPER = {
     }
     let courses = await this.getCourses();
     courses = courses.filter(c => c.id !== courseId);
-    localStorage.setItem("edupeak_courses_db", JSON.stringify(courses));
+    this.setSharedData("edupeak_courses_db", courses);
     if (window.EDUPEAK_DATA) {
       window.EDUPEAK_DATA.courses = courses;
       if (window.renderCourses) window.renderCourses();
@@ -374,19 +413,16 @@ const SUPABASE_HELPER = {
       try {
         const { data, error } = await this.client.from("past_papers").select("*").order("year", { ascending: false });
         if (!error && Array.isArray(data)) {
-          localStorage.setItem("edupeak_papers_db", JSON.stringify(data));
+          this.setSharedData("edupeak_papers_db", data);
           return data;
         }
       } catch (e) {
         console.warn("Supabase fetch past_papers error, using local:", e);
       }
     }
-    const local = localStorage.getItem("edupeak_papers_db");
-    if (local !== null) {
-      try {
-        const parsed = JSON.parse(local);
-        if (Array.isArray(parsed)) return parsed;
-      } catch (e) {}
+    const shared = this.getSharedData("edupeak_papers_db");
+    if (shared !== null && Array.isArray(shared)) {
+      return shared;
     }
     return [];
   },
@@ -407,7 +443,7 @@ const SUPABASE_HELPER = {
     } else {
       papers.unshift(paperData);
     }
-    localStorage.setItem("edupeak_papers_db", JSON.stringify(papers));
+    this.setSharedData("edupeak_papers_db", papers);
     return paperData;
   },
 
@@ -421,7 +457,7 @@ const SUPABASE_HELPER = {
     }
     let papers = await this.getPapers();
     papers = papers.filter(p => p.id !== paperId);
-    localStorage.setItem("edupeak_papers_db", JSON.stringify(papers));
+    this.setSharedData("edupeak_papers_db", papers);
     return true;
   },
 
@@ -431,7 +467,7 @@ const SUPABASE_HELPER = {
       try {
         const { data, error } = await this.client.from("institutes").select("*");
         if (!error && Array.isArray(data)) {
-          localStorage.setItem("edupeak_institutes_db", JSON.stringify(data));
+          this.setSharedData("edupeak_institutes_db", data);
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = data;
           return data;
         }
@@ -439,15 +475,10 @@ const SUPABASE_HELPER = {
         console.warn("Supabase fetch institutes error, using local:", e);
       }
     }
-    const local = localStorage.getItem("edupeak_institutes_db");
-    if (local !== null) {
-      try {
-        const parsed = JSON.parse(local);
-        if (Array.isArray(parsed)) {
-          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = parsed;
-          return parsed;
-        }
-      } catch (e) {}
+    const shared = this.getSharedData("edupeak_institutes_db");
+    if (shared !== null && Array.isArray(shared)) {
+      if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = shared;
+      return shared;
     }
     return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.institutes) ? window.EDUPEAK_DATA.institutes : [];
   },
@@ -468,9 +499,10 @@ const SUPABASE_HELPER = {
     } else {
       institutes.push(instData);
     }
-    localStorage.setItem("edupeak_institutes_db", JSON.stringify(institutes));
+    this.setSharedData("edupeak_institutes_db", institutes);
     if (window.EDUPEAK_DATA) {
       window.EDUPEAK_DATA.institutes = institutes;
+      if (window.renderInstitutes) window.renderInstitutes();
     }
     if (window.EDUPEAK_INSTITUTES && window.EDUPEAK_INSTITUTES.populateDropdowns) {
       window.EDUPEAK_INSTITUTES.populateDropdowns();
@@ -488,9 +520,10 @@ const SUPABASE_HELPER = {
     }
     let institutes = await this.getInstitutes();
     institutes = institutes.filter(i => i.id !== instId);
-    localStorage.setItem("edupeak_institutes_db", JSON.stringify(institutes));
+    this.setSharedData("edupeak_institutes_db", institutes);
     if (window.EDUPEAK_DATA) {
       window.EDUPEAK_DATA.institutes = institutes;
+      if (window.renderInstitutes) window.renderInstitutes();
     }
     if (window.EDUPEAK_INSTITUTES && window.EDUPEAK_INSTITUTES.populateDropdowns) {
       window.EDUPEAK_INSTITUTES.populateDropdowns();
