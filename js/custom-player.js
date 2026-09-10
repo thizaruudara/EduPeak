@@ -134,7 +134,7 @@ const EDUPEAK_PLAYER = (function() {
 
     try {
       ytPlayer = new window.YT.Player('edupeakYTPlayerMount', {
-        host: 'https://www.youtube.com',
+        host: 'https://www.youtube-nocookie.com',
         videoId: videoId,
         playerVars: {
           autoplay: 0,
@@ -962,7 +962,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
 
     try {
       liveYtPlayer = new window.YT.Player('edupeakLiveYTPlayerMount', {
-        host: 'https://www.youtube.com',
+        host: 'https://www.youtube-nocookie.com',
         videoId: videoId,
         playerVars: {
           autoplay: 1,
@@ -1315,12 +1315,34 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   function toggleFullscreen() {
     const wrapper = document.getElementById("edupeakLivePlayerWrapper");
     if (!wrapper) return;
-    if (!document.fullscreenElement) {
-      wrapper.requestFullscreen().catch(() => {});
+
+    const fsElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+    const isPseudoFs = wrapper.classList.contains("fullscreen-mode");
+
+    const updateFsIcon = (isFs) => {
+      const fsBtns = document.querySelectorAll("#edupeakLivePlayerWrapper button[title='Fullscreen'], #livePlayerControlsOverlay .fa-expand, #livePlayerControlsOverlay .fa-compress");
+      fsBtns.forEach(btn => {
+        const icon = btn.tagName === "I" ? btn : btn.querySelector("i");
+        if (icon) icon.className = isFs ? "fa-solid fa-compress" : "fa-solid fa-expand";
+      });
+    };
+
+    if (!fsElement && !isPseudoFs) {
       wrapper.classList.add("fullscreen-mode");
+      updateFsIcon(true);
+      if (typeof wrapper.requestFullscreen === "function") {
+        wrapper.requestFullscreen().catch(() => {});
+      } else if (typeof wrapper.webkitRequestFullscreen === "function") {
+        try { wrapper.webkitRequestFullscreen(); } catch(e) {}
+      }
     } else {
-      document.exitFullscreen().catch(() => {});
       wrapper.classList.remove("fullscreen-mode");
+      updateFsIcon(false);
+      if (document.exitFullscreen && fsElement) {
+        document.exitFullscreen().catch(() => {});
+      } else if (document.webkitExitFullscreen && fsElement) {
+        try { document.webkitExitFullscreen(); } catch(e) {}
+      }
     }
   }
 
@@ -1369,6 +1391,23 @@ const EDUPEAK_LIVE_PLAYER = (function() {
         liveQMenu.classList.remove("active");
       }
     });
+
+    const handleNativeFullscreenChange = () => {
+      const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+      const wrapper = document.getElementById("edupeakLivePlayerWrapper");
+      if (!fsEl && wrapper) {
+        wrapper.classList.remove("fullscreen-mode");
+        const fsBtns = document.querySelectorAll("#edupeakLivePlayerWrapper button[title='Fullscreen'], #livePlayerControlsOverlay .fa-expand, #livePlayerControlsOverlay .fa-compress");
+        fsBtns.forEach(btn => {
+          const icon = btn.tagName === "I" ? btn : btn.querySelector("i");
+          if (icon) icon.className = "fa-solid fa-expand";
+        });
+      }
+    };
+    document.addEventListener("fullscreenchange", handleNativeFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleNativeFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleNativeFullscreenChange);
+    document.addEventListener("MSFullscreenChange", handleNativeFullscreenChange);
   }
 
   try {

@@ -57,13 +57,83 @@
   position: absolute !important;
   top: 50% !important;
   left: 50% !important;
-  transform: translate(-50%, -50%) scale(1.36) !important;
+  transform: translate(-50%, -50%) scale(1.0) !important;
   transform-origin: center center !important;
   width: 100% !important;
   height: 100% !important;
   border: none !important;
   pointer-events: none !important;
   display: block !important;
+}
+
+/* Studio Broadcast Bug (Bottom-Right Corner Brand Mask covering YouTube watermark cleanly without cropping) */
+.edupeak-broadcast-bug {
+  position: absolute;
+  bottom: 12px;
+  right: 14px;
+  z-index: 18;
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: #f8fafc;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  transition: opacity 0.3s ease;
+  min-width: 135px;
+  justify-content: center;
+}
+
+.edupeak-broadcast-bug .bug-label {
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.edupeak-broadcast-bug .bug-divider {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.edupeak-broadcast-bug .bug-quality {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+/* Cross-Platform Fullscreen / iOS Safari Viewport Breakout */
+.edupeak-player-wrapper.fullscreen-mode {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  z-index: 9999999 !important;
+  border-radius: 0 !important;
+  background: #000000 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.edupeak-player-wrapper.fullscreen-mode .edupeak-player-viewport {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 0 !important;
+}
+
+.edupeak-player-wrapper.fullscreen-mode .edupeak-yt-frame-cropper iframe,
+.edupeak-player-wrapper.fullscreen-mode .edupeak-yt-frame-cropper #edupeakYTPlayerMount,
+.edupeak-player-wrapper.fullscreen-mode .edupeak-yt-frame-cropper #edupeakLiveYTPlayerMount {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* Transparent click shield on top of YouTube */
@@ -919,5 +989,38 @@
 .edupeak-live-unmute-btn:active {
   transform: translateX(-50%) scale(0.96) !important;
 }
+
+/* Mobile Player Controls & Overlays Polish */
+@media (max-width: 640px) {
+  .edupeak-player-top-bar {
+    height: 44px;
+    padding: 0.35rem 0.65rem;
+  }
+  .edupeak-player-top-bar .res-badge,
+  .edupeak-player-top-bar .edupeak-player-status-tag {
+    display: none !important;
+  }
+  .edupeak-player-top-bar .drm-badge {
+    font-size: 0.68rem;
+    padding: 0.2rem 0.5rem;
+  }
+  .edupeak-player-controls-overlay {
+    padding: 0.65rem 0.75rem 0.5rem;
+  }
+  .volume-control-box .volume-slider {
+    display: none !important;
+  }
+  .volume-control-box {
+    width: auto !important;
+  }
+  .edupeak-broadcast-bug {
+    bottom: 8px;
+    right: 8px;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.64rem;
+    min-width: 110px;
+  }
+}
+
 
 

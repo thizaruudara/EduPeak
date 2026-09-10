@@ -955,6 +955,42 @@
       cursor: not-allowed !important;
       user-select: none !important;
     }
+
+    /* Mobile Responsive Live Hub Layout Overrides */
+    @media (max-width: 992px) {
+      .live-topbar {
+        padding: 0.6rem 0.85rem;
+      }
+      .live-topbar #liveClockDisplay {
+        display: none !important; /* Hide cluttered timestamp on small screens */
+      }
+      .live-main-container {
+        display: flex;
+        flex-direction: column;
+        padding: 0.5rem 0.65rem 2rem;
+      }
+      /* Video Theater Stage ALWAYS at the top on mobile! */
+      .live-theater-grid {
+        order: 1 !important;
+        margin-bottom: 1.25rem !important;
+        grid-template-columns: 1fr !important;
+      }
+      .multi-live-hub-header {
+        order: 2 !important;
+        margin-top: 1rem;
+        margin-bottom: 0.75rem;
+      }
+      .multi-live-hub-header h2 {
+        font-size: 1.1rem !important;
+      }
+      .live-streams-grid {
+        order: 3 !important;
+      }
+      .chat-wrapper {
+        min-height: 380px !important;
+        max-height: 480px !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1048,6 +1084,14 @@
 
               <!-- Transparent Click Shield (Intercepts clicks: clicking joins/unmutes stream, DOES NOT pause live broadcast) -->
               <div class="edupeak-player-click-shield" id="livePlayerClickShield" onclick="EDUPEAK_LIVE_PLAYER.onShieldClick()"></div>
+
+              <!-- Studio Broadcast Bug (Bottom Right Corner Branding to cover YouTube Logo cleanly without cropping) -->
+              <div class="edupeak-broadcast-bug" id="livePlayerBroadcastBug">
+                <span class="live-pulse-dot" style="width: 7px; height: 7px; background: #ef4444; box-shadow: 0 0 8px #ef4444; display: inline-block;"></span>
+                <span class="bug-label">EDUPEAK LIVE</span>
+                <span class="bug-divider">•</span>
+                <span class="bug-quality">1080p HD</span>
+              </div>
 
               <!-- Floating Tap to Unmute Button (Click or Tap to Unmute Stream) -->
               <button type="button" class="edupeak-live-unmute-btn hidden" id="liveUnmutePromptBtn" style="display: none !important;" onclick="EDUPEAK_LIVE_PLAYER.unmute()">
