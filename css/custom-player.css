@@ -66,29 +66,98 @@
   display: block !important;
 }
 
+/* Startup / Reload Watermark Mask (Hides initial YouTube title, avatar & bottom watermarks for ~5.5s until YouTube auto-hides them) */
+.edupeak-startup-mask {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 17;
+  pointer-events: none;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s;
+}
+
+.edupeak-startup-mask.mask-faded {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+.edupeak-startup-mask.top-mask {
+  top: 0;
+  height: 64px;
+  background: linear-gradient(180deg, #090d16 0%, rgba(9, 13, 22, 0.94) 75%, transparent 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.25rem;
+  color: #ffffff;
+}
+
+.edupeak-startup-mask.top-mask .veil-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  max-width: 65%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edupeak-startup-mask.top-mask .veil-right {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+.edupeak-startup-mask.bottom-mask {
+  bottom: 0;
+  height: 56px;
+  background: linear-gradient(0deg, #090d16 0%, rgba(9, 13, 22, 0.92) 65%, transparent 100%);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 1.25rem;
+}
+
+.edupeak-startup-mask.bottom-mask .veil-bottom-content {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #cbd5e1;
+  letter-spacing: 0.04em;
+}
+
 /* Studio Broadcast Bug (Bottom-Right Corner Brand Mask covering YouTube watermark cleanly without cropping) */
 .edupeak-broadcast-bug {
   position: absolute;
-  bottom: 12px;
-  right: 14px;
+  bottom: 8px;
+  right: 10px;
   z-index: 18;
   pointer-events: none;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  background: rgba(15, 23, 42, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: #0b1120;
+  border: 1px solid rgba(255, 255, 255, 0.24);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   color: #f8fafc;
-  padding: 0.3rem 0.75rem;
+  padding: 0.35rem 0.85rem;
   border-radius: 9999px;
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.04em;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.85);
   transition: opacity 0.3s ease;
-  min-width: 135px;
+  min-width: 145px;
   justify-content: center;
 }
 

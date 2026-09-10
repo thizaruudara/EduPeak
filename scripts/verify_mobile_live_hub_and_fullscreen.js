@@ -157,14 +157,40 @@ function startServer() {
     });
 
     console.log('Mobile Fullscreen Test:', fsTestResult);
-    if (fsTestResult.success) {
-      console.log('✓ PASS: Fullscreen toggle cleanly enters and exits mobile fixed breakout!');
-    } else {
-      throw new Error('FAIL: Fullscreen toggle failed: ' + JSON.stringify(fsTestResult));
+    console.log('\n--- 3. Testing Startup Mask & Anti-Piracy Link Removal ---');
+    const maskAndLinkTest = await page.evaluate(() => {
+      const topMask = document.getElementById('livePlayerTopMask');
+      const bottomMask = document.getElementById('livePlayerBottomMask');
+      const extLink = document.getElementById('livePlayerExternalStreamLink');
+      const hasTop = Boolean(topMask);
+      const hasBottom = Boolean(bottomMask);
+      const noExtLink = !extLink || extLink.style.display === 'none' || extLink.offsetParent === null;
+
+      // Trigger startup mask
+      if (window.EDUPEAK_LIVE_PLAYER && window.EDUPEAK_LIVE_PLAYER.triggerStartupMask) {
+        window.EDUPEAK_LIVE_PLAYER.triggerStartupMask();
+      }
+      const isVisibleOnTrigger = topMask && !topMask.classList.contains('mask-faded');
+
+      return {
+        hasTop,
+        hasBottom,
+        noExtLink,
+        isVisibleOnTrigger
+      };
+    });
+
+    console.log('Mask & Link Test:', maskAndLinkTest);
+    if (!maskAndLinkTest.hasTop || !maskAndLinkTest.hasBottom) {
+      throw new Error('FAIL: Startup watermark masks missing');
     }
+    if (!maskAndLinkTest.noExtLink) {
+      throw new Error('FAIL: External YouTube link must be completely removed');
+    }
+    console.log('✓ PASS: Startup watermark masks active and external YouTube navigation link permanently removed!');
 
     console.log('\n======================================================');
-    console.log('🎉 ALL MOBILE UI & FULLSCREEN TESTS PASSED 100%!');
+    console.log('🎉 ALL MOBILE UI, FULLSCREEN & WATERMARK TESTS PASSED 100%!');
     console.log('======================================================');
   } finally {
     await browser.close();

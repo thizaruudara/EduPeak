@@ -974,18 +974,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
         events: {
           'onReady': () => {
             try {
-              enforceLiveNoCaptions(liveYtPlayer);
-
-              // Force muted play immediately — browsers always allow muted autoplay
-              liveYtPlayer.mute();
-              liveYtPlayer.setVolume(0);
-              const targetPos = (initialStart > 0) ? initialStart : Math.floor(getPlaybackResumeSeconds(videoId));
-              if (targetPos > 0) {
-                try { liveYtPlayer.seekTo(targetPos, true); } catch (e) {}
-              }
-              liveYtPlayer.playVideo();
-
-              // Show unmute prompt so student knows stream is playing
+              triggerStartupMask();
               _showUnmutePrompt();
               startDurationWatchdog();
             } catch (e) {
@@ -1001,9 +990,9 @@ const EDUPEAK_LIVE_PLAYER = (function() {
             if (event.data === PLAYING) {
               isLivePlaying = true;
               if (bigPlayBtn) bigPlayBtn.classList.add("hidden");
-              enforceLiveNoCaptions(liveYtPlayer);
               updateLiveWatermark();
               startDurationWatchdog();
+              triggerStartupMask();
 
               const targetPos = Math.floor(getPlaybackResumeSeconds(videoId));
               const curTime = typeof liveYtPlayer.getCurrentTime === "function" ? liveYtPlayer.getCurrentTime() : 0;
@@ -1066,6 +1055,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       const curState = typeof liveYtPlayer.getPlayerState === "function" ? liveYtPlayer.getPlayerState() : -1;
       if (currentVideoData && currentVideoData.video_id === videoId && (isLivePlaying || curState === 1 || curState === 3)) {
         updateLiveWatermark();
+        triggerStartupMask();
         return;
       }
     }
@@ -1088,19 +1078,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       createLiveYTPlayer(videoId, resumeSec);
     }
 
-    // Update direct stream fallback links for mobile/network bot-check bypass
-    if (videoId) {
-      const extLink = document.getElementById("livePlayerExternalStreamLink");
-      if (extLink) {
-        extLink.href = "https://www.youtube.com/watch?v=" + videoId;
-        extLink.style.display = "inline-flex";
-      }
-      const directBtn = document.getElementById("botCheckDirectYtBtn");
-      if (directBtn) {
-        directBtn.href = "https://www.youtube.com/watch?v=" + videoId;
-      }
-    }
-
+    triggerStartupMask();
     updateLiveWatermark();
   }
 
@@ -1447,6 +1425,33 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     if (shield) shield.style.pointerEvents = "none";
   }
 
+  let startupMaskTimer = null;
+  function triggerStartupMask() {
+    const topMask = document.getElementById("livePlayerTopMask");
+    const bottomMask = document.getElementById("livePlayerBottomMask");
+    if (topMask) topMask.classList.remove("mask-faded");
+    if (bottomMask) bottomMask.classList.remove("mask-faded");
+
+    const topicEl = document.getElementById("veilTopicTitle");
+    if (topicEl && activeSessionData && activeSessionData.topic) {
+      topicEl.textContent = activeSessionData.topic;
+    }
+
+    clearTimeout(startupMaskTimer);
+    startupMaskTimer = setTimeout(() => {
+      if (topMask) topMask.classList.add("mask-faded");
+      if (bottomMask) bottomMask.classList.add("mask-faded");
+    }, 5500); // Fades away once YouTube has auto-hidden its native overlay!
+  }
+
+  function retryPlayback() {
+    dismissBotPrompt();
+    if (liveYtPlayer && typeof liveYtPlayer.playVideo === "function") {
+      try { liveYtPlayer.playVideo(); } catch(e) {}
+    }
+    triggerStartupMask();
+  }
+
   try {
     window.addEventListener("beforeunload", () => {
       try {
@@ -1486,7 +1491,9 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     setSessionData: function(s) { activeSessionData = s; },
     triggerLiveEnded: triggerLiveEnded,
     dismissBotPrompt: dismissBotPrompt,
-    showBotFallbackPrompt: showBotFallbackPrompt
+    showBotFallbackPrompt: showBotFallbackPrompt,
+    triggerStartupMask: triggerStartupMask,
+    retryPlayback: retryPlayback
   };
 })();
 

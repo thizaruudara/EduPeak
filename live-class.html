@@ -1103,6 +1103,24 @@
                 <span id="livePlayerWatermarkText">200512345678</span>
               </div>
 
+              <!-- Startup / Reload Watermark Mask (Hides initial YouTube title, avatar & bottom watermarks for ~5.5s until YouTube auto-hides them) -->
+              <div class="edupeak-startup-mask top-mask" id="livePlayerTopMask">
+                <div class="veil-left">
+                  <span class="live-pulse-dot" style="background: #ef4444; box-shadow: 0 0 10px #ef4444;"></span>
+                  <span class="veil-title" id="veilTopicTitle">EduPeak Live Broadcast</span>
+                </div>
+                <div class="veil-right">
+                  <i class="fa-solid fa-graduation-cap" style="color: #38bdf8;"></i> Amalsha Wanniarachchi • Physics
+                </div>
+              </div>
+
+              <div class="edupeak-startup-mask bottom-mask" id="livePlayerBottomMask">
+                <div class="veil-bottom-content">
+                  <span class="live-pulse-dot" style="background: #ef4444;"></span>
+                  <span>EDUPEAK LIVE CLASSROOM • 1080p HD</span>
+                </div>
+              </div>
+
               <!-- Top Live Status Header -->
               <div class="edupeak-player-top-bar" id="livePlayerTopBar">
                 <div class="edupeak-player-brand">
@@ -1149,9 +1167,6 @@
                         <button onclick="EDUPEAK_LIVE_PLAYER.setPlaybackQuality('medium', this)"><span>360p</span></button>
                       </div>
                     </div>
-                    <a id="livePlayerExternalStreamLink" class="player-btn" href="#" target="_blank" rel="noopener noreferrer" title="Open Stream on YouTube (App / Web)" style="display: none; text-decoration: none; align-items: center; justify-content: center; color: #ef4444; font-size: 1.15rem;">
-                      <i class="fa-brands fa-youtube"></i>
-                    </a>
                     <button class="player-btn" onclick="EDUPEAK_LIVE_PLAYER.toggleFullscreen()" title="Fullscreen">
                       <i class="fa-solid fa-expand"></i>
                     </button>
@@ -1159,20 +1174,20 @@
                 </div>
               </div>
 
-              <!-- Anti-Bot / Shared IP YouTube Verification Fallback Overlay -->
+              <!-- Stream Optimization / Reconnect Overlay (Zero External YouTube Links) -->
               <div class="edupeak-botcheck-fallback" id="livePlayerBotCheckFallback" style="display: none;">
                 <div class="botcheck-modal-box">
-                  <i class="fa-brands fa-youtube" style="font-size: 2.6rem; color: #ef4444; margin-bottom: 0.75rem;"></i>
-                  <h3 style="font-size: 1.1rem; font-weight: 800; margin: 0 0 0.5rem; color: #ffffff;">Network Verification Prompted by YouTube</h3>
+                  <i class="fa-solid fa-tower-broadcast" style="font-size: 2.4rem; color: #ef4444; margin-bottom: 0.75rem;"></i>
+                  <h3 style="font-size: 1.1rem; font-weight: 800; margin: 0 0 0.5rem; color: #ffffff;">Broadcast Stream Reconnect</h3>
                   <p style="font-size: 0.84rem; color: #cbd5e1; margin: 0 0 1.25rem; line-height: 1.5;">
-                    Your mobile or broadband provider's shared IP address triggered YouTube's anti-bot verification. Click below to continue streaming directly without interruption:
+                    If the broadcast is waiting for verification or experiencing network interruptions, click below to re-synchronize:
                   </p>
                   <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
-                    <a id="botCheckDirectYtBtn" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" style="background: #ef4444; border: none; font-weight: 700; border-radius: 8px; padding: 0.55rem 1.15rem; display: inline-flex; align-items: center; gap: 0.5rem; color: #fff; text-decoration: none;">
-                      <i class="fa-brands fa-youtube"></i> Open in YouTube App / Web
-                    </a>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="EDUPEAK_LIVE_PLAYER.retryPlayback()" style="background: #ef4444; border: none; font-weight: 700; border-radius: 8px; padding: 0.55rem 1.15rem; display: inline-flex; align-items: center; gap: 0.5rem; color: #fff;">
+                      <i class="fa-solid fa-rotate-right"></i> Reconnect Stream
+                    </button>
                     <button type="button" class="btn btn-secondary btn-sm" onclick="EDUPEAK_LIVE_PLAYER.dismissBotPrompt()" style="background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-weight: 600; border-radius: 8px; padding: 0.55rem 1rem;">
-                      Dismiss & Sign In Here
+                      Dismiss
                     </button>
                   </div>
                 </div>
