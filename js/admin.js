@@ -1550,19 +1550,21 @@ const ADMIN_CONTROLLER = {
       facilities_si: facilities.length > 0 ? facilities : ["වායුසමනය කළ ශ්‍රවණාගාරය", "Smart LMS Wi-Fi"]
     };
 
+    // 1. Immediately persist locally
+    const institutes = window.EDUPEAK_INSTITUTES ? [...window.EDUPEAK_INSTITUTES.getAll()] : [];
+    const existingIndex = institutes.findIndex(i => i.id === instData.id);
+    if (existingIndex >= 0) {
+      institutes[existingIndex] = { ...institutes[existingIndex], ...instData };
+    } else {
+      institutes.push(instData);
+    }
+    if (window.EDUPEAK_INSTITUTES) {
+      window.EDUPEAK_INSTITUTES.saveAll(institutes);
+    }
+
+    // 2. Sync to Supabase Cloud
     if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.saveInstitute === "function") {
       await window.SUPABASE_HELPER.saveInstitute(instData);
-    } else {
-      const institutes = window.EDUPEAK_INSTITUTES ? [...window.EDUPEAK_INSTITUTES.getAll()] : [];
-      const existingIndex = institutes.findIndex(i => i.id === id);
-      if (existingIndex >= 0) {
-        institutes[existingIndex] = { ...institutes[existingIndex], ...instData };
-      } else {
-        institutes.push(instData);
-      }
-      if (window.EDUPEAK_INSTITUTES) {
-        window.EDUPEAK_INSTITUTES.saveAll(institutes);
-      }
     }
 
     document.getElementById("adminInstituteDrawerModal").classList.remove("active");
@@ -1588,10 +1590,12 @@ const ADMIN_CONTROLLER = {
       inst.badge_si = "ප්‍රධාන භෞතික මධ්‍යස්ථානය";
     }
 
+    if (window.EDUPEAK_INSTITUTES) {
+      window.EDUPEAK_INSTITUTES.saveAll(institutes);
+    }
+
     if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.saveInstitute === "function") {
       await window.SUPABASE_HELPER.saveInstitute(inst);
-    } else if (window.EDUPEAK_INSTITUTES) {
-      window.EDUPEAK_INSTITUTES.saveAll(institutes);
     }
 
     const cleanName = (inst.name || "").replace(/\s*\(Coming soon\)/gi, "");
@@ -1609,13 +1613,12 @@ const ADMIN_CONTROLLER = {
 
     const cleanName = (inst.name || "").replace(/\s*\(Coming soon\)/gi, "");
     if (confirm(`Are you sure you want to delete "${cleanName}"? This branch will be removed from the home page and registration forms.`)) {
+      const filtered = institutes.filter(i => i.id !== id);
+      if (window.EDUPEAK_INSTITUTES) {
+        window.EDUPEAK_INSTITUTES.saveAll(filtered);
+      }
       if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.deleteInstitute === "function") {
         await window.SUPABASE_HELPER.deleteInstitute(id);
-      } else {
-        const filtered = institutes.filter(i => i.id !== id);
-        if (window.EDUPEAK_INSTITUTES) {
-          window.EDUPEAK_INSTITUTES.saveAll(filtered);
-        }
       }
       if (window.showToast) {
         window.showToast(`Branch "${cleanName}" has been deleted.`, "info");

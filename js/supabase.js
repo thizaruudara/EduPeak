@@ -1228,11 +1228,15 @@ const SUPABASE_HELPER = {
     return true;
   },
 
-  // 8. BROADCAST SCHEDULES & LIVE STREAM CONFIG
+  // 8. BROADCAST SCHEDULES & MULTI-LIVE SESSIONS
   async getSchedules() {
+    return this.getLiveSessions();
+  },
+
+  async getLiveSessions() {
     if (this.isConnected && this.client) {
       try {
-        const { data, error } = await this.client.from("broadcast_schedules").select("*");
+        const { data, error } = await this.client.from("broadcast_schedules").select("*").order("updated_at", { ascending: false });
         if (!error && Array.isArray(data) && data.length > 0) {
           this.setSharedData("edupeak_schedules_db", data);
           try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(data)); } catch (e) {}
@@ -1261,41 +1265,92 @@ const SUPABASE_HELPER = {
   },
 
   async saveSchedule(schedData) {
+    return this.saveLiveSession(schedData);
+  },
+
+  async saveLiveSession(schedData) {
     if (!schedData || !schedData.id) return null;
+    
+    // Ensure all standard properties exist
+    schedData.updatedAt = new Date().toISOString();
+    if (!schedData.createdAt) schedData.createdAt = new Date().toISOString();
+    if (!schedData.status) schedData.status = "scheduled";
+    if (schedData.chatEnabled === undefined) schedData.chatEnabled = true;
+
     if (this.isConnected && this.client) {
       try {
         const payload = {
           id: schedData.id,
           topic: schedData.topic,
-          course_id: schedData.courseId || schedData.course_id,
-          courseId: schedData.courseId || schedData.course_id,
+          topic_si: schedData.topic_si || schedData.topic,
+          course_id: schedData.courseId || schedData.course_id || "",
+          courseId: schedData.courseId || schedData.course_id || "",
           courseTitle: schedData.courseTitle || "",
+          subject: schedData.subject || "Physics",
+          subject_si: schedData.subject_si || "භෞතික විද්‍යාව",
+          examYear: schedData.examYear || "2026 A/L",
+          teacherId: schedData.teacherId || "TCH-PHYSICS",
+          teacherName: schedData.teacherName || "Amalsha Wanniarachchi",
+          scheduleDate: schedData.scheduleDate || "",
+          scheduleStartTime: schedData.scheduleStartTime || "",
+          scheduleEndTime: schedData.scheduleEndTime || "",
           scheduleTime: schedData.scheduleTime || "",
           provider: schedData.provider || "youtube",
           rawUrl: schedData.rawUrl || "",
           embedUrl: schedData.embedUrl || "",
+          zoomUrl: schedData.zoomUrl || "",
           status: schedData.status || "scheduled",
-          watermarkEnabled: Boolean(schedData.watermarkEnabled)
+          watermarkEnabled: Boolean(schedData.watermarkEnabled),
+          chatEnabled: Boolean(schedData.chatEnabled),
+          description: schedData.description || "",
+          pinnedNotice: schedData.pinnedNotice || "",
+          recordingUrl: schedData.recordingUrl || "",
+          updated_at: new Date().toISOString()
         };
         const { data, error } = await this.client.from("broadcast_schedules").upsert([payload]).select();
-        if (!error && data && data.length > 0) schedData = data[0];
+        if (!error && data && data.length > 0) {
+          schedData = { ...schedData, ...data[0] };
+        }
       } catch (e) {
         console.warn("Supabase upsert broadcast_schedule error:", e);
       }
     }
-    const schedules = await this.getSchedules();
+    const schedules = await this.getLiveSessions();
     const existingIndex = schedules.findIndex(s => s.id === schedData.id);
     if (existingIndex >= 0) {
       schedules[existingIndex] = { ...schedules[existingIndex], ...schedData };
     } else {
-      schedules.push(schedData);
+      schedules.unshift(schedData);
     }
     this.setSharedData("edupeak_schedules_db", schedules);
     try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(schedules)); } catch (e) {}
+
+    // Dispatch global event for reactive multi-live refresh
+    try {
+      window.dispatchEvent(new CustomEvent("edupeak-live-sessions-updated", { detail: { session: schedData, all: schedules } }));
+    } catch(e) {}
+
     return schedData;
   },
 
+  async updateLiveSessionStatus(sessionId, newStatus) {
+    const schedules = await this.getLiveSessions();
+    const target = schedules.find(s => s.id === sessionId);
+    if (!target) return null;
+
+    target.status = newStatus;
+    target.updatedAt = new Date().toISOString();
+    if (newStatus === "live") target.startedAt = new Date().toISOString();
+    if (newStatus === "ended") target.endedAt = new Date().toISOString();
+
+    return this.saveLiveSession(target);
+  },
+
   async deleteSchedule(schedId) {
+    return this.deleteLiveSession(schedId);
+  },
+
+  async deleteLiveSession(schedId) {
     if (this.isConnected && this.client) {
       try {
         await this.client.from("broadcast_schedules").delete().eq("id", schedId);
@@ -1303,14 +1358,157 @@ const SUPABASE_HELPER = {
         console.warn("Supabase delete broadcast_schedule error:", e);
       }
     }
-    let schedules = await this.getSchedules();
+    let schedules = await this.getLiveSessions();
     schedules = schedules.filter(s => s.id !== schedId);
     this.setSharedData("edupeak_schedules_db", schedules);
     try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(schedules)); } catch (e) {}
+
+    try {
+      window.dispatchEvent(new CustomEvent("edupeak-live-sessions-updated", { detail: { deletedId: schedId, all: schedules } }));
+    } catch(e) {}
+
     return true;
   },
 
-  // 7. SYNC LOCAL DATA TO SUPABASE CLOUD
+  // 9. REAL-TIME LIVE CHAT ENGINE
+  async getLiveChatMessages(sessionId = null) {
+    if (this.isConnected && this.client) {
+      try {
+        let query = this.client.from("live_chat_messages").select("*").order("timestamp", { ascending: true }).limit(200);
+        if (sessionId) {
+          query = query.eq("sessionId", sessionId);
+        }
+        const { data, error } = await query;
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const key = sessionId ? `edupeak_live_chat_${sessionId}` : "edupeak_live_chat_messages";
+          this.setSharedData(key, data);
+          try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) {}
+          return data;
+        }
+      } catch (e) {
+        console.warn("Supabase fetch live chat messages error:", e);
+      }
+    }
+
+    const key = sessionId ? `edupeak_live_chat_${sessionId}` : "edupeak_live_chat_messages";
+    const shared = this.getSharedData(key);
+    if (shared !== null && Array.isArray(shared)) {
+      try { localStorage.setItem(key, JSON.stringify(shared)); } catch (e) {}
+      return shared;
+    }
+    try {
+      const stored = localStorage.getItem(key) || (sessionId ? localStorage.getItem("edupeak_live_chat_messages") : null);
+      if (stored !== null) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          if (sessionId) {
+            const filtered = parsed.filter(m => !m.sessionId || m.sessionId === sessionId);
+            return filtered;
+          }
+          return parsed;
+        }
+      }
+    } catch (e) {}
+    return [];
+  },
+
+  async saveLiveChatMessage(msgObj) {
+    if (!msgObj || !msgObj.text) return null;
+    if (!msgObj.id) {
+      msgObj.id = "msg_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
+    }
+    if (!msgObj.timestamp) msgObj.timestamp = Date.now();
+    if (!msgObj.time) {
+      msgObj.time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    if (this.isConnected && this.client) {
+      try {
+        const payload = {
+          id: msgObj.id,
+          sessionId: msgObj.sessionId || "global",
+          courseId: msgObj.courseId || "",
+          senderName: msgObj.senderName || "User",
+          userRole: msgObj.userRole || "student",
+          userId: msgObj.userId || "",
+          senderNic: msgObj.senderNic || "",
+          time: msgObj.time,
+          timestamp: msgObj.timestamp,
+          text: msgObj.text,
+          isPinned: Boolean(msgObj.isPinned),
+          isAnnouncement: Boolean(msgObj.isAnnouncement),
+          created_at: new Date().toISOString()
+        };
+        await this.client.from("live_chat_messages").upsert([payload]);
+      } catch (e) {
+        console.warn("Supabase save live chat error:", e);
+      }
+    }
+
+    // Save to global & session local stores
+    const allKey = "edupeak_live_chat_messages";
+    let allMessages = [];
+    try {
+      allMessages = JSON.parse(localStorage.getItem(allKey) || "[]");
+    } catch (e) {}
+    allMessages.push(msgObj);
+    if (allMessages.length > 200) allMessages.splice(0, allMessages.length - 200);
+    this.setSharedData(allKey, allMessages);
+    try { localStorage.setItem(allKey, JSON.stringify(allMessages)); } catch (e) {}
+
+    if (msgObj.sessionId) {
+      const sessionKey = `edupeak_live_chat_${msgObj.sessionId}`;
+      let sessionMessages = [];
+      try {
+        sessionMessages = JSON.parse(localStorage.getItem(sessionKey) || "[]");
+      } catch (e) {}
+      sessionMessages.push(msgObj);
+      if (sessionMessages.length > 200) sessionMessages.splice(0, sessionMessages.length - 200);
+      this.setSharedData(sessionKey, sessionMessages);
+      try { localStorage.setItem(sessionKey, JSON.stringify(sessionMessages)); } catch (e) {}
+    }
+
+    try {
+      window.dispatchEvent(new CustomEvent("edupeak-live-chat-updated", { detail: msgObj }));
+    } catch (e) {}
+
+    return msgObj;
+  },
+
+  async clearLiveChat(sessionId = null) {
+    if (sessionId) {
+      const sessionKey = `edupeak_live_chat_${sessionId}`;
+      this.setSharedData(sessionKey, []);
+      try { localStorage.removeItem(sessionKey); } catch (e) {}
+    }
+    const allKey = "edupeak_live_chat_messages";
+    let all = [];
+    if (sessionId) {
+      try {
+        all = JSON.parse(localStorage.getItem(allKey) || "[]");
+        all = all.filter(m => m.sessionId !== sessionId);
+      } catch (e) {}
+    }
+    this.setSharedData(allKey, all);
+    try { localStorage.setItem(allKey, JSON.stringify(all)); } catch (e) {}
+
+    if (this.isConnected && this.client) {
+      try {
+        if (sessionId) {
+          await this.client.from("live_chat_messages").delete().eq("sessionId", sessionId);
+        } else {
+          await this.client.from("live_chat_messages").delete().neq("id", "none");
+        }
+      } catch (e) {}
+    }
+
+    try {
+      window.dispatchEvent(new CustomEvent("edupeak-live-chat-updated", { detail: { cleared: true, sessionId } }));
+    } catch (e) {}
+    return true;
+  },
+
+  // 10. SYNC LOCAL DATA TO SUPABASE CLOUD
   async syncLocalToCloud() {
     if (!this.client || !this.isConnected) {
       return { success: false, message: "Please connect to Supabase first before syncing." };
@@ -1374,7 +1572,7 @@ const SUPABASE_HELPER = {
         await this.client.from("broadcast_schedules").upsert(schedules);
       }
 
-      return { success: true, message: `Synced ${teachers.length} teachers, ${courses.length} courses, ${users.length} profiles, ${papers.length} papers, ${institutes.length} campuses, ${lessons.length} lessons, and ${quizzes.length} quizzes to Supabase Cloud!` };
+      return { success: true, message: `Synced ${teachers.length} teachers, ${courses.length} courses, ${users.length} profiles, ${papers.length} papers, ${institutes.length} campuses, ${lessons.length} lessons, ${quizzes.length} quizzes, and ${schedules.length} live broadcast schedules to Supabase Cloud!` };
     } catch (err) {
       return { success: false, message: "Sync error: " + err.message };
     }
@@ -1541,23 +1739,54 @@ CREATE TABLE IF NOT EXISTS public.quizzes (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 8. Create BROADCAST_SCHEDULES Table
+-- 8. Create BROADCAST_SCHEDULES Table (Multi-Live Broadcasting & Arbitrary Scheduling)
 CREATE TABLE IF NOT EXISTS public.broadcast_schedules (
     id TEXT PRIMARY KEY,
     topic TEXT NOT NULL,
+    topic_si TEXT,
     course_id TEXT,
     courseId TEXT,
     courseTitle TEXT,
+    subject TEXT DEFAULT 'Physics',
+    subject_si TEXT DEFAULT 'භෞතික විද්‍යාව',
+    examYear TEXT DEFAULT '2026 A/L',
+    teacherId TEXT DEFAULT 'TCH-PHYSICS',
+    teacherName TEXT DEFAULT 'Amalsha Wanniarachchi',
+    scheduleDate TEXT,
+    scheduleStartTime TEXT,
+    scheduleEndTime TEXT,
     scheduleTime TEXT,
     provider TEXT DEFAULT 'youtube',
     rawUrl TEXT,
     embedUrl TEXT,
+    zoomUrl TEXT,
     status TEXT DEFAULT 'scheduled',
     watermarkEnabled BOOLEAN DEFAULT false,
+    chatEnabled BOOLEAN DEFAULT true,
+    description TEXT,
+    pinnedNotice TEXT,
+    recordingUrl TEXT,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 9. Create ENROLLMENTS Table
+-- 9. Create LIVE_CHAT_MESSAGES Table (Real-Time Live Chat Moderation)
+CREATE TABLE IF NOT EXISTS public.live_chat_messages (
+    id TEXT PRIMARY KEY,
+    sessionId TEXT DEFAULT 'global',
+    courseId TEXT,
+    senderName TEXT NOT NULL,
+    userRole TEXT DEFAULT 'student',
+    userId TEXT,
+    senderNic TEXT,
+    time TEXT NOT NULL,
+    timestamp NUMERIC NOT NULL,
+    text TEXT NOT NULL,
+    isPinned BOOLEAN DEFAULT false,
+    isAnnouncement BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 10. Create ENROLLMENTS Table
 CREATE TABLE IF NOT EXISTS public.enrollments (
     id BIGSERIAL PRIMARY KEY,
     student_id TEXT REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -1567,7 +1796,7 @@ CREATE TABLE IF NOT EXISTS public.enrollments (
     UNIQUE(student_id, course_id)
 );
 
--- 10. Enable Row Level Security (RLS) & Public Policies
+-- 11. Enable Row Level Security (RLS) & Public Policies
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.teachers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
@@ -1576,6 +1805,7 @@ ALTER TABLE public.institutes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lessons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.quizzes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.broadcast_schedules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.live_chat_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.enrollments ENABLE ROW LEVEL SECURITY;
 
 -- Allow public access
@@ -1589,6 +1819,9 @@ CREATE POLICY "Public can modify institutes" ON public.institutes FOR ALL USING 
 CREATE POLICY "Public can view lessons" ON public.lessons FOR ALL USING (true);
 CREATE POLICY "Public can view quizzes" ON public.quizzes FOR ALL USING (true);
 CREATE POLICY "Public can view broadcast_schedules" ON public.broadcast_schedules FOR ALL USING (true);
+CREATE POLICY "Public can modify broadcast_schedules" ON public.broadcast_schedules FOR ALL USING (true);
+CREATE POLICY "Public can view live_chat_messages" ON public.live_chat_messages FOR ALL USING (true);
+CREATE POLICY "Public can modify live_chat_messages" ON public.live_chat_messages FOR ALL USING (true);
 CREATE POLICY "Public can view and insert profiles" ON public.profiles FOR ALL USING (true);
 CREATE POLICY "Public can view and insert enrollments" ON public.enrollments FOR ALL USING (true);
 
