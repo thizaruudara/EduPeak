@@ -2280,7 +2280,7 @@
             if (s) {
               s.status = "live";
               s.startedAt = s.startedAt || nowIso;
-              s.viewersCount = 342;
+              s.viewersCount = 0;
               s.updatedAt = nowIso;
               localStorage.setItem("edupeak_schedules_db", JSON.stringify(scheds));
             }
@@ -2746,7 +2746,7 @@
           chatEnabled,
           pinnedNotice,
           description,
-          viewersCount: status === "live" ? 340 : 0,
+          viewersCount: 0,
           startedAt: startedAt
         };
 

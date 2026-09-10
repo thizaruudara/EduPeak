@@ -1627,7 +1627,7 @@ const SUPABASE_HELPER = {
       description: sched.description || "",
       pinnedNotice: sched.pinnedNotice || sched.pinned_notice || "",
       recordingUrl: sched.recordingUrl || sched.recording_url || "",
-      viewersCount: Number(sched.viewersCount || sched.viewers_count || (status === "live" ? 180 : 0)),
+      viewersCount: Number(sched.viewersCount || sched.viewers_count || 0),
       startedAt: sched.startedAt || sched.started_at || null,
       endedAt: sched.endedAt || sched.ended_at || null,
       createdAt: sched.createdAt || sched.created_at || new Date().toISOString(),
@@ -1875,7 +1875,7 @@ const SUPABASE_HELPER = {
     target.updatedAt = new Date().toISOString();
     if (newStatus === "live") {
       target.startedAt = target.startedAt || new Date().toISOString();
-      target.viewersCount = Math.max(Number(target.viewersCount || 0), 120);
+      target.viewersCount = Number(target.viewersCount || 0);
     }
     if (newStatus === "ended") {
       target.endedAt = new Date().toISOString();

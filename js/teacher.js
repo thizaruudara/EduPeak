@@ -2419,10 +2419,27 @@ const TEACHER_CONTROLLER = {
     if (!saved) {
       const raw = localStorage.getItem(this.storageKeys.liveStream);
       if (raw) {
-        try {
-          saved = JSON.parse(raw);
-        } catch (e) {}
+        try { saved = JSON.parse(raw); } catch (e) {}
       }
+    }
+
+    // If no URL in saved config, fall back to edupeak_schedules_db (sessions created via edit form)
+    if (!saved || (!saved.rawUrl && !saved.embedUrl)) {
+      try {
+        let sessions = [];
+        if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+          const s = window.SUPABASE_HELPER.getSharedData("edupeak_schedules_db");
+          if (Array.isArray(s) && s.length) sessions = s;
+        }
+        if (!sessions.length) sessions = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
+        // Pick the live session first, then most-recently-updated non-ended session
+        const candidate = sessions.find(s => s.status === "live")
+          || sessions.filter(s => s.status !== "ended").sort((a,b) => new Date(b.updatedAt||0) - new Date(a.updatedAt||0))[0]
+          || null;
+        if (candidate && (candidate.rawUrl || candidate.rawurl || candidate.embedUrl)) {
+          saved = { ...candidate, rawUrl: candidate.rawUrl || candidate.rawurl || candidate.embedUrl };
+        }
+      } catch(e) {}
     }
     const titleEl = document.getElementById("liveStudioTopic");
     const urlEl = document.getElementById("liveStudioUrl");

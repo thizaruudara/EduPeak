@@ -1074,55 +1074,72 @@
     // --------------------------------------------------------------------------
     // LIVE CLASS ALERT BANNER
     // --------------------------------------------------------------------------
-    function checkLiveBanner() {
-      const bannerEl  = document.getElementById("studentLiveAlertBanner");
-      const iconEl    = document.getElementById("studentLiveAlertIcon");
-      const titleEl   = document.getElementById("studentLiveAlertTitle");
-      const subEl     = document.getElementById("studentLiveAlertSub");
-      const linkEl    = document.getElementById("studentLiveAlertLink");
+    async function checkLiveBanner() {
+      const bannerEl = document.getElementById("studentLiveAlertBanner");
+      const iconEl   = document.getElementById("studentLiveAlertIcon");
+      const titleEl  = document.getElementById("studentLiveAlertTitle");
+      const subEl    = document.getElementById("studentLiveAlertSub");
+      const linkEl   = document.getElementById("studentLiveAlertLink");
       if (!bannerEl) return;
 
-      let cfg = null;
-      // 1. Try shared Supabase/cross-tab data
-      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
-        const shared = window.SUPABASE_HELPER.getSharedData("edupeak_live_stream_config");
-        if (shared && typeof shared === "object") cfg = shared;
+      // Collect all sessions from every available source
+      function getAllSessions() {
+        let sessions = [];
+        // 1. Shared memory (cross-tab)
+        if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+          const s = window.SUPABASE_HELPER.getSharedData("edupeak_schedules_db");
+          if (Array.isArray(s) && s.length) sessions = s;
+        }
+        // 2. localStorage (correct key)
+        if (!sessions.length) {
+          try { sessions = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]"); } catch(e) {}
+        }
+        // 3. Legacy single-config key
+        if (!sessions.length) {
+          let cfg = null;
+          if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function")
+            cfg = window.SUPABASE_HELPER.getSharedData("edupeak_live_stream_config");
+          if (!cfg) try { cfg = JSON.parse(localStorage.getItem("edupeak_live_stream_config") || "null"); } catch(e) {}
+          if (cfg && cfg.id) sessions = [cfg];
+        }
+        return Array.isArray(sessions) ? sessions : [];
       }
-      // 2. Fallback to localStorage
-      if (!cfg) {
-        try { cfg = JSON.parse(localStorage.getItem("edupeak_live_stream_config") || "null"); } catch(e) {}
-      }
-      // 3. Also aggregate all scheduled sessions for "upcoming" banner
-      let scheduledSoon = null;
-      try {
-        const sessions = JSON.parse(localStorage.getItem("edupeak_live_sessions_db") || "[]");
-        const deleted  = JSON.parse(localStorage.getItem("edupeak_deleted_schedules_db") || "[]");
-        scheduledSoon = sessions
-          .filter(s => !deleted.includes(s.id) && s.status === "scheduled" && s.topic && s.topic !== "No Live Broadcast Scheduled")
-          .sort((a,b) => new Date(b.updatedAt||0) - new Date(a.updatedAt||0))[0] || null;
-      } catch(e) {}
 
-      const isLive      = cfg && cfg.status === "live"  && cfg.topic && cfg.topic !== "No Live Broadcast Scheduled";
-      const isScheduled = cfg && cfg.status === "scheduled" && cfg.topic && cfg.topic !== "No Live Broadcast Scheduled";
+      const deleted = (() => { try { return JSON.parse(localStorage.getItem("edupeak_deleted_schedules_db") || "[]"); } catch(e) { return []; } })();
+      let sessions = getAllSessions().filter(s => !deleted.includes(s.id) && s.topic && s.topic !== "No Live Broadcast Scheduled");
+
+      // If nothing found (fresh load / cache cleared) — fetch from Supabase then re-render
+      if (!sessions.length && window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getLiveSessions === "function") {
+        try {
+          sessions = (await window.SUPABASE_HELPER.getLiveSessions()) || [];
+          sessions = sessions.filter(s => !deleted.includes(s.id) && s.topic && s.topic !== "No Live Broadcast Scheduled");
+        } catch(e) {}
+      }
+
+      const liveSession      = sessions.find(s => s.status === "live") || null;
+      const scheduledSession = sessions.find(s => s.status === "scheduled") || null;
+      const cfg = liveSession || scheduledSession;
+
+      const isLive      = !!liveSession;
+      const isScheduled = !isLive && !!scheduledSession;
 
       if (isLive) {
-        // ── LIVE NOW banner ──
         bannerEl.style.display = "block";
         bannerEl.style.background = "linear-gradient(135deg,#7f1d1d 0%,#dc2626 50%,#ef4444 100%)";
         if (iconEl)  iconEl.textContent  = "🔴";
         if (titleEl) titleEl.textContent = `LIVE NOW: ${cfg.topic}`;
         if (subEl)   subEl.textContent   = cfg.scheduleTime ? `${cfg.scheduleTime}  — Tap to join the live classroom` : "Tap to join the live classroom";
         if (linkEl)  linkEl.style.background = "linear-gradient(135deg,#7f1d1d 0%,#dc2626 50%,#ef4444 100%)";
-      } else if (isScheduled || scheduledSoon) {
-        // ── SCHEDULED banner ──
-        const s = (isScheduled ? cfg : scheduledSoon);
+        bannerEl.style.animation = "";
+      } else if (isScheduled) {
         bannerEl.style.display = "block";
+        bannerEl.style.background = "linear-gradient(135deg,#1e3a5f 0%,#1d4ed8 60%,#3b82f6 100%)";
         if (iconEl)  iconEl.textContent  = "⏳";
-        if (titleEl) titleEl.textContent = `Upcoming Live: ${s.topic}`;
-        if (subEl)   subEl.textContent   = s.scheduleTime ? `Scheduled: ${s.scheduleTime}  — Tap to view details` : "Tap to view schedule details";
+        if (titleEl) titleEl.textContent = `Upcoming Live: ${cfg.topic}`;
+        if (subEl)   subEl.textContent   = cfg.scheduleTime ? `Scheduled: ${cfg.scheduleTime}  — Tap to view details` : "Tap to view schedule details";
         if (linkEl)  linkEl.style.background = "linear-gradient(135deg,#1e3a5f 0%,#1d4ed8 60%,#3b82f6 100%)";
         bannerEl.style.boxShadow = "0 4px 24px rgba(29,78,216,0.22)";
-        bannerEl.style.animation = "none"; // no pulse for scheduled
+        bannerEl.style.animation = "none";
         const btnSpan = linkEl && linkEl.querySelector("span:last-child");
         if (btnSpan) btnSpan.textContent = "View Schedule →";
       } else {
