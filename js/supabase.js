@@ -283,7 +283,7 @@ const SUPABASE_HELPER = {
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("teachers").select("*");
-        if (!error && Array.isArray(data) && data.length > 0) {
+        if (!error && Array.isArray(data)) {
           this.setSharedData("edupeak_teachers_db", data);
           try { localStorage.setItem("edupeak_teachers_db", JSON.stringify(data)); } catch (e) {}
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.teachers = data;
@@ -294,16 +294,16 @@ const SUPABASE_HELPER = {
       }
     }
     const shared = this.getSharedData("edupeak_teachers_db");
-    if (shared !== null && Array.isArray(shared) && shared.length > 0) {
+    if (shared !== null && Array.isArray(shared)) {
       if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.teachers = shared;
       try { localStorage.setItem("edupeak_teachers_db", JSON.stringify(shared)); } catch (e) {}
       return shared;
     }
     try {
       const stored = localStorage.getItem("edupeak_teachers_db");
-      if (stored) {
+      if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           this.setSharedData("edupeak_teachers_db", parsed);
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.teachers = parsed;
           return parsed;
@@ -357,6 +357,7 @@ const SUPABASE_HELPER = {
     let teachers = await this.getTeachers();
     teachers = teachers.filter(t => t.id !== teacherId);
     this.setSharedData("edupeak_teachers_db", teachers);
+    try { localStorage.setItem("edupeak_teachers_db", JSON.stringify(teachers)); } catch (e) {}
     if (window.EDUPEAK_DATA) {
       window.EDUPEAK_DATA.teachers = teachers;
       if (window.renderTeachers) window.renderTeachers();
@@ -369,7 +370,7 @@ const SUPABASE_HELPER = {
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("courses").select("*");
-        if (!error && Array.isArray(data) && data.length > 0) {
+        if (!error && Array.isArray(data)) {
           this.setSharedData("edupeak_courses_db", data);
           try {
             localStorage.setItem("edupeak_courses_db", JSON.stringify(data));
@@ -382,7 +383,7 @@ const SUPABASE_HELPER = {
       }
     }
     const shared = this.getSharedData("edupeak_courses_db");
-    if (shared !== null && Array.isArray(shared) && shared.length > 0) {
+    if (shared !== null && Array.isArray(shared)) {
       if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = shared;
       try {
         localStorage.setItem("edupeak_courses_db", JSON.stringify(shared));
@@ -391,9 +392,9 @@ const SUPABASE_HELPER = {
     }
     try {
       const stored = localStorage.getItem("edupeak_courses_db");
-      if (stored) {
+      if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           this.setSharedData("edupeak_courses_db", parsed);
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = parsed;
           return parsed;
@@ -468,7 +469,7 @@ const SUPABASE_HELPER = {
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("past_papers").select("*").order("year", { ascending: false });
-        if (!error && Array.isArray(data) && data.length > 0) {
+        if (!error && Array.isArray(data)) {
           this.setSharedData("edupeak_papers_db", data);
           try { localStorage.setItem("edupeak_papers_db", JSON.stringify(data)); } catch (e) {}
           return data;
@@ -478,15 +479,15 @@ const SUPABASE_HELPER = {
       }
     }
     const shared = this.getSharedData("edupeak_papers_db");
-    if (shared !== null && Array.isArray(shared) && shared.length > 0) {
+    if (shared !== null && Array.isArray(shared)) {
       try { localStorage.setItem("edupeak_papers_db", JSON.stringify(shared)); } catch (e) {}
       return shared;
     }
     try {
       const stored = localStorage.getItem("edupeak_papers_db");
-      if (stored) {
+      if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           this.setSharedData("edupeak_papers_db", parsed);
           return parsed;
         }
@@ -495,38 +496,47 @@ const SUPABASE_HELPER = {
 
     const defaultPapers = [
       {
-        id: "pp-2024-al-phy",
+        id: "pap-al-2024",
         title: "2024 G.C.E. A/L Physics Past Paper & Structured Marking Scheme",
         title_si: "2024 උසස් පෙළ භෞතික විද්‍යාව පසුගිය විභාග ප්‍රශ්න පත්‍රය සහ ලකුණු දීමේ පටිපාටිය",
         year: 2024,
-        type: "past_paper",
+        type: "national",
+        unit: "all",
         unitName: "Complete Paper (Part I & II)",
+        size: "4.8 MB",
         fileSize: "4.8 MB",
         downloadCount: 3840,
+        url: "assets/papers/2024_AL_Physics_Paper.pdf",
         pdfUrl: "assets/papers/2024_AL_Physics_Paper.pdf",
         storageType: "local"
       },
       {
-        id: "pp-2023-al-phy",
+        id: "pap-al-2023",
         title: "2023 G.C.E. A/L Physics Past Paper & Detailed Marking Scheme",
         title_si: "2023 උසස් පෙළ භෞතික විද්‍යාව පසුගිය විභාග ප්‍රශ්න පත්‍රය සහ පිළිතුරු විවරණය",
         year: 2023,
-        type: "past_paper",
+        type: "national",
+        unit: "all",
         unitName: "Complete Paper (Part I & II)",
+        size: "5.2 MB",
         fileSize: "5.2 MB",
         downloadCount: 5120,
+        url: "assets/papers/2023_AL_Physics_Paper.pdf",
         pdfUrl: "assets/papers/2023_AL_Physics_Paper.pdf",
         storageType: "local"
       },
       {
-        id: "pp-2022-al-phy",
+        id: "pap-al-2022",
         title: "2022 G.C.E. A/L Physics Past Paper with MCQ Explanations",
         title_si: "2022 උසස් පෙළ භෞතික විද්‍යාව පසුගිය විභාග ප්‍රශ්න පත්‍රය හා විවරණය",
         year: 2022,
-        type: "past_paper",
+        type: "national",
+        unit: "all",
         unitName: "Complete Paper (Part I & II)",
+        size: "4.5 MB",
         fileSize: "4.5 MB",
         downloadCount: 6200,
+        url: "assets/papers/2022_AL_Physics_Paper.pdf",
         pdfUrl: "assets/papers/2022_AL_Physics_Paper.pdf",
         storageType: "local"
       }
@@ -578,7 +588,7 @@ const SUPABASE_HELPER = {
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("institutes").select("*");
-        if (!error && Array.isArray(data) && data.length > 0) {
+        if (!error && Array.isArray(data)) {
           this.setSharedData("edupeak_institutes_db", data);
           try { localStorage.setItem("edupeak_institutes_db", JSON.stringify(data)); } catch (e) {}
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = data;
@@ -589,16 +599,16 @@ const SUPABASE_HELPER = {
       }
     }
     const shared = this.getSharedData("edupeak_institutes_db");
-    if (shared !== null && Array.isArray(shared) && shared.length > 0) {
+    if (shared !== null && Array.isArray(shared)) {
       if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = shared;
       try { localStorage.setItem("edupeak_institutes_db", JSON.stringify(shared)); } catch (e) {}
       return shared;
     }
     try {
       const stored = localStorage.getItem("edupeak_institutes_db");
-      if (stored) {
+      if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           this.setSharedData("edupeak_institutes_db", parsed);
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = parsed;
           return parsed;
