@@ -2217,6 +2217,9 @@ const TEACHER_CONTROLLER = {
       topic,
       courseId: document.getElementById("liveStudioCourseSelect")?.value || "",
       courseTitle: document.getElementById("liveStudioCourseSelect")?.selectedOptions[0]?.text || "",
+      scheduleDay: day,
+      scheduleStartTime: start,
+      scheduleEndTime: end,
       scheduleTime,
       provider,
       rawUrl,
@@ -2446,13 +2449,21 @@ const TEACHER_CONTROLLER = {
           scheduleIdEl.value = cfg.scheduleId || cfg.id;
         }
 
-        // Parse the stored scheduleTime string back into day / start / end inputs
-        // so the time fields never revert to their HTML default values on re-render
-        if (cfg.scheduleTime) {
+        // Restore day / start / end time inputs.
+        // Prefer the explicit raw fields (saved since the latest fix).
+        // Fall back to parsing the scheduleTime string for older records.
+        const dayEl   = document.getElementById("liveStudioScheduleDay");
+        const startEl = document.getElementById("liveStudioScheduleStartTime");
+        const endEl   = document.getElementById("liveStudioScheduleEndTime");
+
+        if (cfg.scheduleStartTime && cfg.scheduleEndTime) {
+          // Direct fields available — use them, no parsing needed
+          if (dayEl   && cfg.scheduleDay)       dayEl.value   = cfg.scheduleDay;
+          if (startEl && cfg.scheduleStartTime) startEl.value = cfg.scheduleStartTime;
+          if (endEl   && cfg.scheduleEndTime)   endEl.value   = cfg.scheduleEndTime;
+        } else if (cfg.scheduleTime) {
+          // Legacy records — parse from string
           const parsed = this.parseScheduleString(cfg.scheduleTime);
-          const dayEl   = document.getElementById("liveStudioScheduleDay");
-          const startEl = document.getElementById("liveStudioScheduleStartTime");
-          const endEl   = document.getElementById("liveStudioScheduleEndTime");
           if (dayEl   && parsed.day)       dayEl.value   = parsed.day;
           if (startEl && parsed.startTime) startEl.value = parsed.startTime;
           if (endEl   && parsed.endTime)   endEl.value   = parsed.endTime;
