@@ -773,7 +773,9 @@ const EDUPEAK_LIVE_PLAYER = (function() {
 
   function extractYouTubeId(url) {
     if (!url) return "";
-    if (url.length === 11 && !url.includes("/") && !url.includes(".")) return url;
+    if (typeof url !== "string") return "";
+    url = url.trim();
+    if (url.length === 11 && !url.includes("/") && !url.includes(".") && !url.includes("?")) return url;
     const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|live\/|shorts\/)([^#&\?]{11}).*/;
     const match = url.match(regExp);
     return (match && match[2] && match[2].length === 11) ? match[2] : "";
@@ -855,6 +857,11 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   function createLiveYTPlayer(videoId, startOffset = null) {
     const container = document.getElementById("edupeakLiveYTPlayerMount");
     if (!container) return;
+
+    if (!videoId && activeSessionData) {
+      const u = activeSessionData.rawUrl || activeSessionData.rawurl || activeSessionData.raw_url || activeSessionData.embedUrl || activeSessionData.embedurl || activeSessionData.embed_url || "";
+      videoId = extractYouTubeId(u);
+    }
 
     // No URL configured — show message instead of playing placeholder
     if (!videoId) {
@@ -1006,7 +1013,14 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     if (sessionData) {
       activeSessionData = sessionData;
     }
-    const videoId = extractYouTubeId(url);
+    const resolvedUrl = (typeof url === "string" && url.trim())
+      ? url.trim()
+      : (sessionData && (sessionData.rawUrl || sessionData.rawurl || sessionData.raw_url || sessionData.embedUrl || sessionData.embedurl || sessionData.embed_url || "")) || "";
+    let videoId = extractYouTubeId(resolvedUrl);
+    if (!videoId && activeSessionData) {
+      const u = activeSessionData.rawUrl || activeSessionData.rawurl || activeSessionData.raw_url || activeSessionData.embedUrl || activeSessionData.embedurl || activeSessionData.embed_url || "";
+      videoId = extractYouTubeId(u);
+    }
     const startSec = getElapsedSeconds();
 
     if (liveYtPlayer && liveYtPlayer.loadVideoById) {

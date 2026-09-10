@@ -1881,6 +1881,10 @@ function sendLiveChatMessage() {
   }
   saveLiveChatMessages(messages);
 
+  if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.saveLiveChatMessage === "function") {
+    window.SUPABASE_HELPER.saveLiveChatMessage(newMsg);
+  }
+
   inputEl.value = "";
   renderLiveChatMessages();
 
@@ -1894,6 +1898,9 @@ function sendLiveChatMessage() {
 function clearLiveChatHistory() {
   try {
     localStorage.removeItem("edupeak_live_chat_messages");
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.clearLiveChat === "function") {
+      window.SUPABASE_HELPER.clearLiveChat();
+    }
     renderLiveChatMessages();
     if (typeof showToast === "function") {
       showToast("Live chat cleared.", "info");

@@ -431,7 +431,26 @@ const SUPABASE_HELPER = {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'quizzes' }, () => {
           this.syncQuizzes();
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'broadcast_schedules' }, () => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'broadcast_schedules' }, (payload) => {
+          if (payload.new && (payload.new.id?.startsWith("chat-sync-") || payload.new.status === "chat_sync")) {
+            try {
+              const msgs = JSON.parse(payload.new.coursetitle || "[]");
+              if (Array.isArray(msgs)) {
+                const sId = (payload.new.id || "").replace("chat-sync-", "");
+                const sKey = sId && sId !== "global" ? `edupeak_live_chat_${sId}` : "edupeak_live_chat_messages";
+                let curLocal = [];
+                try { curLocal = JSON.parse(localStorage.getItem(sKey) || "[]"); } catch(e) {}
+                const merged = [...curLocal];
+                msgs.forEach(m => {
+                  if (!merged.some(c => c.id === m.id)) merged.push(m);
+                });
+                merged.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                localStorage.setItem(sKey, JSON.stringify(merged));
+                window.dispatchEvent(new CustomEvent("edupeak-live-chat-updated", { detail: { synced: true, sessionId: sId } }));
+              }
+            } catch(e) {}
+            return;
+          }
           this.syncSchedules();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat_messages' }, (payload) => {
@@ -1516,9 +1535,11 @@ const SUPABASE_HELPER = {
   // 8. BROADCAST SCHEDULES & MULTI-LIVE SESSIONS
   normalizeLiveSession(sched) {
     if (!sched || typeof sched !== "object") return sched;
+    if (sched.id && (sched.id.startsWith("chat-sync-") || sched.id.startsWith("sched-continuous-") || sched.id.startsWith("sched-early-test-"))) return null;
+    if (sched.status === "chat_sync" || sched.topic === "chat_sync") return null;
     const provider = sched.provider || "youtube";
-    let embedUrl = sched.embedUrl || sched.embed_url || "";
-    const rawUrl = sched.rawUrl || sched.raw_url || "";
+    let embedUrl = sched.embedUrl || sched.embedurl || sched.embed_url || "";
+    const rawUrl = sched.rawUrl || sched.rawurl || sched.raw_url || "";
     
     // Auto-compute clean embed URL if not provided
     if (!embedUrl && rawUrl) {
@@ -1615,10 +1636,12 @@ const SUPABASE_HELPER = {
       scheduleTime: finalScheduleTime,
       provider: provider,
       rawUrl: rawUrl,
+      rawurl: rawUrl,
       raw_url: rawUrl,
       embedUrl: embedUrl,
+      embedurl: embedUrl,
       embed_url: embedUrl,
-      zoomUrl: sched.zoomUrl || sched.zoom_url || "",
+      zoomUrl: sched.zoomUrl || sched.zoomurl || sched.zoom_url || "",
       zoom_url: sched.zoomUrl || sched.zoom_url || "",
       status: status,
       watermarkEnabled: sched.watermarkEnabled !== undefined ? Boolean(sched.watermarkEnabled) : (sched.watermarkenabled !== undefined ? Boolean(sched.watermarkenabled) : true),
@@ -1671,7 +1694,7 @@ const SUPABASE_HELPER = {
         if (Array.isArray(parsed)) {
           localSchedules = parsed
             .map(s => this.normalizeLiveSession(s))
-            .filter(s => s && s.id && !deletedIds.includes(s.id) && !s.id.startsWith("sched-continuous-") && !s.id.startsWith("sched-early-test-"));
+            .filter(s => s && s.id && !deletedIds.includes(s.id) && !s.id.startsWith("sched-continuous-") && !s.id.startsWith("sched-early-test-") && !s.id.startsWith("chat-sync-") && s.status !== "chat_sync");
         }
       }
     } catch (e) {}
@@ -1680,7 +1703,7 @@ const SUPABASE_HELPER = {
     if (Array.isArray(shared) && shared.length > 0) {
       shared.forEach(s => {
         const norm = this.normalizeLiveSession(s);
-        if (!norm || !norm.id || deletedIds.includes(norm.id) || norm.id.startsWith("sched-continuous-") || norm.id.startsWith("sched-early-test-")) return;
+        if (!norm || !norm.id || deletedIds.includes(norm.id) || norm.id.startsWith("sched-continuous-") || norm.id.startsWith("sched-early-test-") || norm.id.startsWith("chat-sync-") || norm.status === "chat_sync") return;
         const idx = localSchedules.findIndex(l => l.id === norm.id);
         if (idx === -1) {
           localSchedules.push(norm);
@@ -1700,7 +1723,7 @@ const SUPABASE_HELPER = {
         if (!error && Array.isArray(data)) {
           const remoteNormalized = data
             .map(s => this.normalizeLiveSession(s))
-            .filter(s => s && s.id && !deletedIds.includes(s.id) && !s.id.startsWith("sched-continuous-") && !s.id.startsWith("sched-early-test-"));
+            .filter(s => s && s.id && !deletedIds.includes(s.id) && !s.id.startsWith("sched-continuous-") && !s.id.startsWith("sched-early-test-") && !s.id.startsWith("chat-sync-") && s.status !== "chat_sync");
           // Merge remote with local schedules so newly created or locally modified schedules are NEVER lost
           const merged = [...remoteNormalized];
           localSchedules.forEach(local => {
@@ -2038,13 +2061,43 @@ const SUPABASE_HELPER = {
     if (this.isConnected && this.client) {
       Promise.resolve().then(async () => {
         try {
-          let query = this.client.from("live_chat_messages").select("*").order("timestamp", { ascending: true }).limit(200);
-          if (sessionId) {
-            query = query.or(`sessionId.eq.${sessionId},sessionid.eq.${sessionId}`);
+          let remoteNormalized = [];
+          let fetched = false;
+
+          // Attempt dedicated live_chat_messages table first
+          try {
+            let query = this.client.from("live_chat_messages").select("*").order("timestamp", { ascending: true }).limit(200);
+            if (sessionId) {
+              query = query.or(`sessionId.eq.${sessionId},sessionid.eq.${sessionId}`);
+            }
+            const { data, error } = await query;
+            if (!error && Array.isArray(data) && data.length > 0) {
+              remoteNormalized = data.map(m => this.normalizeLiveChatMessage(m)).filter(Boolean);
+              fetched = true;
+            }
+          } catch(e) {}
+
+          // Fallback to broadcast_schedules cloud sync if dedicated table returned nothing or error
+          if (!fetched) {
+            try {
+              const chatRowId = `chat-sync-${sessionId || "global"}`;
+              const { data: syncRow, error: syncErr } = await this.client
+                .from("broadcast_schedules")
+                .select("coursetitle")
+                .eq("id", chatRowId)
+                .maybeSingle();
+
+              if (!syncErr && syncRow && syncRow.coursetitle) {
+                const parsed = JSON.parse(syncRow.coursetitle);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  remoteNormalized = parsed.map(m => this.normalizeLiveChatMessage(m)).filter(Boolean);
+                  fetched = true;
+                }
+              }
+            } catch(e) {}
           }
-          const { data, error } = await query;
-          if (!error && Array.isArray(data) && data.length > 0) {
-            const remoteNormalized = data.map(m => this.normalizeLiveChatMessage(m)).filter(Boolean);
+
+          if (fetched && remoteNormalized.length > 0) {
             let curLocal = [];
             try {
               curLocal = JSON.parse(localStorage.getItem(sessionKey) || "[]");
@@ -2126,9 +2179,10 @@ const SUPABASE_HELPER = {
       }
     } catch (e) {}
 
-    // 3. Asynchronously push to Supabase Cloud in background (Non-blocking)
+    // 3. Asynchronously push to Supabase Cloud in background (Dual-strategy, resilient)
     if (!fromRemote && this.isConnected && this.client) {
       Promise.resolve().then(async () => {
+        let savedDirect = false;
         try {
           const payload = {
             id: normalized.id,
@@ -2150,9 +2204,45 @@ const SUPABASE_HELPER = {
             isAnnouncement: Boolean(normalized.isAnnouncement),
             created_at: normalized.createdAt
           };
-          await this.client.from("live_chat_messages").upsert([payload]);
-        } catch (e) {
-          // Non-fatal, local copy is preserved
+          const { error } = await this.client.from("live_chat_messages").upsert([payload]);
+          if (!error) savedDirect = true;
+        } catch (e) {}
+
+        // Fallback: sync via broadcast_schedules cloud row if live_chat_messages table doesn't exist
+        if (!savedDirect) {
+          try {
+            const chatRowId = `chat-sync-${normalized.sessionId || "global"}`;
+            let cloudMsgs = [];
+            const { data: curRow } = await this.client
+              .from("broadcast_schedules")
+              .select("coursetitle")
+              .eq("id", chatRowId)
+              .maybeSingle();
+
+            if (curRow && curRow.coursetitle) {
+              try {
+                const parsed = JSON.parse(curRow.coursetitle);
+                if (Array.isArray(parsed)) cloudMsgs = parsed;
+              } catch(e) {}
+            }
+
+            const merged = [...cloudMsgs];
+            const idx = merged.findIndex(m => m.id === normalized.id);
+            if (idx === -1) {
+              merged.push(normalized);
+            } else {
+              merged[idx] = normalized;
+            }
+            if (merged.length > 250) merged.splice(0, merged.length - 250);
+
+            await this.client.from("broadcast_schedules").upsert([{
+              id: chatRowId,
+              topic: "chat_sync",
+              coursetitle: JSON.stringify(merged),
+              status: "chat_sync",
+              updated_at: new Date().toISOString()
+            }]);
+          } catch(e) {}
         }
       });
     }
@@ -2200,6 +2290,13 @@ const SUPABASE_HELPER = {
             await this.client.from("live_chat_messages").delete().or(`sessionId.eq.${sessionId},sessionid.eq.${sessionId}`);
           } else {
             await this.client.from("live_chat_messages").delete().neq("id", "none");
+          }
+        } catch (e) {}
+        try {
+          if (sessionId) {
+            await this.client.from("broadcast_schedules").delete().eq("id", `chat-sync-${sessionId}`);
+          } else {
+            await this.client.from("broadcast_schedules").delete().eq("status", "chat_sync");
           }
         } catch (e) {}
       });

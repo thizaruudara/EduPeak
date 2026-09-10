@@ -1851,7 +1851,7 @@
                   <span>${s.teacherName || 'Faculty Lecturer'}</span>
                 </div>
                 <div>
-                  ${isLive ? `<strong style="color: #ef4444;"><i class="fa-solid fa-users"></i> ${s.viewersCount || 150}</strong>` : `<i class="fa-solid fa-calendar-day"></i> ${s.scheduleTime || 'Today'}`}
+                  ${isLive ? `<strong style="color: #ef4444;"><i class="fa-solid fa-users"></i> ${s.viewersCount !== undefined && s.viewersCount !== null ? s.viewersCount : (s.viewers_count !== undefined && s.viewers_count !== null ? s.viewers_count : 0)}</strong>` : `<i class="fa-solid fa-calendar-day"></i> ${s.scheduleTime || 'Today'}`}
                 </div>
               </div>
             </div>
@@ -1931,7 +1931,7 @@
             }
           }
 
-          const streamSrc = session.rawUrl || session.embedUrl;
+          const streamSrc = session.rawUrl || session.rawurl || session.raw_url || session.embedUrl || session.embedurl || session.embed_url || "";
           const isYouTube = !session.provider || session.provider === "youtube" || (streamSrc && (streamSrc.includes("youtube.com") || streamSrc.includes("youtu.be") || (streamSrc.length === 11 && !streamSrc.includes("/"))));
 
           if (isYouTube && window.EDUPEAK_LIVE_PLAYER) {
@@ -2428,28 +2428,28 @@
 
         if (!Array.isArray(messages)) messages = [];
 
-        // Baseline greeting messages for newly created / empty classroom sessions
-        if (messages.length === 0) {
-          messages = [
-            {
-              id: "msg-sys-1",
-              senderName: "EduPeak System",
-              userRole: "admin",
-              time: "Live Now",
-              text: "Welcome to the EduPeak Real-Time Live Classroom! Ask your physics questions and doubts directly to the lecturer."
-            },
-            {
-              id: "msg-tch-1",
-              senderName: (this.activeSession?.teacherName || "Amalsha Wanniarachchi"),
-              userRole: "teacher",
-              time: "Live Now",
-              text: "Hello students! Welcome to today's live session. Please feel free to type any doubts here."
-            }
-          ];
-        }
+        const baselineGreetings = [
+          {
+            id: "msg-sys-1",
+            senderName: "EduPeak System",
+            userRole: "admin",
+            time: "Live Now",
+            text: "Welcome to the EduPeak Real-Time Live Classroom! Ask your physics questions and doubts directly to the lecturer."
+          },
+          {
+            id: "msg-tch-1",
+            senderName: (this.activeSession?.teacherName || "Amalsha Wanniarachchi"),
+            userRole: "teacher",
+            time: "Live Now",
+            text: "Hello students! Welcome to today's live session. Please feel free to type any doubts here."
+          }
+        ];
+
+        const realUserMessages = messages.filter(m => m.id !== "msg-sys-1" && m.id !== "msg-tch-1");
+        const displayMessages = [...baselineGreetings, ...realUserMessages];
 
         // Signature check: prevents flickering / scroll jumps during background polling
-        const newSig = messages.map(m => (m.id || '') + (m.text || '')).join('|');
+        const newSig = displayMessages.map(m => (m.id || '') + (m.text || '')).join('|');
         if (isBackgroundPoll && container._lastChatSig === newSig) {
           return;
         }
@@ -2461,7 +2461,7 @@
         const currentUserName = this.currentUser?.name?.toLowerCase();
         const currentUserNic = this.currentUser?.nic;
 
-        container.innerHTML = messages.map(m => {
+        container.innerHTML = displayMessages.map(m => {
           const isTeacher = m.userRole === "teacher" || m.userRole === "lecturer";
           const isAdmin = m.userRole === "admin";
           const isMe = this.currentUser && (
@@ -2663,8 +2663,8 @@
         document.getElementById("formEndTime").value   = parsedEnd   || "12:30";
         document.getElementById("formProvider").value = s.provider || "youtube";
         document.getElementById("formStatus").value = s.status || "scheduled";
-        document.getElementById("formStreamUrl").value = s.rawUrl || s.embedUrl || "";
-        document.getElementById("formZoomUrl").value = s.zoomUrl || "";
+        document.getElementById("formStreamUrl").value = s.rawUrl || s.rawurl || s.raw_url || s.embedUrl || s.embedurl || s.embed_url || "";
+        document.getElementById("formZoomUrl").value = s.zoomUrl || s.zoomurl || s.zoom_url || "";
         document.getElementById("formPinnedNotice").value = s.pinnedNotice || "";
         document.getElementById("formDescription").value = s.description || "";
         document.getElementById("formWatermarkToggle").checked = s.watermarkEnabled !== false;
