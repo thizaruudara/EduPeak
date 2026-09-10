@@ -4,6 +4,26 @@
   "trailingSlash": false,
   "rewrites": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "admin.edupeak.lk"
+        }
+      ],
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "teacher.edupeak.lk"
+        }
+      ],
+      "destination": "/teacher-portal.html"
+    },
+    {
       "source": "/((?!css/|js/|assets/|screenshots/|favicon\\.ico|manifest\\.json|robots\\.txt|sitemap\\.xml).*)",
       "has": [
         {
@@ -24,11 +44,31 @@
       "destination": "/teacher-portal.html"
     },
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "admin.(.*)"
+        }
+      ],
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "teacher.(.*)"
+        }
+      ],
+      "destination": "/teacher-portal.html"
+    },
+    {
       "source": "/((?!css/|js/|assets/|screenshots/|favicon\\.ico|manifest\\.json|robots\\.txt|sitemap\\.xml).*)",
       "has": [
         {
           "type": "host",
-          "value": "admin.(?<domain>.*)"
+          "value": "admin.(.*)"
         }
       ],
       "destination": "/admin.html"
@@ -38,7 +78,7 @@
       "has": [
         {
           "type": "host",
-          "value": "teacher.(?<domain>.*)"
+          "value": "teacher.(.*)"
         }
       ],
       "destination": "/teacher-portal.html"

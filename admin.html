@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    (function() {
+      var h = window.location.hostname.toLowerCase();
+      if (h === 'edupeak.lk' || h === 'www.edupeak.lk') {
+        window.location.replace('/index.html');
+      } else if (h === 'teacher.edupeak.lk' || (h.startsWith('teacher.') && !h.includes('admin'))) {
+        window.location.replace('/teacher-portal.html');
+      }
+    })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>EduPeak LMS - Master Administrator Console</title>
