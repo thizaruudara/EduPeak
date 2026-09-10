@@ -778,12 +778,35 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   }
 
   function getElapsedSeconds() {
-    if (!activeSessionData || !activeSessionData.startedAt) return 0;
-    const startMs = new Date(activeSessionData.startedAt).getTime();
+    let startedAt = activeSessionData ? (activeSessionData.startedAt || activeSessionData.started_at) : null;
+    const sessId = (activeSessionData && (activeSessionData.id || activeSessionData.scheduleId))
+      || (window.LIVE_APP ? window.LIVE_APP.activeSessionId : null);
+    if (!startedAt && sessId) {
+      try { startedAt = localStorage.getItem("edupeak_session_started_" + sessId); } catch(e) {}
+    }
+    if (!startedAt) return 0;
+    const startMs = new Date(startedAt).getTime();
     if (isNaN(startMs) || startMs <= 0) return 0;
     const nowMs = Date.now();
     const elapsed = Math.floor((nowMs - startMs) / 1000);
     return Math.max(0, elapsed);
+  }
+
+  function getPlaybackResumeSeconds(videoId) {
+    const sessId = (activeSessionData && (activeSessionData.id || activeSessionData.scheduleId))
+      || (window.LIVE_APP ? window.LIVE_APP.activeSessionId : null);
+    let savedSec = 0;
+    try {
+      const key1 = sessId ? "edupeak_live_playback_" + sessId : null;
+      const key2 = videoId ? "edupeak_live_playback_" + videoId : null;
+      const val = (key1 && localStorage.getItem(key1)) || (key2 && localStorage.getItem(key2));
+      if (val) {
+        const num = parseFloat(val);
+        if (!isNaN(num) && num > 0) savedSec = num;
+      }
+    } catch(e) {}
+    const elapsed = getElapsedSeconds();
+    return Math.max(savedSec, elapsed);
   }
 
   function triggerLiveEnded() {
@@ -830,16 +853,26 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     durationCheckInterval = setInterval(() => {
       if (!liveYtPlayer) return;
       try {
+        const curTime = typeof liveYtPlayer.getCurrentTime === "function" ? liveYtPlayer.getCurrentTime() : 0;
+        if (curTime > 1) {
+          const sessId = (activeSessionData && (activeSessionData.id || activeSessionData.scheduleId))
+            || (window.LIVE_APP ? window.LIVE_APP.activeSessionId : null);
+          const vId = (typeof liveYtPlayer.getVideoData === "function" && liveYtPlayer.getVideoData()?.video_id) || "";
+          try {
+            if (sessId) localStorage.setItem("edupeak_live_playback_" + sessId, String(Math.floor(curTime)));
+            if (vId) localStorage.setItem("edupeak_live_playback_" + vId, String(Math.floor(curTime)));
+          } catch(e) {}
+        }
+
         const vidDuration = typeof liveYtPlayer.getDuration === "function" ? liveYtPlayer.getDuration() : 0;
         const isLiveType = typeof liveYtPlayer.getVideoData === "function" && liveYtPlayer.getVideoData()?.isLive;
         if (!isLiveType && vidDuration > 0) {
-          const curTime = typeof liveYtPlayer.getCurrentTime === "function" ? liveYtPlayer.getCurrentTime() : 0;
           if (curTime >= vidDuration - 0.5 && curTime > 0) {
             triggerLiveEnded();
           }
         }
       } catch(e) {}
-    }, 2000);
+    }, 1000);
   }
 
   function stopDurationWatchdog() {
@@ -920,8 +953,12 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       }, 500);
     }
 
-    // Always restart from 0 on load/reload unless explicitly provided
-    const initialStart = (typeof startOffset === "number" && startOffset >= 0) ? Math.floor(startOffset) : 0;
+    // Resume from saved position or live elapsed offset so reloading does NOT restart from 0
+    const resumeSec = (typeof startOffset === "number" && startOffset > 0)
+      ? Math.floor(startOffset)
+      : Math.floor(getPlaybackResumeSeconds(videoId));
+
+    const initialStart = resumeSec > 0 ? resumeSec : 0;
 
     try {
       liveYtPlayer = new window.YT.Player('edupeakLiveYTPlayerMount', {
@@ -952,9 +989,10 @@ const EDUPEAK_LIVE_PLAYER = (function() {
               // Force muted play immediately — browsers always allow muted autoplay
               liveYtPlayer.mute();
               liveYtPlayer.setVolume(0);
-              try {
-                liveYtPlayer.seekTo(initialStart > 0 ? initialStart : 0, true);
-              } catch (e) {}
+              const targetPos = (initialStart > 0) ? initialStart : Math.floor(getPlaybackResumeSeconds(videoId));
+              if (targetPos > 0) {
+                try { liveYtPlayer.seekTo(targetPos, true); } catch (e) {}
+              }
               liveYtPlayer.playVideo();
 
               // Show unmute prompt so student knows stream is playing
@@ -976,6 +1014,13 @@ const EDUPEAK_LIVE_PLAYER = (function() {
               enforceLiveNoCaptions(liveYtPlayer);
               updateLiveWatermark();
               startDurationWatchdog();
+
+              const targetPos = Math.floor(getPlaybackResumeSeconds(videoId));
+              const curTime = typeof liveYtPlayer.getCurrentTime === "function" ? liveYtPlayer.getCurrentTime() : 0;
+              if (targetPos > 3 && curTime < 2) {
+                try { liveYtPlayer.seekTo(targetPos, true); } catch(e) {}
+              }
+
               // Show prompt only if muted and user has not unmuted yet
               if (_isMuted() && !_hasUserUnmuted) {
                 _showUnmutePrompt();
@@ -1003,6 +1048,9 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   function loadLiveStream(url, sessionData = null) {
     if (sessionData) {
       activeSessionData = sessionData;
+      if (sessionData.id && sessionData.startedAt) {
+        try { localStorage.setItem("edupeak_session_started_" + sessionData.id, sessionData.startedAt); } catch(e) {}
+      }
     }
     const resolvedUrl = (typeof url === "string" && url.trim())
       ? url.trim()
@@ -1012,7 +1060,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       const u = activeSessionData.rawUrl || activeSessionData.rawurl || activeSessionData.raw_url || activeSessionData.embedUrl || activeSessionData.embedurl || activeSessionData.embed_url || "";
       videoId = extractYouTubeId(u);
     }
-    const startSec = 0;
+    const resumeSec = Math.floor(getPlaybackResumeSeconds(videoId));
 
     // If player already exists and is already playing this video ID, DO NOT interrupt or reload playback!
     if (liveYtPlayer && typeof liveYtPlayer.getVideoData === "function") {
@@ -1026,16 +1074,20 @@ const EDUPEAK_LIVE_PLAYER = (function() {
 
     if (liveYtPlayer && liveYtPlayer.loadVideoById) {
       try {
-        liveYtPlayer.loadVideoById({
-          videoId: videoId,
-          startSeconds: 0
-        });
+        if (resumeSec > 0) {
+          liveYtPlayer.loadVideoById({
+            videoId: videoId,
+            startSeconds: resumeSec
+          });
+        } else {
+          liveYtPlayer.loadVideoById(videoId);
+        }
         startDurationWatchdog();
       } catch (e) {
-        createLiveYTPlayer(videoId, 0);
+        createLiveYTPlayer(videoId, resumeSec);
       }
     } else {
-      createLiveYTPlayer(videoId, 0);
+      createLiveYTPlayer(videoId, resumeSec);
     }
     updateLiveWatermark();
   }
@@ -1119,6 +1171,11 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     _unmute();
     if (liveYtPlayer && typeof liveYtPlayer.playVideo === "function") {
       try {
+        const resumePos = Math.floor(getPlaybackResumeSeconds());
+        const curTime = typeof liveYtPlayer.getCurrentTime === "function" ? liveYtPlayer.getCurrentTime() : 0;
+        if (resumePos > 3 && curTime < 2) {
+          liveYtPlayer.seekTo(resumePos, true);
+        }
         liveYtPlayer.playVideo();
         if (liveYtPlayer.isMuted && liveYtPlayer.isMuted()) {
           liveYtPlayer.unMute();
@@ -1313,6 +1370,23 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       }
     });
   }
+
+  try {
+    window.addEventListener("beforeunload", () => {
+      try {
+        if (liveYtPlayer && typeof liveYtPlayer.getCurrentTime === "function") {
+          const curTime = liveYtPlayer.getCurrentTime();
+          if (curTime > 1) {
+            const sessId = (activeSessionData && (activeSessionData.id || activeSessionData.scheduleId))
+              || (window.LIVE_APP ? window.LIVE_APP.activeSessionId : null);
+            const vId = (typeof liveYtPlayer.getVideoData === "function" && liveYtPlayer.getVideoData()?.video_id) || "";
+            if (sessId) localStorage.setItem("edupeak_live_playback_" + sessId, String(Math.floor(curTime)));
+            if (vId) localStorage.setItem("edupeak_live_playback_" + vId, String(Math.floor(curTime)));
+          }
+        }
+      } catch(e) {}
+    });
+  } catch(e) {}
 
   return {
     init: initLivePlayer,

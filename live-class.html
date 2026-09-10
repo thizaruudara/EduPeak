@@ -1964,9 +1964,15 @@
             this.standbyWatchTimer = null;
           }
 
-          // Ensure startedAt timestamp exists for continuous playback synchronization
-          if (!session.startedAt) {
+          // Ensure startedAt timestamp exists and is preserved across reloads for continuous playback synchronization
+          const cachedStartedAt = session.id ? localStorage.getItem("edupeak_session_started_" + session.id) : null;
+          if (!session.startedAt && cachedStartedAt) {
+            session.startedAt = cachedStartedAt;
+          } else if (!session.startedAt) {
             session.startedAt = new Date().toISOString();
+            if (session.id) {
+              try { localStorage.setItem("edupeak_session_started_" + session.id, session.startedAt); } catch(e) {}
+            }
             if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
               window.SUPABASE_HELPER.updateLiveSessionStatus(session.id, "live", { startedAt: session.startedAt });
             } else {
@@ -1979,6 +1985,8 @@
                 }
               } catch(e) {}
             }
+          } else if (session.startedAt && session.id) {
+            try { localStorage.setItem("edupeak_session_started_" + session.id, session.startedAt); } catch(e) {}
           }
 
           const streamSrc = session.rawUrl || session.rawurl || session.raw_url || session.embedUrl || session.embedurl || session.embed_url || "";

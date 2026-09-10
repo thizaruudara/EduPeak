@@ -71,7 +71,7 @@ function startServer() {
     const page = await context.newPage();
 
     // Prepare mock session: Started 150 seconds ago with unique ID per run
-    const testSessionId = 'sched-continuous-' + Date.now();
+    const testSessionId = 'sched-play-' + Date.now();
     const startedAtTime = new Date(Date.now() - 150 * 1000).toISOString();
 
     const mockSchedules = [

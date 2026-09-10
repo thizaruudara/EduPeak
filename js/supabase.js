@@ -1651,7 +1651,16 @@ const SUPABASE_HELPER = {
       pinnedNotice: sched.pinnedNotice || sched.pinned_notice || "",
       recordingUrl: sched.recordingUrl || sched.recording_url || "",
       viewersCount: Number(sched.viewersCount || sched.viewers_count || 0),
-      startedAt: sched.startedAt || sched.started_at || null,
+      startedAt: (function() {
+        let sAt = sched.startedAt || sched.started_at || null;
+        if (!sAt && sched.id) {
+          try { sAt = localStorage.getItem("edupeak_session_started_" + sched.id) || null; } catch(e) {}
+        }
+        if (sAt && sched.id) {
+          try { localStorage.setItem("edupeak_session_started_" + sched.id, sAt); } catch(e) {}
+        }
+        return sAt;
+      })(),
       endedAt: sched.endedAt || sched.ended_at || null,
       createdAt: sched.createdAt || sched.created_at || new Date().toISOString(),
       updatedAt: sched.updatedAt || sched.updated_at || new Date().toISOString()
