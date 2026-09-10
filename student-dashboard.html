@@ -679,26 +679,8 @@
               <a href="past-papers.html" style="font-size: 0.8rem; font-weight: 700; color: #227aff; text-decoration: none;">
                 View Paper Vault ➔
               </a>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-              <a href="past-papers.html" style="display: flex; align-items: center; gap: 0.6rem; padding: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; text-decoration: none; color: #0f172a;">
-                <div style="width: 32px; height: 32px; border-radius: 8px; background: #fee2e2; color: #ef4444; display: flex; align-items: center; justify-content: center;">
-                  <i class="fa-solid fa-file-pdf"></i>
-                </div>
-                <div>
-                  <strong style="font-size: 0.8rem; display: block;">2024 G.C.E. A/L Past Paper</strong>
-                  <span style="font-size: 0.7rem; color: #64748b;">With Marking Scheme</span>
-                </div>
-              </a>
-              <a href="past-papers.html" style="display: flex; align-items: center; gap: 0.6rem; padding: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; text-decoration: none; color: #0f172a;">
-                <div style="width: 32px; height: 32px; border-radius: 8px; background: #fee2e2; color: #ef4444; display: flex; align-items: center; justify-content: center;">
-                  <i class="fa-solid fa-file-pdf"></i>
-                </div>
-                <div>
-                  <strong style="font-size: 0.8rem; display: block;">Royal College Term Test</strong>
-                  <span style="font-size: 0.7rem; color: #64748b;">Mechanics & Dynamics</span>
-                </div>
-              </a>
+            <div id="dashMaterialsList" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+              <!-- Dynamically Populated by JavaScript from Paper Vault -->
             </div>
           </div>
 
@@ -1021,8 +1003,9 @@
       document.getElementById("dashStudentBranch").textContent = currentUser.branch || "Victory Embilipitiya";
       document.getElementById("countdownBatchLabel").textContent = `${currentUser.examYear || '2027 A/L'} Exam Countdown`;
 
-      // 3. Render Enrolled Courses & Pending Orders
+      // 3. Render Enrolled Courses, Course Materials & Pending Orders
       renderEnrolledCourses();
+      renderCourseMaterials();
       renderPendingOrders();
 
       // 4. Start Live Exam Countdown Clock
@@ -1575,6 +1558,44 @@
             </a>
           </div>
         </div>
+      `).join('');
+    }
+
+    async function renderCourseMaterials() {
+      const container = document.getElementById("dashMaterialsList");
+      if (!container) return;
+
+      let papers = [];
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getPapers === "function") {
+        papers = await window.SUPABASE_HELPER.getPapers();
+      } else {
+        const saved = localStorage.getItem("edupeak_papers_db");
+        if (saved) {
+          try { papers = JSON.parse(saved); } catch(e) {}
+        }
+      }
+
+      if (!papers || papers.length === 0) {
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1; padding: 1.25rem 1rem; text-align: center; color: #64748b; font-size: 0.85rem; background: #f8fafc; border-radius: 10px; border: 1.5px dashed #e2e8f0;">
+            <i class="fa-solid fa-folder-open" style="margin-right: 0.35rem; color: #94a3b8;"></i> No course materials or PDF papers uploaded yet. Visit <a href="past-papers.html" style="color: #227aff; font-weight: 700; text-decoration: none;">Paper Vault</a> for updates.
+          </div>
+        `;
+        return;
+      }
+
+      // Show top 2-4 recent papers from paper vault
+      const recent = papers.slice(0, 4);
+      container.innerHTML = recent.map(p => `
+        <a href="past-papers.html" style="display: flex; align-items: center; gap: 0.6rem; padding: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; text-decoration: none; color: #0f172a; transition: all 0.2s ease;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: #fee2e2; color: #ef4444; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i class="fa-solid fa-file-pdf"></i>
+          </div>
+          <div style="overflow: hidden;">
+            <strong style="font-size: 0.8rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.title}</strong>
+            <span style="font-size: 0.7rem; color: #64748b;">${p.year} Exam • ${p.unitName || 'PDF Document'}</span>
+          </div>
+        </a>
       `).join('');
     }
 
