@@ -368,7 +368,137 @@ const SUPABASE_HELPER = {
     return true;
   },
 
-  // 4. SYNC LOCAL DATA TO SUPABASE CLOUD
+  // 4. PAST PAPERS (PDF Vault)
+  async getPapers() {
+    if (this.isConnected && this.client) {
+      try {
+        const { data, error } = await this.client.from("past_papers").select("*").order("year", { ascending: false });
+        if (!error && Array.isArray(data)) {
+          localStorage.setItem("edupeak_papers_db", JSON.stringify(data));
+          return data;
+        }
+      } catch (e) {
+        console.warn("Supabase fetch past_papers error, using local:", e);
+      }
+    }
+    const local = localStorage.getItem("edupeak_papers_db");
+    if (local !== null) {
+      try {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {}
+    }
+    return [];
+  },
+
+  async savePaper(paperData) {
+    if (this.isConnected && this.client) {
+      try {
+        const { data, error } = await this.client.from("past_papers").upsert([paperData]).select();
+        if (!error && data) return data[0];
+      } catch (e) {
+        console.warn("Supabase upsert past_paper error:", e);
+      }
+    }
+    const papers = await this.getPapers();
+    const existingIndex = papers.findIndex(p => p.id === paperData.id);
+    if (existingIndex >= 0) {
+      papers[existingIndex] = { ...papers[existingIndex], ...paperData };
+    } else {
+      papers.unshift(paperData);
+    }
+    localStorage.setItem("edupeak_papers_db", JSON.stringify(papers));
+    return paperData;
+  },
+
+  async deletePaper(paperId) {
+    if (this.isConnected && this.client) {
+      try {
+        await this.client.from("past_papers").delete().eq("id", paperId);
+      } catch (e) {
+        console.warn("Supabase delete past_paper error:", e);
+      }
+    }
+    let papers = await this.getPapers();
+    papers = papers.filter(p => p.id !== paperId);
+    localStorage.setItem("edupeak_papers_db", JSON.stringify(papers));
+    return true;
+  },
+
+  // 5. CAMPUS BRANCHES & INSTITUTES
+  async getInstitutes() {
+    if (this.isConnected && this.client) {
+      try {
+        const { data, error } = await this.client.from("institutes").select("*");
+        if (!error && Array.isArray(data)) {
+          localStorage.setItem("edupeak_institutes_db", JSON.stringify(data));
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = data;
+          return data;
+        }
+      } catch (e) {
+        console.warn("Supabase fetch institutes error, using local:", e);
+      }
+    }
+    const local = localStorage.getItem("edupeak_institutes_db");
+    if (local !== null) {
+      try {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed)) {
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = parsed;
+          return parsed;
+        }
+      } catch (e) {}
+    }
+    return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.institutes) ? window.EDUPEAK_DATA.institutes : [];
+  },
+
+  async saveInstitute(instData) {
+    if (this.isConnected && this.client) {
+      try {
+        const { data, error } = await this.client.from("institutes").upsert([instData]).select();
+        if (!error && data) return data[0];
+      } catch (e) {
+        console.warn("Supabase upsert institute error:", e);
+      }
+    }
+    const institutes = await this.getInstitutes();
+    const existingIndex = institutes.findIndex(i => i.id === instData.id);
+    if (existingIndex >= 0) {
+      institutes[existingIndex] = { ...institutes[existingIndex], ...instData };
+    } else {
+      institutes.push(instData);
+    }
+    localStorage.setItem("edupeak_institutes_db", JSON.stringify(institutes));
+    if (window.EDUPEAK_DATA) {
+      window.EDUPEAK_DATA.institutes = institutes;
+    }
+    if (window.EDUPEAK_INSTITUTES && window.EDUPEAK_INSTITUTES.populateDropdowns) {
+      window.EDUPEAK_INSTITUTES.populateDropdowns();
+    }
+    return instData;
+  },
+
+  async deleteInstitute(instId) {
+    if (this.isConnected && this.client) {
+      try {
+        await this.client.from("institutes").delete().eq("id", instId);
+      } catch (e) {
+        console.warn("Supabase delete institute error:", e);
+      }
+    }
+    let institutes = await this.getInstitutes();
+    institutes = institutes.filter(i => i.id !== instId);
+    localStorage.setItem("edupeak_institutes_db", JSON.stringify(institutes));
+    if (window.EDUPEAK_DATA) {
+      window.EDUPEAK_DATA.institutes = institutes;
+    }
+    if (window.EDUPEAK_INSTITUTES && window.EDUPEAK_INSTITUTES.populateDropdowns) {
+      window.EDUPEAK_INSTITUTES.populateDropdowns();
+    }
+    return true;
+  },
+
+  // 6. SYNC LOCAL DATA TO SUPABASE CLOUD
   async syncLocalToCloud() {
     if (!this.client || !this.isConnected) {
       return { success: false, message: "Please connect to Supabase first before syncing." };
@@ -378,6 +508,14 @@ const SUPABASE_HELPER = {
       const teachers = window.EDUPEAK_DATA ? window.EDUPEAK_DATA.teachers : [];
       const courses = window.EDUPEAK_DATA ? window.EDUPEAK_DATA.courses : [];
       const users = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getUsers() : [];
+      let papers = [];
+      try {
+        papers = JSON.parse(localStorage.getItem("edupeak_papers_db") || "[]");
+      } catch(e) {}
+      let institutes = [];
+      try {
+        institutes = JSON.parse(localStorage.getItem("edupeak_institutes_db") || "[]");
+      } catch(e) {}
 
       // Sync teachers
       if (teachers.length > 0) {
@@ -391,8 +529,16 @@ const SUPABASE_HELPER = {
       if (users.length > 0) {
         await this.client.from("profiles").upsert(users);
       }
+      // Sync past papers
+      if (papers.length > 0) {
+        await this.client.from("past_papers").upsert(papers);
+      }
+      // Sync institutes
+      if (institutes.length > 0) {
+        await this.client.from("institutes").upsert(institutes);
+      }
 
-      return { success: true, message: `Synced ${teachers.length} teachers, ${courses.length} courses, and ${users.length} profiles to Supabase!` };
+      return { success: true, message: `Synced ${teachers.length} teachers, ${courses.length} courses, ${users.length} profiles, ${papers.length} papers, and ${institutes.length} campuses to Supabase Cloud!` };
     } catch (err) {
       return { success: false, message: "Sync error: " + err.message };
     }
@@ -444,20 +590,56 @@ CREATE TABLE IF NOT EXISTS public.courses (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     title_si TEXT,
-    teacher TEXT NOT NULL,
+    teacher TEXT,
+    teacherName TEXT,
     teacher_id TEXT,
-    stream TEXT NOT NULL,
+    stream TEXT,
     price TEXT,
-    fee_numeric NUMERIC DEFAULT 0,
-    icon TEXT DEFAULT 'fa-book',
+    fee TEXT,
+    category TEXT,
+    examYear TEXT,
+    level TEXT,
+    liveTime TEXT,
+    medium TEXT,
+    rating NUMERIC DEFAULT 4.99,
+    students NUMERIC DEFAULT 0,
+    modulesCount NUMERIC DEFAULT 24,
+    thumbnailIcon TEXT DEFAULT 'fa-atom',
     badge TEXT,
     badge_si TEXT,
-    mode TEXT DEFAULT 'Hybrid (Physical + Live Stream)',
     active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 4. Create ENROLLMENTS Table
+-- 4. Create PAST_PAPERS Table (PDF Vault)
+CREATE TABLE IF NOT EXISTS public.past_papers (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    title_si TEXT,
+    type TEXT DEFAULT 'national',
+    unit TEXT DEFAULT 'all',
+    unitName TEXT DEFAULT 'Complete Past Paper Examination',
+    year NUMERIC DEFAULT 2024,
+    size TEXT DEFAULT 'Cloud PDF',
+    url TEXT NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 5. Create INSTITUTES Table (Campus Branches)
+CREATE TABLE IF NOT EXISTS public.institutes (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    name_si TEXT,
+    city TEXT,
+    district TEXT,
+    address TEXT,
+    phone TEXT,
+    status TEXT DEFAULT 'active',
+    hasPhysicalLocation BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 6. Create ENROLLMENTS Table
 CREATE TABLE IF NOT EXISTS public.enrollments (
     id BIGSERIAL PRIMARY KEY,
     student_id TEXT REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -467,15 +649,19 @@ CREATE TABLE IF NOT EXISTS public.enrollments (
     UNIQUE(student_id, course_id)
 );
 
--- 5. Enable Row Level Security (RLS) & Public Read Access Policies
+-- 7. Enable Row Level Security (RLS) & Public Policies
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.teachers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.past_papers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.institutes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.enrollments ENABLE ROW LEVEL SECURITY;
 
--- Allow public read access to teachers & courses
+-- Allow public access
 CREATE POLICY "Public can view teachers" ON public.teachers FOR SELECT USING (true);
 CREATE POLICY "Public can view courses" ON public.courses FOR SELECT USING (true);
+CREATE POLICY "Public can view past_papers" ON public.past_papers FOR ALL USING (true);
+CREATE POLICY "Public can view institutes" ON public.institutes FOR ALL USING (true);
 CREATE POLICY "Public can view and insert profiles" ON public.profiles FOR ALL USING (true);
 CREATE POLICY "Public can view and insert enrollments" ON public.enrollments FOR ALL USING (true);
 

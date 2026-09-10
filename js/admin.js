@@ -1655,7 +1655,10 @@ const ADMIN_CONTROLLER = {
   // =========================================================================
   // 5. PAST PAPERS & PDF VAULT MANAGEMENT (STRICTLY ADMIN ONLY)
   // =========================================================================
-  getPapers() {
+  async getPapers() {
+    if (window.SUPABASE_HELPER) {
+      return await window.SUPABASE_HELPER.getPapers();
+    }
     const saved = localStorage.getItem("edupeak_papers_db");
     if (saved !== null) {
       try {
@@ -1907,11 +1910,11 @@ const ADMIN_CONTROLLER = {
     }
   },
 
-  renderPapers() {
+  async renderPapers() {
     const tbody = document.getElementById("adminPapersTableBody");
     if (!tbody) return;
 
-    let papers = this.getPapers();
+    let papers = await this.getPapers();
 
     const searchTerm = (document.getElementById("adminPaperSearchInput") ? document.getElementById("adminPaperSearchInput").value : "").toLowerCase().trim();
     const catFilter = document.getElementById("adminPaperCategoryFilter") ? document.getElementById("adminPaperCategoryFilter").value : "all";
@@ -2023,10 +2026,10 @@ const ADMIN_CONTROLLER = {
     modal.classList.add("active");
   },
 
-  openEditPaperModal(paperId) {
+  async openEditPaperModal(paperId) {
     const modal = document.getElementById("adminPaperDrawerModal");
     if (!modal) return;
-    const papers = this.getPapers();
+    const papers = await this.getPapers();
     const p = papers.find(item => item.id === paperId);
     if (!p) return;
 
@@ -2048,7 +2051,7 @@ const ADMIN_CONTROLLER = {
     modal.classList.add("active");
   },
 
-  handleSavePaperSubmit(event) {
+  async handleSavePaperSubmit(event) {
     event.preventDefault();
     const id = document.getElementById("paperFormId").value.trim() || `pap-${Date.now()}`;
     const title = document.getElementById("paperFormTitle").value.trim();
@@ -2059,9 +2062,6 @@ const ADMIN_CONTROLLER = {
     const unitName = document.getElementById("paperFormUnitName").value.trim() || "Physics Unit";
     const size = document.getElementById("paperFormSize").value.trim() || "Cloud PDF";
     const url = document.getElementById("paperFormUrl").value.trim() || `assets/docs/paper_${year}.pdf`;
-
-    let papers = this.getPapers();
-    const existingIndex = papers.findIndex(item => item.id === id);
 
     const paperObj = {
       id,
@@ -2076,19 +2076,17 @@ const ADMIN_CONTROLLER = {
       updated_at: new Date().toISOString()
     };
 
-    if (existingIndex >= 0) {
-      papers[existingIndex] = { ...papers[existingIndex], ...paperObj };
+    if (window.SUPABASE_HELPER) {
+      await window.SUPABASE_HELPER.savePaper(paperObj);
     } else {
-      papers.unshift(paperObj);
-    }
-
-    localStorage.setItem("edupeak_papers_db", JSON.stringify(papers));
-
-    // Sync to Supabase if available
-    if (window.SUPABASE_HELPER && window.SUPABASE_HELPER.isConnected) {
-      try {
-        window.SUPABASE_HELPER.client.from("past_papers").upsert(paperObj).then(() => {});
-      } catch (e) {}
+      let papers = await this.getPapers();
+      const existingIndex = papers.findIndex(item => item.id === id);
+      if (existingIndex >= 0) {
+        papers[existingIndex] = { ...papers[existingIndex], ...paperObj };
+      } else {
+        papers.unshift(paperObj);
+      }
+      localStorage.setItem("edupeak_papers_db", JSON.stringify(papers));
     }
 
     const modal = document.getElementById("adminPaperDrawerModal");
@@ -2098,11 +2096,11 @@ const ADMIN_CONTROLLER = {
       window.showToast(`✓ PDF Paper "${title}" saved and published successfully!`, "success");
     }
 
-    this.renderPapers();
+    await this.renderPapers();
   },
 
-  deletePaper(paperId) {
-    const papers = this.getPapers();
+  async deletePaper(paperId) {
+    const papers = await this.getPapers();
     const p = papers.find(item => item.id === paperId);
     const title = p ? p.title : "this paper";
 
@@ -2110,25 +2108,22 @@ const ADMIN_CONTROLLER = {
       return;
     }
 
-    const updated = papers.filter(item => item.id !== paperId);
-    localStorage.setItem("edupeak_papers_db", JSON.stringify(updated));
-
-    // Delete in Supabase if connected
-    if (window.SUPABASE_HELPER && window.SUPABASE_HELPER.isConnected) {
-      try {
-        window.SUPABASE_HELPER.client.from("past_papers").delete().eq("id", paperId).then(() => {});
-      } catch (e) {}
+    if (window.SUPABASE_HELPER) {
+      await window.SUPABASE_HELPER.deletePaper(paperId);
+    } else {
+      const updated = papers.filter(item => item.id !== paperId);
+      localStorage.setItem("edupeak_papers_db", JSON.stringify(updated));
     }
 
     if (window.showToast) {
       window.showToast("✓ Paper successfully removed from Paper Vault.", "info");
     }
 
-    this.renderPapers();
+    await this.renderPapers();
   },
 
-  previewPaper(paperId) {
-    const papers = this.getPapers();
+  async previewPaper(paperId) {
+    const papers = await this.getPapers();
     const p = papers.find(item => item.id === paperId);
     if (!p) return;
 

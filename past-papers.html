@@ -372,7 +372,10 @@
       }
     ];
 
-    function getPapersDatabase() {
+    async function getPapersDatabase() {
+      if (window.SUPABASE_HELPER) {
+        return await window.SUPABASE_HELPER.getPapers();
+      }
       const saved = localStorage.getItem("edupeak_papers_db");
       if (saved !== null) {
         try {
@@ -380,10 +383,7 @@
           if (Array.isArray(parsed)) return parsed;
         } catch (e) {}
       }
-      try {
-        localStorage.setItem("edupeak_papers_db", JSON.stringify(DEFAULT_PAPERS));
-      } catch(e) {}
-      return DEFAULT_PAPERS;
+      return [];
     }
 
     let currentTypeFilter = "all";
@@ -499,9 +499,9 @@
       };
     }
 
-    function renderPapers() {
+    async function renderPapers() {
       const container = document.getElementById("papersGridContainer");
-      const database = getPapersDatabase();
+      const database = await getPapersDatabase();
 
       const filtered = database.filter(p => {
         const matchesType = currentTypeFilter === "all" || p.type === currentTypeFilter;
@@ -566,8 +566,8 @@
       }).join('');
     }
 
-    function downloadPaper(paperId) {
-      const database = getPapersDatabase();
+    async function downloadPaper(paperId) {
+      const database = await getPapersDatabase();
       const p = database.find(item => item.id === paperId);
       if (!p) return;
       
@@ -579,8 +579,8 @@
       }
     }
 
-    function openPdfPreview(paperId) {
-      const database = getPapersDatabase();
+    async function openPdfPreview(paperId) {
+      const database = await getPapersDatabase();
       const p = database.find(item => item.id === paperId) || database[0];
       if (!p) return;
 
@@ -622,6 +622,12 @@
       }
     }
   </script>
+
+  <!-- Core JavaScript & Cloud Sync -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/data.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
 
   <!-- Floating Direct WhatsApp Button -->
   <a href="https://wa.me/94760687578" target="_blank" rel="noopener noreferrer" class="floating-help-btn" title="Contact EduPeak WhatsApp Hotline (+94 76 068 7578)">
