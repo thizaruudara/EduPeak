@@ -527,6 +527,11 @@
         if (iframe) iframe.src = "about:blank";
       }
     }
+
+    window.renderPastPapersGrid = renderPapers;
+    window.addEventListener("edupeak:papers-synced", () => {
+      renderPapers();
+    });
   </script>
 
   <!-- Floating Direct WhatsApp Button -->

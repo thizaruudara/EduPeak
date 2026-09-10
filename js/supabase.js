@@ -69,6 +69,8 @@ const SUPABASE_HELPER = {
           // Connected to Supabase instance, table not created yet
           this.isConnected = true;
           this.updateStatusBadge(true, "Connected to Supabase Cloud");
+          this.syncAllCloudData();
+          this.setupRealtimeSubscriptions();
           return { success: true, message: "Connected to Supabase project!" };
         } else {
           // Real error (invalid URL, network failure, bad API key)
@@ -79,11 +81,134 @@ const SUPABASE_HELPER = {
       }
       this.isConnected = true;
       this.updateStatusBadge(true, "Connected to Supabase Cloud");
+      this.syncAllCloudData();
+      this.setupRealtimeSubscriptions();
       return { success: true, message: "Connected to Supabase project!" };
     } catch (err) {
       this.isConnected = false;
       this.updateStatusBadge(false, "Connection Failed: " + err.message);
       return { success: false, message: err.message };
+    }
+  },
+
+  // Asynchronously synchronize all cloud databases with local storage & UI
+  async syncAllCloudData() {
+    try {
+      await Promise.allSettled([
+        this.syncCourses(),
+        this.syncTeachers(),
+        this.syncPapers()
+      ]);
+    } catch (e) {
+      console.warn("syncAllCloudData warning:", e);
+    }
+  },
+
+  async syncCourses() {
+    if (!this.isConnected || !this.client) return null;
+    try {
+      const { data, error } = await this.client.from("courses").select("*");
+      if (!error && Array.isArray(data)) {
+        this.setSharedData("edupeak_courses_db", data);
+        try { localStorage.setItem("edupeak_courses_db", JSON.stringify(data)); } catch (e) {}
+        if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = data;
+
+        if (typeof window.dispatchEvent === "function") {
+          window.dispatchEvent(new CustomEvent("edupeak:courses-synced", { detail: data }));
+        }
+
+        if (typeof window.renderCourses === "function") window.renderCourses();
+        if (typeof window.renderCategorizedCourses === "function") window.renderCategorizedCourses();
+        if (typeof window.updateCategoryCounts === "function") window.updateCategoryCounts();
+        if (typeof window.renderStudentCourses === "function") window.renderStudentCourses();
+        if (typeof window.updateStudentCategoryCounts === "function") window.updateStudentCategoryCounts();
+        if (window.TEACHER_CONTROLLER) {
+          if (typeof window.TEACHER_CONTROLLER.loadCustomData === "function") window.TEACHER_CONTROLLER.loadCustomData();
+          if (typeof window.TEACHER_CONTROLLER.renderMetrics === "function") window.TEACHER_CONTROLLER.renderMetrics();
+          if (window.TEACHER_CONTROLLER.currentTab === "courses" && typeof window.TEACHER_CONTROLLER.renderCourses === "function") {
+            window.TEACHER_CONTROLLER.renderCourses();
+          }
+        }
+        if (window.ADMIN_CONTROLLER) {
+          if (typeof window.ADMIN_CONTROLLER.renderCourses === "function") window.ADMIN_CONTROLLER.renderCourses();
+          if (typeof window.ADMIN_CONTROLLER.renderOverview === "function") window.ADMIN_CONTROLLER.renderOverview();
+        }
+        return data;
+      }
+    } catch (e) {
+      console.warn("syncCourses error:", e);
+    }
+    return null;
+  },
+
+  async syncTeachers() {
+    if (!this.isConnected || !this.client) return null;
+    try {
+      const { data, error } = await this.client.from("teachers").select("*");
+      if (!error && Array.isArray(data)) {
+        this.setSharedData("edupeak_teachers_db", data);
+        try { localStorage.setItem("edupeak_teachers_db", JSON.stringify(data)); } catch (e) {}
+        if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.teachers = data;
+
+        if (typeof window.dispatchEvent === "function") {
+          window.dispatchEvent(new CustomEvent("edupeak:teachers-synced", { detail: data }));
+        }
+
+        if (typeof window.renderTeachers === "function") window.renderTeachers();
+        if (window.ADMIN_CONTROLLER && typeof window.ADMIN_CONTROLLER.renderTeachers === "function") {
+          window.ADMIN_CONTROLLER.renderTeachers();
+        }
+        return data;
+      }
+    } catch (e) {
+      console.warn("syncTeachers error:", e);
+    }
+    return null;
+  },
+
+  async syncPapers() {
+    if (!this.isConnected || !this.client) return null;
+    try {
+      const { data, error } = await this.client.from("past_papers").select("*").order("year", { ascending: false });
+      if (!error && Array.isArray(data)) {
+        this.setSharedData("edupeak_papers_db", data);
+        try { localStorage.setItem("edupeak_papers_db", JSON.stringify(data)); } catch (e) {}
+
+        if (typeof window.dispatchEvent === "function") {
+          window.dispatchEvent(new CustomEvent("edupeak:papers-synced", { detail: data }));
+        }
+
+        if (typeof window.renderPastPapersGrid === "function") window.renderPastPapersGrid();
+        if (typeof window.renderPaperVaultPage === "function") window.renderPaperVaultPage();
+        if (window.TEACHER_CONTROLLER && window.TEACHER_CONTROLLER.currentTab === "papers" && typeof window.TEACHER_CONTROLLER.renderPapers === "function") {
+          window.TEACHER_CONTROLLER.renderPapers();
+        }
+        return data;
+      }
+    } catch (e) {
+      console.warn("syncPapers error:", e);
+    }
+    return null;
+  },
+
+  setupRealtimeSubscriptions() {
+    if (!this.client || this._realtimeSubscribed) return;
+    try {
+      this._realtimeSubscribed = true;
+      this.client
+        .channel('public-db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => {
+          this.syncCourses();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'teachers' }, () => {
+          this.syncTeachers();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'past_papers' }, () => {
+          this.syncPapers();
+        })
+        .subscribe();
+    } catch (e) {
+      console.warn("Realtime subscription setup failed:", e);
     }
   },
 
@@ -404,15 +529,9 @@ const SUPABASE_HELPER = {
       }
     } catch (e) {}
 
-    const defaultCourses = (window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.courses) && window.EDUPEAK_DATA.courses.length > 0)
+    const defaultCourses = (window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.courses))
       ? window.EDUPEAK_DATA.courses
       : [];
-    if (defaultCourses.length > 0) {
-      this.setSharedData("edupeak_courses_db", defaultCourses);
-      try {
-        localStorage.setItem("edupeak_courses_db", JSON.stringify(defaultCourses));
-      } catch (e) {}
-    }
     return defaultCourses;
   },
 
@@ -439,8 +558,15 @@ const SUPABASE_HELPER = {
     } catch (e) {}
     if (window.EDUPEAK_DATA) {
       window.EDUPEAK_DATA.courses = courses;
-      if (typeof window.renderCourses === "function") window.renderCourses();
     }
+    if (typeof window.dispatchEvent === "function") {
+      window.dispatchEvent(new CustomEvent("edupeak:courses-synced", { detail: courses }));
+    }
+    if (typeof window.renderCourses === "function") window.renderCourses();
+    if (typeof window.renderCategorizedCourses === "function") window.renderCategorizedCourses();
+    if (typeof window.updateCategoryCounts === "function") window.updateCategoryCounts();
+    if (typeof window.renderStudentCourses === "function") window.renderStudentCourses();
+    if (typeof window.updateStudentCategoryCounts === "function") window.updateStudentCategoryCounts();
     return courseData;
   },
 
@@ -461,7 +587,25 @@ const SUPABASE_HELPER = {
     } catch (e) {}
     if (window.EDUPEAK_DATA) {
       window.EDUPEAK_DATA.courses = courses;
-      if (typeof window.renderCourses === "function") window.renderCourses();
+    }
+    if (typeof window.dispatchEvent === "function") {
+      window.dispatchEvent(new CustomEvent("edupeak:courses-synced", { detail: courses }));
+    }
+    if (typeof window.renderCourses === "function") window.renderCourses();
+    if (typeof window.renderCategorizedCourses === "function") window.renderCategorizedCourses();
+    if (typeof window.updateCategoryCounts === "function") window.updateCategoryCounts();
+    if (typeof window.renderStudentCourses === "function") window.renderStudentCourses();
+    if (typeof window.updateStudentCategoryCounts === "function") window.updateStudentCategoryCounts();
+    if (window.TEACHER_CONTROLLER) {
+      if (typeof window.TEACHER_CONTROLLER.loadCustomData === "function") window.TEACHER_CONTROLLER.loadCustomData();
+      if (typeof window.TEACHER_CONTROLLER.renderMetrics === "function") window.TEACHER_CONTROLLER.renderMetrics();
+      if (window.TEACHER_CONTROLLER.currentTab === "courses" && typeof window.TEACHER_CONTROLLER.renderCourses === "function") {
+        window.TEACHER_CONTROLLER.renderCourses();
+      }
+    }
+    if (window.ADMIN_CONTROLLER) {
+      if (typeof window.ADMIN_CONTROLLER.renderCourses === "function") window.ADMIN_CONTROLLER.renderCourses();
+      if (typeof window.ADMIN_CONTROLLER.renderOverview === "function") window.ADMIN_CONTROLLER.renderOverview();
     }
     return true;
   },

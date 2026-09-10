@@ -187,6 +187,21 @@ function renderCourses() {
   let courses = [];
   if (typeof window.getLMSCourses === "function") {
     courses = window.getLMSCourses();
+  } else if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+    const shared = window.SUPABASE_HELPER.getSharedData("edupeak_courses_db");
+    if (shared !== null && Array.isArray(shared)) {
+      courses = shared;
+    } else {
+      const stored = localStorage.getItem("edupeak_courses_db");
+      if (stored !== null) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) courses = parsed;
+        } catch (e) {}
+      } else {
+        courses = (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.courses : []);
+      }
+    }
   } else {
     const stored = localStorage.getItem("edupeak_courses_db");
     if (stored !== null) {
@@ -196,19 +211,11 @@ function renderCourses() {
       } catch (e) {}
     } else {
       courses = (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.courses : []);
-      try {
-        const customCourses = JSON.parse(localStorage.getItem("edupeak_custom_courses") || "[]");
-        if (customCourses.length) {
-          customCourses.forEach(c => {
-            if (!courses.find(item => item.id === c.id)) courses.unshift(c);
-          });
-        }
-      } catch (e) {}
     }
   }
 
-  const lang = window.currentLang;
-  const t = window.EDUPEAK_TRANSLATIONS[lang];
+  const lang = window.currentLang || "en";
+  const t = (window.EDUPEAK_TRANSLATIONS && window.EDUPEAK_TRANSLATIONS[lang]) || {};
 
   const filtered = activeCourseFilter === "all" 
     ? courses 
@@ -218,6 +225,17 @@ function renderCourses() {
         if (activeCourseFilter === "diploma") return (c.level || "").includes("Diploma") || (c.stream || "").includes("Professional");
         return true;
       });
+
+  if (!filtered || filtered.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state-card" style="text-align: center; padding: 3.5rem 1.5rem; grid-column: 1 / -1; background: var(--bg-surface, #ffffff); border-radius: 12px; border: 1px dashed var(--border-subtle, #e2e8f0);">
+        <div style="font-size: 2.5rem; color: #94a3b8; margin-bottom: 0.75rem;"><i class="fa-solid fa-graduation-cap"></i></div>
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.35rem;">${lang === 'si' ? 'පාඨමාලා නොමැත' : 'No Courses Available'}</h3>
+        <p style="color: #64748b; font-size: 0.85rem; margin: 0;">${lang === 'si' ? 'දැනට සක්‍රීය පාඨමාලා කිසිවක් නොමැත.' : 'There are currently no active courses in the catalog.'}</p>
+      </div>
+    `;
+    return;
+  }
 
   const currentUser = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
   const isTeacherOrAdmin = currentUser && (currentUser.role === "teacher" || currentUser.role === "admin");
@@ -273,7 +291,7 @@ function renderCourses() {
             </span>
             <span class="detail-pill"><i class="fa-solid fa-language"></i> ${medium}</span>
             <span class="detail-pill"><i class="fa-regular fa-clock"></i> ${course.liveTime}</span>
-            <span class="detail-pill"><i class="fa-solid fa-layer-group"></i> ${course.modulesCount} ${t.course_card_lessons}</span>
+            <span class="detail-pill"><i class="fa-solid fa-layer-group"></i> ${course.modulesCount} ${t.course_card_lessons || 'Lessons'}</span>
           </div>
 
           <div class="course-footer-row">
@@ -291,7 +309,7 @@ function renderCourses() {
               </a>
             ` : `
               <button class="btn btn-primary btn-sm" onclick="enrollCourse('${course.id}')">
-                <i class="fa-solid fa-cart-plus"></i> ${t.course_card_enroll}
+                <i class="fa-solid fa-cart-plus"></i> ${t.course_card_enroll || 'Enroll'}
               </button>
             `)}
           </div>
@@ -1239,4 +1257,14 @@ window.initScrollRevealAndProgressBar = initScrollRevealAndProgressBar;
 window.toggleProfileDropdown = toggleProfileDropdown;
 window.closeProfileDropdown = closeProfileDropdown;
 window.simulatePeakBotMsg = simulatePeakBotMsg;
+window.renderCourses = renderCourses;
+window.renderTeachers = renderTeachers;
+
+window.addEventListener("edupeak:courses-synced", () => {
+  renderCourses();
+});
+
+window.addEventListener("edupeak:teachers-synced", () => {
+  renderTeachers();
+});
 

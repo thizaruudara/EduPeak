@@ -137,14 +137,24 @@ function loadSavedLMSData() {
     }
 
     // Load custom courses database created in Teacher Studio / Admin
-    const storedCoursesDb = localStorage.getItem("edupeak_courses_db");
-    if (storedCoursesDb !== null) {
-      try {
-        const parsed = JSON.parse(storedCoursesDb);
-        if (Array.isArray(parsed) && window.EDUPEAK_DATA) {
-          window.EDUPEAK_DATA.courses = parsed;
-        }
-      } catch (e) {}
+    let loadedCourses = null;
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+      const shared = window.SUPABASE_HELPER.getSharedData("edupeak_courses_db");
+      if (shared !== null && Array.isArray(shared)) {
+        loadedCourses = shared;
+      }
+    }
+    if (loadedCourses === null) {
+      const storedCoursesDb = localStorage.getItem("edupeak_courses_db");
+      if (storedCoursesDb !== null) {
+        try {
+          const parsed = JSON.parse(storedCoursesDb);
+          if (Array.isArray(parsed)) loadedCourses = parsed;
+        } catch (e) {}
+      }
+    }
+    if (loadedCourses !== null) {
+      if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = loadedCourses;
     } else {
       const customCourses = JSON.parse(localStorage.getItem("edupeak_custom_courses") || "[]");
       if (customCourses.length && window.EDUPEAK_DATA) {
@@ -190,7 +200,7 @@ function getLMSCourses() {
   try {
     if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
       const shared = window.SUPABASE_HELPER.getSharedData("edupeak_courses_db");
-      if (shared !== null && Array.isArray(shared) && shared.length > 0) {
+      if (shared !== null && Array.isArray(shared)) {
         if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = shared;
         return shared;
       }
@@ -198,18 +208,12 @@ function getLMSCourses() {
     const stored = localStorage.getItem("edupeak_courses_db");
     if (stored !== null) {
       const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = parsed;
         return parsed;
       }
     }
-    const defaultCourses = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses && window.EDUPEAK_DATA.courses.length > 0) ? window.EDUPEAK_DATA.courses : [];
-    if (defaultCourses.length > 0) {
-      try {
-        localStorage.setItem("edupeak_courses_db", JSON.stringify(defaultCourses));
-      } catch (e) {}
-    }
-    return defaultCourses;
+    return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
   } catch (e) {
     return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
   }
@@ -1972,6 +1976,13 @@ window.setLMSCourseYearFilter = setLMSCourseYearFilter;
 window.resetLMSCourseFilters = resetLMSCourseFilters;
 window.LMS_STATE = LMS_STATE;
 window.initLMS = initLMS;
+
+window.addEventListener("edupeak:courses-synced", () => {
+  loadCustomStorageData();
+  const activeTab = LMS_STATE.currentTab;
+  if (activeTab === "enrolled-courses") renderEnrolledCoursesGrid();
+  if (activeTab === "all-courses") renderAllLMSCourses();
+});
 
 document.addEventListener("DOMContentLoaded", () => {
   const lmsModal = document.getElementById("lmsModalWrapper");
