@@ -22,6 +22,7 @@ const AUTH_SYSTEM = {
       name_si: "කසුන් ජයසුන්දර",
       email: "student@edupeak.lk",
       phone: "0771234567",
+      nic: "200512345678",
       password: "student123",
       role: "student",
       institute: "Victory Embilipitiya",
@@ -34,6 +35,7 @@ const AUTH_SYSTEM = {
       address: "Victory College, Embilipitiya Pallegama, Sri Lanka",
       email_verified: true,
       avatarLetter: "K",
+      enrolledCourses: [],
       joinedDate: "2025-01-10"
     },
     {
@@ -89,17 +91,33 @@ const AUTH_SYSTEM = {
 
   init() {
     // Sync clean canonical users if db version updated
-    const DB_VERSION = "v5_teacher_accounts_ready";
+    const DB_VERSION = "v6_student_nic_support";
     if (localStorage.getItem("edupeak_db_ver") !== DB_VERSION) {
       const existing = this.getUsers();
+      // Retroactively ensure all existing students have valid NIC
+      existing.forEach(u => {
+        if (u.role === "student" && !u.nic) {
+          u.nic = u.id === "EP-2027-001" ? "200512345678" : ("2005" + Math.floor(10000000 + Math.random() * 90000000));
+        }
+      });
       this.defaultUsers.forEach(def => {
         const found = existing.find(u => u.id === def.id || (u.email && def.email && u.email.toLowerCase() === def.email.toLowerCase()));
         if (!found) {
           existing.push(def);
+        } else if (def.nic && !found.nic) {
+          found.nic = def.nic;
         }
       });
       localStorage.setItem(this.storageKeys.users, JSON.stringify(existing));
       localStorage.setItem("edupeak_db_ver", DB_VERSION);
+
+      // Ensure active session student has nic populated
+      const curUser = this.getCurrentUser();
+      if (curUser && curUser.role === "student" && !curUser.nic) {
+        const dbUser = existing.find(u => u.id === curUser.id);
+        curUser.nic = dbUser?.nic || "200512345678";
+        localStorage.setItem(this.storageKeys.session, JSON.stringify(curUser));
+      }
     } else if (!localStorage.getItem(this.storageKeys.users)) {
       localStorage.setItem(this.storageKeys.users, JSON.stringify(this.defaultUsers));
     }
@@ -116,18 +134,20 @@ const AUTH_SYSTEM = {
         if (session && session.user) {
           const user = session.user;
           const userMeta = user.user_metadata || {};
+          const studentExamYear = userMeta.exam_year || userMeta.examYear || "2027 A/L";
           const googleUser = {
-            id: `EP-GOOGLE-${user.id.substring(0, 6)}`,
+            id: this.generateStudentId(studentExamYear),
             name: userMeta.full_name || userMeta.name || user.email.split('@')[0],
             name_si: userMeta.full_name || userMeta.name || user.email.split('@')[0],
             email: user.email,
             phone: user.phone || userMeta.phone || "",
             role: "student",
             institute: userMeta.institute || "Victory Embilipitiya",
-            examYear: userMeta.exam_year || "2026 A/L",
+            examYear: studentExamYear,
             stream: userMeta.stream || "Physical Science",
             district: userMeta.district || "Ratnapura / Embilipitiya",
             branch: "Victory Embilipitiya",
+            enrolledCourses: [],
             email_verified: true,
             authProvider: "google",
             avatarLetter: (userMeta.full_name || user.email).charAt(0).toUpperCase(),
@@ -151,13 +171,7 @@ const AUTH_SYSTEM = {
             window.showToast(`🎉 Welcome, ${googleUser.name}! Signed in with Google.`, "success");
           }
           setTimeout(() => {
-            if (googleUser.role === "student") {
-              window.location.href = "student-dashboard.html";
-            } else if (googleUser.role === "teacher") {
-              window.location.href = "teacher-portal.html";
-            } else {
-              window.location.href = "student-dashboard.html";
-            }
+            window.location.href = "student-dashboard.html";
           }, 500);
         }
       } catch (err) {
@@ -218,6 +232,159 @@ const AUTH_SYSTEM = {
     }
   },
 
+  // Systematic Student ID Generation: EP-[YEAR]-[001...999]
+  generateStudentId(examYear) {
+    let year = "2027";
+    if (examYear) {
+      const match = String(examYear).match(/\b(20\d\d)\b/);
+      if (match) {
+        year = match[1];
+      }
+    } else {
+      year = String(new Date().getFullYear());
+    }
+
+    const prefix = `EP-${year}-`;
+    const users = this.getUsers ? this.getUsers() : [];
+
+    // Collect all existing student IDs from default users, local db, and teacher roster
+    const allIds = new Set();
+    if (Array.isArray(this.defaultUsers)) {
+      this.defaultUsers.forEach(u => { if (u.id) allIds.add(u.id.toUpperCase()); });
+    }
+    users.forEach(u => { if (u.id) allIds.add(u.id.toUpperCase()); });
+
+    if (window.TEACHER_CONTROLLER && typeof window.TEACHER_CONTROLLER.getRegisteredStudents === "function") {
+      try {
+        const tStudents = window.TEACHER_CONTROLLER.getRegisteredStudents() || [];
+        tStudents.forEach(s => { if (s.id) allIds.add(s.id.toUpperCase()); });
+      } catch (e) {}
+    }
+
+    // Find the highest sequence number currently registered with this year prefix
+    let maxSeq = 0;
+    allIds.forEach(id => {
+      if (id.startsWith(prefix)) {
+        const numPart = parseInt(id.slice(prefix.length), 10);
+        if (!isNaN(numPart) && numPart > maxSeq) {
+          maxSeq = numPart;
+        }
+      }
+    });
+
+    let nextSeq = maxSeq + 1;
+    let candidate = `${prefix}${String(nextSeq).padStart(3, "0")}`;
+    while (allIds.has(candidate.toUpperCase())) {
+      nextSeq++;
+      candidate = `${prefix}${String(nextSeq).padStart(3, "0")}`;
+    }
+
+    return candidate;
+  },
+
+  getSession() {
+    return this.getCurrentUser();
+  },
+
+  // Retrieve specific enrolled courses for a given student ID
+  getStudentEnrolledCourses(studentId) {
+    if (!studentId) return [];
+    let courses = [];
+
+    // 1. Check in users database
+    const users = this.getUsers();
+    const user = users.find(u => u.id === studentId || (u.email && u.email.toLowerCase() === String(studentId).toLowerCase()));
+    if (user && Array.isArray(user.enrolledCourses)) {
+      courses.push(...user.enrolledCourses);
+    }
+
+    // 2. Check dedicated per-student course access key
+    try {
+      const stored = localStorage.getItem(`edupeak_student_courses_${studentId}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) courses.push(...parsed);
+      }
+    } catch (e) {}
+
+    // 3. Check active session
+    const session = this.getCurrentUser();
+    if (session && (session.id === studentId || (session.email && session.email.toLowerCase() === String(studentId).toLowerCase()))) {
+      if (Array.isArray(session.enrolledCourses)) {
+        courses.push(...session.enrolledCourses);
+      }
+    }
+
+    // 4. Check approved orders in edupeak_pending_orders
+    try {
+      const orders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
+      if (Array.isArray(orders)) {
+        orders.forEach(ord => {
+          const isApproved = ord.status && (ord.status.toLowerCase() === "approved" || ord.status.toLowerCase().includes("approved"));
+          if (isApproved) {
+            const matches = ord.studentId === studentId || 
+              (session && (
+                (ord.studentPhone && session.phone && ord.studentPhone.replace(/\D/g, '') === session.phone.replace(/\D/g, '')) ||
+                (ord.studentName && session.name && ord.studentName.toLowerCase().trim() === session.name.toLowerCase().trim()) ||
+                (ord.studentEmail && session.email && ord.studentEmail.toLowerCase() === session.email.toLowerCase())
+              ));
+            if (matches && ord.courseId) {
+              courses.push(ord.courseId);
+            }
+          }
+        });
+      }
+    } catch (e) {}
+
+    return Array.from(new Set(courses));
+  },
+
+  // Set and synchronize granted course access for a specific student
+  setStudentEnrolledCourses(studentId, courseIds) {
+    if (!studentId) return false;
+    const cleanCourses = Array.isArray(courseIds) ? [...new Set(courseIds)] : [];
+
+    // 1. Update in users database
+    const users = this.getUsers();
+    const user = users.find(u => u.id === studentId || (u.email && u.email.toLowerCase() === String(studentId).toLowerCase()));
+    if (user) {
+      user.enrolledCourses = cleanCourses;
+      localStorage.setItem(this.storageKeys.users, JSON.stringify(users));
+
+      // Sync with Supabase if online
+      if (window.SUPABASE_HELPER && window.SUPABASE_HELPER.syncProfile) {
+        window.SUPABASE_HELPER.syncProfile({
+          id: user.id,
+          enrolled_courses: cleanCourses
+        }).catch(err => console.warn("Supabase profile course sync warning:", err));
+      }
+    }
+
+    // 2. Store in dedicated localStorage keys
+    localStorage.setItem(`edupeak_student_courses_${studentId}`, JSON.stringify(cleanCourses));
+    if (user && user.id !== studentId) {
+      localStorage.setItem(`edupeak_student_courses_${user.id}`, JSON.stringify(cleanCourses));
+    }
+
+    // 3. Update active session immediately if this student is currently logged in
+    const session = this.getCurrentUser();
+    if (session && (session.id === studentId || (session.email && session.email.toLowerCase() === String(studentId).toLowerCase()) || (user && session.id === user.id))) {
+      session.enrolledCourses = cleanCourses;
+      localStorage.setItem(this.storageKeys.session, JSON.stringify(session));
+
+      // Also ensure edupeak_enrolled array includes these courses
+      try {
+        let globalEnrolled = JSON.parse(localStorage.getItem("edupeak_enrolled") || "[]");
+        cleanCourses.forEach(cid => {
+          if (!globalEnrolled.includes(cid)) globalEnrolled.push(cid);
+        });
+        localStorage.setItem("edupeak_enrolled", JSON.stringify(globalEnrolled));
+      } catch (e) {}
+    }
+
+    return true;
+  },
+
   // --------------------------------------------------------------------------
   // OTP DISPATCH & VERIFICATION ENGINE (With Supabase Cloud Duplicate Check)
   // --------------------------------------------------------------------------
@@ -237,7 +404,17 @@ const AUTH_SYSTEM = {
       return { success: false, code: "INVALID_PHONE", message: "⚠️ Please enter a valid mobile number (e.g. 077 123 4567)." };
     }
 
-    // 3. Supabase & Local DB Check to ensure user is not already registered
+    // 3. NIC Validation & Duplicate Check (Required)
+    const cleanNic = formData.nic ? formData.nic.trim().toUpperCase() : "";
+    if (!cleanNic) {
+      return { success: false, code: "MISSING_NIC", message: "⚠️ Student NIC number is required for registration." };
+    }
+    const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
+    if (!nicRegex.test(cleanNic)) {
+      return { success: false, code: "INVALID_NIC", message: "⚠️ Please enter a valid Sri Lankan NIC number (12 digits e.g. 200412345678 or 9 digits with V/X e.g. 200012345V)." };
+    }
+
+    // 4. Supabase & Local DB Check to ensure user is not already registered
     if (window.SUPABASE_HELPER && window.SUPABASE_HELPER.checkUserExists) {
       try {
         const existsCheck = await window.SUPABASE_HELPER.checkUserExists(cleanEmail, cleanPhone);
@@ -272,6 +449,10 @@ const AUTH_SYSTEM = {
     if (duplicatePhone) {
       return { success: false, code: "PHONE_EXISTS", message: `⚠️ An account with mobile '${cleanPhone}' already exists. Please Sign In.` };
     }
+    const duplicateNic = users.find(u => u.nic && u.nic.toUpperCase() === cleanNic);
+    if (duplicateNic) {
+      return { success: false, code: "NIC_EXISTS", message: `⚠️ An account with NIC '${cleanNic}' already exists. Please Sign In.` };
+    }
 
     // Trigger Supabase Cloud Auth Sign Up (Sends real verification email if configured)
     if (window.SUPABASE_HELPER && window.SUPABASE_HELPER.client) {
@@ -302,6 +483,7 @@ const AUTH_SYSTEM = {
       ...formData,
       email: cleanEmail,
       phone: cleanPhone,
+      nic: cleanNic,
       otpCode: generatedOtp,
       otpTimestamp: Date.now()
     };
@@ -379,8 +561,7 @@ const AUTH_SYSTEM = {
   // Commit verified student to Database & Supabase
   async commitRegistration(data) {
     const users = this.getUsers();
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const newId = `EP-2025-${randomSuffix}`;
+    const newId = this.generateStudentId(data.examYear);
 
     const newUser = {
       id: newId,
@@ -388,16 +569,18 @@ const AUTH_SYSTEM = {
       name_si: data.name.trim(),
       email: data.email,
       phone: data.phone,
+      nic: data.nic ? data.nic.trim().toUpperCase() : "",
       password: data.password,
       role: "student",
       institute: data.institute || "Victory Embilipitiya",
-      examYear: data.examYear || "2026 A/L",
+      examYear: data.examYear || "2027 A/L",
       stream: data.stream || "Physical Science",
       district: data.district || "Ratnapura / Embilipitiya",
       branch: data.institute || "Victory Embilipitiya",
       email_verified: true,
       authProvider: data.authProvider || "email",
       avatarLetter: data.name.trim().charAt(0).toUpperCase(),
+      enrolledCourses: data.enrolledCourses || [],
       joinedDate: new Date().toISOString().split("T")[0]
     };
 
@@ -412,6 +595,7 @@ const AUTH_SYSTEM = {
           name: newUser.name,
           email: newUser.email,
           phone: newUser.phone,
+          nic: newUser.nic,
           role: "student",
           institute: newUser.institute,
           exam_year: newUser.examYear,
@@ -552,7 +736,33 @@ const AUTH_SYSTEM = {
 
   logout() {
     localStorage.removeItem(this.storageKeys.session);
-    if (window.closeLMSPortal) window.closeLMSPortal();
+
+    // 1. Close LMS Portal & stop players
+    if (window.closeLMSPortal) {
+      try { window.closeLMSPortal(); } catch (e) {}
+    }
+    if (window.EDUPEAK_PLAYER && typeof window.EDUPEAK_PLAYER.pause === "function") {
+      try { window.EDUPEAK_PLAYER.pause(); } catch (e) {}
+    }
+    if (window.EDUPEAK_LIVE_PLAYER && typeof window.EDUPEAK_LIVE_PLAYER.pause === "function") {
+      try { window.EDUPEAK_LIVE_PLAYER.pause(); } catch (e) {}
+    }
+
+    // 2. Halt any DOM video/audio/iframe media
+    try {
+      document.querySelectorAll("iframe").forEach(iframe => {
+        iframe.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+      });
+      document.querySelectorAll("video, audio").forEach(media => {
+        try { media.pause(); } catch (e) {}
+      });
+    } catch (e) {}
+
+    // 3. Clear openLms / lms URL parameters so no re-open occurs
+    if (window.location.search.includes("openLms") || window.location.search.includes("lms") || window.location.search.includes("course")) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     if (window.LMS_STATE) window.LMS_STATE.currentUser = null;
     this.updateUIForAuthState();
 
@@ -565,7 +775,7 @@ const AUTH_SYSTEM = {
 
     // Redirect to home page if currently inside a protected portal
     const pathname = window.location.pathname.toLowerCase();
-    if (pathname.includes("teacher-portal") || pathname.includes("student-dashboard")) {
+    if (pathname.includes("teacher-portal") || pathname.includes("student-dashboard") || pathname.includes("profile")) {
       setTimeout(() => {
         window.location.href = "index.html";
       }, 350);
@@ -625,64 +835,28 @@ const AUTH_SYSTEM = {
 
       // Populate Dropdown Navigation Links based on Role
       if (dropdownNavLinks) {
-        if (currentUser.role === "student") {
-          dropdownNavLinks.innerHTML = `
-            <a href="student-dashboard.html" class="dropdown-nav-item" onclick="closeProfileDropdown();">
-              <i class="fa-solid fa-gauge-high" style="color: #227aff;"></i>
-              <span>Student Dashboard</span>
-            </a>
-            <a href="profile.html" class="dropdown-nav-item" onclick="closeProfileDropdown();">
-              <i class="fa-solid fa-user-pen" style="color: #8b5cf6;"></i>
-              <span>My Profile & Avatar</span>
-            </a>
-            <a href="past-papers.html" class="dropdown-nav-item" onclick="closeProfileDropdown();">
-              <i class="fa-solid fa-file-pdf" style="color: #10b981;"></i>
-              <span>Past Paper Vault</span>
-            </a>
-            <button type="button" class="dropdown-nav-item" onclick="openLMSPortal('video-classroom'); closeProfileDropdown();">
-              <i class="fa-solid fa-circle-play" style="color: #06b6d4;"></i>
-              <span>Video Classroom Replay</span>
-            </button>
-            <button type="button" class="dropdown-nav-item" onclick="openLMSPortal('speed-quiz'); closeProfileDropdown();">
-              <i class="fa-solid fa-stopwatch" style="color: #f59e0b;"></i>
-              <span>Speed MCQ Arena</span>
-            </button>
-          `;
-        } else if (currentUser.role === "teacher") {
-          dropdownNavLinks.innerHTML = `
-            <a href="teacher-portal.html" class="dropdown-nav-item" onclick="closeProfileDropdown();">
-              <i class="fa-solid fa-chalkboard-user"></i>
-              <span>Teacher & Faculty Studio</span>
-            </a>
-            <a href="teacher-portal.html" class="dropdown-nav-item" onclick="closeProfileDropdown();">
-              <i class="fa-solid fa-book-open"></i>
-              <span>Course & Lesson Manager</span>
-            </a>
-            <a href="teacher-portal.html" class="dropdown-nav-item" onclick="closeProfileDropdown();">
-              <i class="fa-solid fa-clipboard-question"></i>
-              <span>Speed MCQ Quiz Creator</span>
-            </a>
-            <a href="teacher-portal.html" class="dropdown-nav-item" onclick="closeProfileDropdown();">
-              <i class="fa-solid fa-tower-broadcast" style="color: #ef4444;"></i>
-              <span>Live Broadcast Console</span>
-            </a>
-          `;
-        } else if (currentUser.role === "admin") {
-          dropdownNavLinks.innerHTML = `
-            <button type="button" class="dropdown-nav-item" onclick="openAdminPanel(); closeProfileDropdown();">
-              <i class="fa-solid fa-gauge-high"></i>
-              <span>Admin Dashboard & Metrics</span>
-            </button>
-            <button type="button" class="dropdown-nav-item" onclick="openAdminPanel(); closeProfileDropdown();">
-              <i class="fa-solid fa-users"></i>
-              <span>Student & Lecturer Directory</span>
-            </button>
-            <button type="button" class="dropdown-nav-item" onclick="openAdminPanel(); closeProfileDropdown();">
-              <i class="fa-solid fa-database"></i>
-              <span>Supabase Cloud Sync</span>
-            </button>
-          `;
-        }
+        dropdownNavLinks.innerHTML = `
+          <a href="student-dashboard.html" class="dropdown-nav-item" onclick="closeProfileDropdown();">
+            <i class="fa-solid fa-graduation-cap" style="color: #227aff;"></i>
+            <span>My Student LMS Dashboard</span>
+          </a>
+          <a href="profile.html" class="dropdown-nav-item" onclick="closeProfileDropdown();">
+            <i class="fa-solid fa-user-pen" style="color: #8b5cf6;"></i>
+            <span>My Profile & Avatar</span>
+          </a>
+          <a href="past-papers.html" class="dropdown-nav-item" onclick="closeProfileDropdown();">
+            <i class="fa-solid fa-file-pdf" style="color: #10b981;"></i>
+            <span>Past Paper Vault</span>
+          </a>
+          <button type="button" class="dropdown-nav-item" onclick="openLMSPortal('video-classroom'); closeProfileDropdown();">
+            <i class="fa-solid fa-circle-play" style="color: #06b6d4;"></i>
+            <span>Video Classroom Replay</span>
+          </button>
+          <button type="button" class="dropdown-nav-item" onclick="openLMSPortal('speed-quiz'); closeProfileDropdown();">
+            <i class="fa-solid fa-stopwatch" style="color: #f59e0b;"></i>
+            <span>Speed MCQ Arena</span>
+          </button>
+        `;
       }
 
       // Sync with LMS state
@@ -699,6 +873,21 @@ const AUTH_SYSTEM = {
       if (window.closeProfileDropdown) window.closeProfileDropdown();
       if (window.LMS_STATE) {
         window.LMS_STATE.currentUser = null;
+      }
+    }
+
+    // Dynamic Smart LMS Section CTA Button
+    const lmsCtaBtn = document.getElementById("lmsTryDemoRegisterBtn");
+    if (lmsCtaBtn) {
+      if (currentUser) {
+        lmsCtaBtn.href = "javascript:void(0)";
+        lmsCtaBtn.onclick = (e) => { e.preventDefault(); if (window.openLMSPortal) window.openLMSPortal('video-classroom'); else window.location.href = 'student-dashboard.html'; };
+        lmsCtaBtn.innerHTML = `<i class="fa-solid fa-circle-play"></i> <span>Launch Student LMS Portal</span>`;
+      } else {
+        lmsCtaBtn.href = "register.html";
+        lmsCtaBtn.onclick = (e) => { /* normal navigation to register */ };
+        const isSi = (localStorage.getItem("edupeak_lang") === "si");
+        lmsCtaBtn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="lms_launch_demo">${isSi ? "LMS පද්ධතියට ලියාපදිංචි වන්න" : "Register to Access LMS Portal"}</span>`;
       }
     }
   },
@@ -766,6 +955,7 @@ async function handleRegistrationSubmit(e) {
   const name = document.getElementById("regNameInput")?.value.trim();
   const email = document.getElementById("regEmailInput")?.value.trim();
   const phone = document.getElementById("regPhoneInput")?.value.trim();
+  const nic = document.getElementById("regNicInput")?.value.trim();
   const institute = document.getElementById("regInstituteSelect")?.value;
   const examYear = document.getElementById("regExamYearSelect")?.value;
   const stream = document.getElementById("regStreamSelect")?.value;
@@ -787,8 +977,15 @@ async function handleRegistrationSubmit(e) {
   if (errorAlert) errorAlert.style.display = "none";
   if (successAlert) successAlert.style.display = "none";
 
-  if (!name || !email || !phone || !password) {
-    showError("Please fill in all required registration fields.");
+  if (!name || !email || !phone || !nic || !password) {
+    showError("Please fill in all required registration fields including your NIC number.");
+    return;
+  }
+
+  // Validate Sri Lankan NIC (12-digit new format, or 9-digit + V/X old format)
+  const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
+  if (!nicRegex.test(nic)) {
+    showError("⚠️ Please enter a valid Sri Lankan NIC number (12 digits e.g. 200412345678, or 9 digits with V/X e.g. 200012345V).");
     return;
   }
 
@@ -827,6 +1024,7 @@ async function handleRegistrationSubmit(e) {
       name,
       email,
       phone,
+      nic: nic.toUpperCase(),
       institute,
       examYear,
       stream,
@@ -915,10 +1113,6 @@ async function handleOtpVerificationSubmit(e) {
       if (redirectParam) {
         sessionStorage.removeItem("edupeak_redirect_after_login");
         window.location.href = redirectParam;
-      } else if (result.user.role === "student") {
-        window.location.href = "student-dashboard.html";
-      } else if (result.user.role === "teacher") {
-        window.location.href = "teacher-portal.html";
       } else {
         window.location.href = "student-dashboard.html";
       }
@@ -967,9 +1161,10 @@ function handleGoogleCredentialResponse(response) {
 
   if (!user) {
     // Automatically register new Google Student
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const examYear = "2027 A/L";
+    const newId = AUTH_SYSTEM.generateStudentId(examYear);
     user = {
-      id: `EP-2025-${randomSuffix}`,
+      id: newId,
       name: payload.name || payload.email.split("@")[0],
       name_si: payload.name || payload.email.split("@")[0],
       email: payload.email,
@@ -977,7 +1172,7 @@ function handleGoogleCredentialResponse(response) {
       password: "",
       role: "student",
       institute: "Victory Embilipitiya",
-      examYear: "2026 A/L",
+      examYear: examYear,
       stream: "Physical Science",
       district: "Ratnapura / Embilipitiya",
       branch: "Victory Embilipitiya",
@@ -985,6 +1180,7 @@ function handleGoogleCredentialResponse(response) {
       avatarLetter: (payload.name || payload.email).charAt(0).toUpperCase(),
       email_verified: true,
       authProvider: "google",
+      enrolledCourses: [],
       joinedDate: new Date().toISOString().split("T")[0]
     };
 
@@ -1006,13 +1202,7 @@ function handleGoogleCredentialResponse(response) {
   }
 
   setTimeout(() => {
-    if (user.role === "student") {
-      window.location.href = "student-dashboard.html";
-    } else if (user.role === "teacher") {
-      window.location.href = "teacher-portal.html";
-    } else {
-      window.location.href = "student-dashboard.html";
-    }
+    window.location.href = "student-dashboard.html";
   }, 450);
 }
 

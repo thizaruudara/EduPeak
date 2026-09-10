@@ -2,6 +2,48 @@
   "version": 2,
   "cleanUrls": true,
   "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/((?!css/|js/|assets/|screenshots/|favicon\\.ico|manifest\\.json|robots\\.txt|sitemap\\.xml).*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "admin.edupeak.lk"
+        }
+      ],
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/((?!css/|js/|assets/|screenshots/|favicon\\.ico|manifest\\.json|robots\\.txt|sitemap\\.xml).*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "teacher.edupeak.lk"
+        }
+      ],
+      "destination": "/teacher-portal.html"
+    },
+    {
+      "source": "/((?!css/|js/|assets/|screenshots/|favicon\\.ico|manifest\\.json|robots\\.txt|sitemap\\.xml).*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "admin.(?<domain>.*)"
+        }
+      ],
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/((?!css/|js/|assets/|screenshots/|favicon\\.ico|manifest\\.json|robots\\.txt|sitemap\\.xml).*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "teacher.(?<domain>.*)"
+        }
+      ],
+      "destination": "/teacher-portal.html"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

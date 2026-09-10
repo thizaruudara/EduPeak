@@ -194,6 +194,7 @@ const SUPABASE_HELPER = {
           name: profileData.name || profileData.full_name,
           email: profileData.email,
           phone: profileData.phone,
+          nic: profileData.nic || "",
           role: profileData.role || "student",
           institute: profileData.institute || "Victory Embilipitiya",
           exam_year: profileData.exam_year || profileData.examYear || "2026 A/L",

@@ -130,6 +130,20 @@
 .icon-purple { background: #faf5ff; color: #8b5cf6; }
 
 /* Navigation Tab Pills */
+.teacher-nav-tabs-wrapper {
+  position: relative;
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+.tab-label-short {
+  display: none;
+}
+
+.tab-label-full {
+  display: inline;
+}
+
 .teacher-nav-tabs {
   display: flex;
   gap: 0.65rem;
@@ -138,9 +152,10 @@
   border: 1px solid var(--border-color);
   border-radius: 9999px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
-  margin-bottom: 2rem;
+  margin-bottom: 0;
   overflow-x: auto;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 .teacher-nav-tabs::-webkit-scrollbar {
@@ -327,15 +342,74 @@
     margin-bottom: 1.25rem;
   }
 
-  .teacher-nav-tabs {
-    padding: 0.35rem;
-    gap: 0.35rem;
+  /* Mobile Tab Navigation */
+  .tab-label-full {
+    display: none;
+  }
+
+  .tab-label-short {
+    display: inline;
+  }
+
+  .teacher-nav-tabs-wrapper {
+    position: relative;
     margin-bottom: 1.25rem;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 0.35rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+  }
+
+  .teacher-nav-tabs-wrapper::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 28px;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.95));
+    pointer-events: none;
+    border-top-right-radius: 16px;
+    border-bottom-right-radius: 16px;
+    z-index: 2;
+  }
+
+  .teacher-nav-tabs {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 0.1rem 1.75rem 0.1rem 0.35rem;
+    scroll-padding: 0 1.75rem 0 0.35rem;
+    gap: 0.45rem;
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+  }
+
+  .teacher-nav-tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .teacher-tab-btn {
-    padding: 0.45rem 0.85rem;
-    font-size: 0.775rem;
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    padding: 0.55rem 0.95rem;
+    font-size: 0.825rem;
+    border-radius: 12px;
+    gap: 0.45rem;
+    min-height: 40px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .teacher-tab-btn i {
+    font-size: 0.85rem;
   }
 
   .teacher-card {
@@ -354,5 +428,17 @@
 @media (max-width: 480px) {
   #teacherProfileName {
     max-width: 70px;
+  }
+
+  .teacher-nav-tabs-wrapper {
+    border-radius: 14px;
+    padding: 0.3rem;
+  }
+
+  .teacher-tab-btn {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.8rem;
+    border-radius: 10px;
+    gap: 0.4rem;
   }
 }

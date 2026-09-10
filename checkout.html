@@ -217,115 +217,80 @@
       font-size: 1.35rem;
     }
 
-    /* Payment Tabs */
-    .payment-methods-tabs {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.75rem;
-      margin-bottom: 1.75rem;
+    /* WhatsApp Order Steps & Features */
+    .whatsapp-order-box {
+      background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+      border: 1.5px solid #86efac;
+      border-radius: 14px;
+      padding: 1.35rem;
+      margin-bottom: 1.5rem;
     }
 
-    .pay-tab-btn {
-      background: #f8fafc;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 0.85rem 0.5rem;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
+    .whatsapp-box-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .whatsapp-icon-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #25d366;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      box-shadow: 0 4px 10px rgba(37, 211, 102, 0.35);
+      flex-shrink: 0;
+    }
+
+    .whatsapp-box-title h4 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 800;
+      color: #14532d;
+    }
+
+    .whatsapp-box-title p {
+      margin: 0.15rem 0 0 0;
+      font-size: 0.8rem;
+      color: #166534;
+    }
+
+    .whatsapp-steps-list {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 0.35rem;
+      gap: 0.65rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
     }
 
-    .pay-tab-btn i {
-      font-size: 1.25rem;
-      color: #64748b;
-    }
-
-    .pay-tab-btn span {
-      font-size: 0.775rem;
-      font-weight: 700;
-      color: #334155;
-    }
-
-    .pay-tab-btn:hover {
-      border-color: #227aff;
-      background: #eff6ff;
-    }
-
-    .pay-tab-btn.active {
-      border-color: #227aff;
-      background: #eff6ff;
-      box-shadow: 0 0 0 1.5px #227aff inset;
-    }
-
-    .pay-tab-btn.active i,
-    .pay-tab-btn.active span {
-      color: #227aff;
-    }
-
-    .pay-pane {
-      display: none;
-    }
-
-    .pay-pane.active {
-      display: block;
-      animation: fadeIn 0.3s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(4px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Bank Transfer Info Box */
-    .bank-info-box {
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      border-radius: 12px;
-      padding: 1.25rem;
-      margin-bottom: 1.25rem;
-    }
-
-    .bank-row {
+    .whatsapp-step-item {
       display: flex;
-      justify-content: space-between;
-      font-size: 0.85rem;
-      padding: 0.25rem 0;
+      align-items: flex-start;
+      gap: 0.65rem;
+      font-size: 0.84rem;
+      color: #15803d;
+      line-height: 1.45;
     }
 
-    .bank-row strong {
-      color: #1e3a8a;
-    }
-
-    /* Slip Upload Box */
-    .slip-upload-dropzone {
-      border: 2px dashed #cbd5e1;
-      border-radius: 12px;
-      padding: 1.5rem;
-      text-align: center;
-      background: #f8fafc;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      position: relative;
-    }
-
-    .slip-upload-dropzone:hover {
-      border-color: #227aff;
-      background: #eff6ff;
-    }
-
-    .slip-preview-box {
-      margin-top: 0.75rem;
-      display: none;
-    }
-
-    .slip-preview-img {
-      max-height: 140px;
-      border-radius: 8px;
-      border: 1px solid #cbd5e1;
+    .whatsapp-step-badge {
+      background: #16a34a;
+      color: #ffffff;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 800;
+      flex-shrink: 0;
+      margin-top: 1px;
     }
 
     /* Form Controls */
@@ -343,10 +308,10 @@
 
     .form-control {
       width: 100%;
-      padding: 0.7rem 0.95rem;
-      border: 1.5px solid #e2e8f0;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid #cbd5e1;
       border-radius: 10px;
-      font-size: 0.9rem;
+      font-size: 0.92rem;
       font-family: inherit;
       color: #1e293b;
       background: #ffffff;
@@ -356,8 +321,16 @@
 
     .form-control:focus {
       outline: none;
-      border-color: #227aff;
-      box-shadow: 0 0 0 3px rgba(34, 122, 255, 0.15);
+      border-color: #16a34a;
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+    }
+
+    .form-control[readonly] {
+      background: #f8fafc;
+      border-color: #e2e8f0;
+      color: #475569;
+      cursor: not-allowed;
+      font-weight: 600;
     }
 
     .form-row {
@@ -366,31 +339,33 @@
       gap: 1rem;
     }
 
-    .btn-checkout-pay {
+    .btn-checkout-whatsapp {
       width: 100%;
-      padding: 0.95rem;
-      font-size: 1.05rem;
+      padding: 1.05rem;
+      font-size: 1.1rem;
       font-weight: 800;
       border-radius: 12px;
-      background: linear-gradient(135deg, #1565d8 0%, #227aff 100%);
+      background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
       color: #ffffff;
       border: none;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0.5rem;
-      box-shadow: 0 8px 20px -4px rgba(34, 122, 255, 0.4);
+      gap: 0.65rem;
+      box-shadow: 0 10px 24px -4px rgba(34, 197, 94, 0.45);
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       margin-top: 1.25rem;
+      text-decoration: none;
     }
 
-    .btn-checkout-pay:hover {
+    .btn-checkout-whatsapp:hover {
       transform: translateY(-2px);
-      box-shadow: 0 12px 28px -4px rgba(34, 122, 255, 0.5);
+      box-shadow: 0 14px 30px -4px rgba(34, 197, 94, 0.6);
+      background: linear-gradient(135deg, #15803d 0%, #16a34a 100%);
     }
 
-    .btn-checkout-pay:disabled {
+    .btn-checkout-whatsapp:disabled {
       opacity: 0.7;
       cursor: not-allowed;
       transform: none;
@@ -557,6 +532,61 @@
         </div>
       </div>
 
+      <!-- Pending Order Notice Box (Shown if student already submitted a pending order for this course) -->
+      <div id="pendingOrderExistsBox" style="display: none; background: #fffdf5; border: 2px solid #fde68a; border-radius: var(--radius-lg); padding: 2.25rem 1.5rem; text-align: center; margin-bottom: 2rem; box-shadow: 0 4px 16px rgba(245, 158, 11, 0.08);">
+        <div style="width: 64px; height: 64px; background: #fef3c7; color: #d97706; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1.25rem;">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+        </div>
+        <div style="display: inline-flex; align-items: center; gap: 0.4rem; background: #fef3c7; color: #b45309; border: 1px solid #fde68a; padding: 0.3rem 0.85rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; margin-bottom: 0.75rem;">
+          <i class="fa-solid fa-hourglass-half"></i> Order Awaiting Admin Verification
+        </div>
+        <h2 style="color: #92400e; font-size: 1.45rem; font-weight: 800; margin-bottom: 0.5rem;">
+          You Already Have a Pending Order for this Course!
+        </h2>
+        <p id="pendingOrderCourseTitle" style="color: #78350f; font-weight: 700; font-size: 1.05rem; margin-bottom: 0.75rem;">
+          2028 A/L Physics - Fundamental Principles & Units Masterclass
+        </p>
+        
+        <div style="background: #ffffff; border: 1.5px solid #fde68a; border-radius: 12px; padding: 1.15rem 1.35rem; max-width: 480px; margin: 0 auto 1.5rem; text-align: left; font-size: 0.85rem; color: #78350f; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.05);">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.45rem; border-bottom: 1px dashed #fef3c7; padding-bottom: 0.35rem;">
+            <span>Order Reference:</span> <strong id="pendingOrderRef" style="font-family: monospace; font-size: 0.9rem; color: #0f172a; background: #fef3c7; padding: 0.1rem 0.45rem; border-radius: 4px;">ORD-157200</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.45rem; border-bottom: 1px dashed #fef3c7; padding-bottom: 0.35rem;">
+            <span>Order Date:</span> <strong id="pendingOrderDate" style="color: #0f172a;">--</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.45rem; border-bottom: 1px dashed #fef3c7; padding-bottom: 0.35rem;">
+            <span>Current Status:</span> <strong style="color: #d97706; display: inline-flex; align-items: center; gap: 0.3rem;"><i class="fa-solid fa-clock"></i> Pending Payment Approval</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span>Tuition Fee:</span> <strong id="pendingOrderFee" style="color: #227aff; font-weight: 800;">LKR 3,500 / Month</strong>
+          </div>
+        </div>
+
+        <p style="color: #92400e; font-size: 0.9rem; max-width: 580px; margin: 0 auto 1.75rem; line-height: 1.55;">
+          To prevent duplicate bank payments, you cannot re-order this same course while your current enrollment request is awaiting verification. Once an administrator or lecturer approves your order, this course will automatically activate on your dashboard. If you made a mistake or wish to cancel this order, please contact our hotline below.
+        </p>
+
+        <div style="display: flex; gap: 0.85rem; justify-content: center; flex-wrap: wrap;">
+          <a href="https://wa.me/94760687578" id="pendingOrderWaBtn" target="_blank" rel="noopener noreferrer" class="btn" style="background: #16a34a; color: #ffffff; padding: 0.75rem 1.5rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 10px; text-decoration: none;">
+            <i class="fa-brands fa-whatsapp"></i> Chat with Support Desk (+94 76 068 7578)
+          </a>
+          <a href="student-dashboard.html" class="btn btn-primary" style="padding: 0.75rem 1.5rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem;">
+            <i class="fa-solid fa-gauge-high"></i> Go to Student Dashboard
+          </a>
+          <a href="courses.html" class="btn btn-outline" style="padding: 0.75rem 1.5rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem; background: #ffffff;">
+            <i class="fa-solid fa-arrow-left"></i> Browse Other Courses
+          </a>
+        </div>
+      </div>
+
+      <!-- Faculty / Admin Preview Notice -->
+      <div id="facultyPreviewBanner" style="display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 0.9rem 1.25rem; margin-bottom: 1.5rem; color: #1e40af; font-size: 0.875rem; align-items: center; gap: 0.75rem; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.06);">
+        <i class="fa-solid fa-chalkboard-user" style="font-size: 1.25rem; color: #2563eb;"></i>
+        <div>
+          <strong>Faculty / Admin Preview:</strong> As a teacher/admin, you have full administrative access to all courses in the LMS. You can test and preview this student checkout & tuition payment flow below.
+        </div>
+      </div>
+
       <div class="checkout-grid" id="checkoutGrid">
 
         <!-- Left Column: Selected Course & Invoice Summary -->
@@ -612,11 +642,11 @@
 
         </div>
 
-        <!-- Right Column: Student Profile & Payment Form -->
+        <!-- Right Column: Student Billing & Delivery Details -->
         <div class="checkout-card">
           <div class="card-title-bar">
-            <h2><i class="fa-solid fa-credit-card" style="color: #227aff;"></i> Payment Gateway</h2>
-            <div id="checkoutUserPill" style="font-size: 0.8rem; font-weight: 700; color: #227aff; background: #eff6ff; padding: 0.25rem 0.65rem; border-radius: 9999px;">
+            <h2><i class="fa-solid fa-address-card" style="color: #16a34a;"></i> Student Billing Details</h2>
+            <div id="checkoutUserPill" style="font-size: 0.8rem; font-weight: 700; color: #16a34a; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 0.25rem 0.65rem; border-radius: 9999px;">
               <i class="fa-solid fa-user-check"></i> <span id="checkoutUserNameDisplay">Kasun</span>
             </div>
           </div>
@@ -642,118 +672,75 @@
             </div>
           </div>
 
-          <!-- Student & Delivery Info -->
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.15rem; margin-bottom: 1.5rem;">
-            <h4 style="font-size: 0.85rem; font-weight: 800; color: #334155; margin: 0 0 0.75rem 0; text-transform: uppercase;">
-              <i class="fa-solid fa-address-card" style="color: #227aff;"></i> Registered Student Details
-            </h4>
+          <!-- WhatsApp Order Instructions Box -->
+          <div class="whatsapp-order-box">
+            <div class="whatsapp-box-header">
+              <div class="whatsapp-icon-circle">
+                <i class="fa-brands fa-whatsapp"></i>
+              </div>
+              <div class="whatsapp-box-title">
+                <h4>Order through WhatsApp Hotline</h4>
+                <p>Direct enrollment request & manual verification</p>
+              </div>
+            </div>
+            <ul class="whatsapp-steps-list">
+              <li class="whatsapp-step-item">
+                <span class="whatsapp-step-badge">1</span>
+                <span>Confirm your student delivery information below.</span>
+              </li>
+              <li class="whatsapp-step-item">
+                <span class="whatsapp-step-badge">2</span>
+                <span>Click <strong>Order through WhatsApp</strong> to send your order details directly to our hotline.</span>
+              </li>
+              <li class="whatsapp-step-item">
+                <span class="whatsapp-step-badge">3</span>
+                <span>Receive payment instructions (Bank Transfer / Cash Slip) & our administration will manually assign your course access.</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Student & Delivery Info Form -->
+          <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 1.25rem; margin-bottom: 1.5rem;">
             <div class="form-row">
-              <div class="form-group" style="margin-bottom: 0.5rem;">
-                <label>Student Name</label>
+              <div class="form-group">
+                <label><i class="fa-solid fa-user"></i> Full Student Name</label>
                 <input type="text" class="form-control" id="studentNameInput" readonly>
               </div>
-              <div class="form-group" style="margin-bottom: 0.5rem;">
-                <label>Student ID</label>
+              <div class="form-group">
+                <label><i class="fa-solid fa-id-badge"></i> Student ID</label>
                 <input type="text" class="form-control" id="studentIdInput" readonly>
               </div>
             </div>
-            <div class="form-row">
-              <div class="form-group" style="margin-bottom: 0;">
-                <label>Mobile Number (For Courier SMS)</label>
-                <input type="tel" class="form-control" id="studentPhoneInput" placeholder="0771234567" required>
-              </div>
-              <div class="form-group" style="margin-bottom: 0;">
-                <label>Tute Delivery City / District</label>
-                <input type="text" class="form-control" id="studentAddressInput" placeholder="e.g. Embilipitiya, Ratnapura" required>
-              </div>
-            </div>
-          </div>
-
-          <!-- Payment Method Tabs -->
-          <div class="payment-methods-tabs">
-            <button type="button" class="pay-tab-btn active" data-tab="card" onclick="switchPayTab('card')">
-              <i class="fa-solid fa-credit-card"></i>
-              <span>Card / LankaQR</span>
-            </button>
-            <button type="button" class="pay-tab-btn" data-tab="bank" onclick="switchPayTab('bank')">
-              <i class="fa-solid fa-building-columns"></i>
-              <span>Bank Transfer</span>
-            </button>
-            <button type="button" class="pay-tab-btn" data-tab="branch" onclick="switchPayTab('branch')">
-              <i class="fa-solid fa-receipt"></i>
-              <span>Victory Cash Slip</span>
-            </button>
-          </div>
-
-          <!-- TAB 1: CARD / LANKAQR PAYMENT -->
-          <div class="pay-pane active" id="payPane_card">
-            <div class="form-group">
-              <label>Name on Card</label>
-              <input type="text" class="form-control" id="cardNameInput" placeholder="e.g. K. S. Jayasundara">
-            </div>
-
-            <div class="form-group">
-              <label>Card Number</label>
-              <div style="position: relative;">
-                <input type="text" class="form-control" id="cardNumberInput" placeholder="4111 2222 3333 4444" maxlength="19">
-                <i class="fa-brands fa-cc-visa" style="position: absolute; right: 12px; top: 12px; font-size: 1.25rem; color: #1e3a8a;"></i>
-              </div>
-            </div>
 
             <div class="form-row">
               <div class="form-group">
-                <label>Expiry Date</label>
-                <input type="text" class="form-control" id="cardExpiryInput" placeholder="MM / YY" maxlength="5">
+                <label><i class="fa-brands fa-whatsapp" style="color: #10b981;"></i> WhatsApp Mobile Number <span style="color: #ef4444;">*</span></label>
+                <input type="tel" class="form-control" id="studentPhoneInput" placeholder="077 123 4567" required>
               </div>
               <div class="form-group">
-                <label>CVV / CVC</label>
-                <input type="password" class="form-control" id="cardCvvInput" placeholder="123" maxlength="4">
+                <label><i class="fa-solid fa-location-dot" style="color: #227aff;"></i> Home District / City <span style="color: #ef4444;">*</span></label>
+                <input type="text" class="form-control" id="studentDistrictInput" placeholder="e.g. Ratnapura / Embilipitiya" required>
               </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0.75rem;">
+              <label><i class="fa-solid fa-truck-fast"></i> Tute Courier Postal Delivery Address <span style="color: #ef4444;">*</span></label>
+              <textarea class="form-control" id="studentAddressInput" rows="2" placeholder="Enter complete home postal address for courier delivery of printed physics tutes" required></textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label><i class="fa-regular fa-comment-dots"></i> Order Notes / Message to Teacher (Optional)</label>
+              <input type="text" class="form-control" id="orderNotesInput" placeholder="e.g. Need Sinhala medium tutes / Bank transfer ready">
             </div>
           </div>
 
-          <!-- TAB 2: BANK TRANSFER & SLIP UPLOAD -->
-          <div class="pay-pane" id="payPane_bank">
-            <div class="bank-info-box">
-              <div class="bank-row"><span>Bank:</span> <strong>Bank of Ceylon (BOC)</strong></div>
-              <div class="bank-row"><span>Account Name:</span> <strong>Victory Higher Educational Institute</strong></div>
-              <div class="bank-row"><span>Account Number:</span> <strong>889420188</strong></div>
-              <div class="bank-row"><span>Branch:</span> <strong>Embilipitiya Super Branch</strong></div>
-            </div>
-
-            <div class="form-group">
-              <label>Upload Deposit / Online Transfer Slip</label>
-              <div class="slip-upload-dropzone" onclick="document.getElementById('slipFileInput').click()">
-                <input type="file" id="slipFileInput" accept="image/*,.pdf" style="display: none;" onchange="handleSlipFile(this)">
-                <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2rem; color: #227aff; margin-bottom: 0.5rem;"></i>
-                <p style="margin: 0; font-size: 0.85rem; font-weight: 700; color: #1e293b;">Click to upload bank payment receipt</p>
-                <span style="font-size: 0.75rem; color: #64748b;">Supports PNG, JPG, JPEG or PDF (Max 5MB)</span>
-              </div>
-              <div class="slip-preview-box" id="slipPreviewBox">
-                <img id="slipPreviewImg" src="" alt="Payment Slip Preview" class="slip-preview-img">
-                <p id="slipFileName" style="font-size: 0.8rem; color: #047857; margin: 0.4rem 0 0 0; font-weight: 600;"></p>
-              </div>
-            </div>
-          </div>
-
-          <!-- TAB 3: VICTORY EMBILIPITIYA CASH VOUCHER -->
-          <div class="pay-pane" id="payPane_branch">
-            <div style="background: #fdf4ff; border: 1px solid #f5d0fe; border-radius: 12px; padding: 1.15rem; margin-bottom: 1.25rem; font-size: 0.85rem; color: #86198f;">
-              <i class="fa-solid fa-building-columns"></i> Paid at <strong>Victory College Embilipitiya Cash Counter</strong>? Enter the receipt number stamped on your payment card.
-            </div>
-            <div class="form-group">
-              <label>Branch Receipt / Voucher Number</label>
-              <input type="text" class="form-control" id="voucherNumberInput" placeholder="e.g. VIC-EMB-2025-9842">
-            </div>
-          </div>
-
-          <!-- Complete Enrollment Button -->
-          <button type="button" class="btn-checkout-pay" id="btnCompletePayment" onclick="processCheckoutEnrollment()">
-            <i class="fa-solid fa-lock"></i> Pay & Activate LMS Enrollment
+          <!-- Order Through WhatsApp Button -->
+          <button type="button" class="btn-checkout-whatsapp" id="btnOrderWhatsApp" onclick="processWhatsAppOrder()">
+            <i class="fa-brands fa-whatsapp" style="font-size: 1.35rem;"></i> Order & Enroll through WhatsApp
           </button>
 
-          <p style="text-align: center; font-size: 0.775rem; color: #64748b; margin-top: 1rem;">
-            🔒 By confirming payment, your student portal access is activated immediately with 24/7 video and tute tracking.
+          <p style="text-align: center; font-size: 0.78rem; color: #64748b; margin-top: 1rem; line-height: 1.5;">
+            💬 Redirects to our official EduPeak hotline (+94 76 068 7578) with your order summary. Course is manually activated upon receipt verification.
           </p>
 
         </div>
@@ -766,34 +753,34 @@
   <!-- SUCCESS CONFIRMATION MODAL -->
   <div class="success-modal-overlay" id="checkoutSuccessModal">
     <div class="success-modal-card">
-      <div class="success-icon-badge">
-        <i class="fa-solid fa-check"></i>
+      <div class="success-icon-badge" style="background: #ecfdf5; color: #16a34a; border-color: #86efac;">
+        <i class="fa-brands fa-whatsapp" style="font-size: 2.2rem;"></i>
       </div>
       <h2 style="font-family: var(--font-heading); font-size: 1.6rem; font-weight: 900; color: #0f172a; margin: 0 0 0.5rem 0;">
-        Enrollment Confirmed! 🎉
+        Order Request Created! 🚀
       </h2>
       <p style="font-size: 0.925rem; color: #64748b; line-height: 1.5; margin-bottom: 1.5rem;" id="successModalMessage">
-        You are now registered in the <strong>2025 A/L Physics Masterclass</strong>. Your LMS digital pass and tute delivery tracking are ready.
+        Your enrollment request has been generated. Please send the pre-filled message on WhatsApp so our team can provide payment details and manually activate your course.
       </p>
 
       <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; text-align: left; font-size: 0.85rem; color: #334155;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
-          <span>Invoice ID:</span> <strong id="successInvoiceId">INV-2025-88421</strong>
+          <span>Order ID:</span> <strong id="successInvoiceId">ORD-88421</strong>
         </div>
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
           <span>Student ID:</span> <strong id="successStudentId">EP-2025-001</strong>
         </div>
         <div style="display: flex; justify-content: space-between;">
-          <span>Status:</span> <strong style="color: #047857;"><i class="fa-solid fa-circle-check"></i> Active in LMS</strong>
+          <span>Status:</span> <strong style="color: #d97706;"><i class="fa-solid fa-clock"></i> Pending Payment & Activation</strong>
         </div>
       </div>
 
-      <div style="display: flex; gap: 0.75rem;">
-        <button class="btn btn-primary" style="flex: 1; padding: 0.85rem;" onclick="redirectToLMS()">
-          <i class="fa-solid fa-play"></i> Launch Video Classroom
+      <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <button class="btn btn-primary" style="flex: 1; padding: 0.85rem; background: #16a34a; border-color: #16a34a;" onclick="reopenWhatsAppOrder()">
+          <i class="fa-brands fa-whatsapp"></i> Re-open WhatsApp Hotline
         </button>
-        <button class="btn btn-ghost" style="padding: 0.85rem;" onclick="window.location.href='index.html'">
-          Home
+        <button class="btn btn-ghost" style="padding: 0.85rem;" onclick="window.location.href='student-dashboard.html'">
+          <i class="fa-solid fa-gauge-high"></i> Dashboard
         </button>
       </div>
     </div>
@@ -810,9 +797,53 @@
   <script src="js/lms.js"></script>
 
   <script>
-    let activePayTab = "card";
     let selectedCourse = null;
     let currentUser = null;
+    let lastGeneratedWaUrl = "";
+
+    function getAllCourses() {
+      if (typeof window.getLMSCourses === "function") {
+        return window.getLMSCourses();
+      }
+      let courses = [];
+      try {
+        const stored = localStorage.getItem("edupeak_courses_db");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) return parsed;
+        }
+        const customCourses = JSON.parse(localStorage.getItem("edupeak_custom_courses") || "[]");
+        courses = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? [...window.EDUPEAK_DATA.courses] : [];
+        if (customCourses.length) {
+          customCourses.forEach(c => {
+            if (!courses.find(item => item.id === c.id)) courses.unshift(c);
+          });
+        }
+      } catch (e) {
+        courses = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
+      }
+      return courses;
+    }
+
+    function getStudentEnrolledList(user) {
+      let list = [];
+      if (!user) return list;
+      if (Array.isArray(user.enrolledCourses)) {
+        list.push(...user.enrolledCourses);
+      }
+      if (user.id && window.AUTH_SYSTEM && typeof window.AUTH_SYSTEM.getStudentEnrolledCourses === "function") {
+        const userCourses = window.AUTH_SYSTEM.getStudentEnrolledCourses(user.id);
+        if (Array.isArray(userCourses)) list.push(...userCourses);
+      }
+      try {
+        const saved = localStorage.getItem("edupeak_enrolled");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) list.push(...parsed);
+        }
+      } catch (e) {}
+      return Array.from(new Set(list));
+    }
 
     document.addEventListener("DOMContentLoaded", () => {
       // 1. Check User Session
@@ -826,18 +857,21 @@
         return;
       }
 
+      const isTeacherOrAdmin = currentUser && (currentUser.role === "teacher" || currentUser.role === "admin");
+
       // Populate User details
       document.getElementById("checkoutUserNameDisplay").textContent = currentUser.name || "Student";
       document.getElementById("studentNameInput").value = currentUser.name || "";
       document.getElementById("studentIdInput").value = currentUser.id || currentUser.studentId || "EP-2025-001";
-      document.getElementById("studentPhoneInput").value = currentUser.phone || "0771234567";
-      document.getElementById("studentAddressInput").value = currentUser.district || "Victory Embilipitiya Campus";
+      document.getElementById("studentPhoneInput").value = currentUser.phone || "";
+      document.getElementById("studentDistrictInput").value = currentUser.district || "Ratnapura / Embilipitiya";
+      document.getElementById("studentAddressInput").value = currentUser.address || "";
 
-      // 2. Identify Course from URL Parameters
+      // 2. Identify Course from URL Parameters (including custom teacher-created courses)
       const urlParams = new URLSearchParams(window.location.search);
       const courseId = urlParams.get("course") || "crs-phy-2025";
 
-      const allCourses = window.EDUPEAK_DATA ? window.EDUPEAK_DATA.courses : [];
+      const allCourses = getAllCourses();
       selectedCourse = allCourses.find(c => c.id === courseId) || allCourses[0];
 
       if (selectedCourse) {
@@ -848,22 +882,76 @@
         document.getElementById("summaryTotalFee").textContent = selectedCourse.fee || "LKR 3,500.00";
         document.getElementById("checkoutBatchYearBadge").textContent = selectedCourse.examYear || selectedCourse.level || "2025 A/L";
 
-        // CHECK IF STUDENT IS ALREADY ENROLLED IN THIS COURSE
-        const isAlreadyEnrolled = typeof isCourseEnrolled === "function" 
-          ? isCourseEnrolled(selectedCourse.id) 
-          : (window.isCourseEnrolled ? window.isCourseEnrolled(selectedCourse.id) : false);
+        const noticeBox = document.getElementById("alreadyEnrolledNoticeBox");
+        const checkoutGrid = document.getElementById("checkoutGrid");
+        const facultyBanner = document.getElementById("facultyPreviewBanner");
 
-        if (isAlreadyEnrolled) {
-          const noticeBox = document.getElementById("alreadyEnrolledNoticeBox");
-          const checkoutGrid = document.getElementById("checkoutGrid");
-          const courseNameEl = document.getElementById("alreadyEnrolledCourseName");
-          const lmsBtn = document.getElementById("alreadyEnrolledLmsBtn");
+        // CHECK IF USER IS TEACHER/ADMIN (SHOW FACULTY PREVIEW) OR ENROLLED STUDENT
+        if (isTeacherOrAdmin) {
+          // Show faculty preview banner and keep checkout grid visible so teacher can test/preview checkout flow
+          if (facultyBanner) facultyBanner.style.display = "flex";
+          if (noticeBox) noticeBox.style.display = "none";
+          if (checkoutGrid) checkoutGrid.style.display = "grid";
+        } else {
+          // Regular student: check if they actually paid/enrolled in this course
+          const studentEnrolled = getStudentEnrolledList(currentUser);
+          const isAlreadyEnrolled = studentEnrolled.some(id => {
+            if (!id || !selectedCourse.id) return false;
+            const targetClean = String(selectedCourse.id).toLowerCase().replace(/-theory|-revision|-paper/g, '');
+            const cleanId = String(id).toLowerCase().replace(/-theory|-revision|-paper/g, '');
+            return id === selectedCourse.id || id.startsWith(selectedCourse.id) || selectedCourse.id.startsWith(id) || cleanId === targetClean;
+          });
 
-          if (courseNameEl) courseNameEl.textContent = selectedCourse.title;
-          if (lmsBtn) lmsBtn.href = `index.html?openLms=video-classroom&course=${encodeURIComponent(selectedCourse.id)}`;
-          if (noticeBox) noticeBox.style.display = "block";
-          if (checkoutGrid) checkoutGrid.style.display = "none";
-          return;
+          if (isAlreadyEnrolled) {
+            const courseNameEl = document.getElementById("alreadyEnrolledCourseName");
+            const lmsBtn = document.getElementById("alreadyEnrolledLmsBtn");
+
+            if (courseNameEl) courseNameEl.textContent = selectedCourse.title;
+            if (lmsBtn) lmsBtn.href = `index.html?openLms=video-classroom&course=${encodeURIComponent(selectedCourse.id)}`;
+            if (noticeBox) noticeBox.style.display = "block";
+            if (checkoutGrid) checkoutGrid.style.display = "none";
+            return;
+          } else {
+            if (noticeBox) noticeBox.style.display = "none";
+          }
+
+          // Check if student already has an active pending order awaiting admin verification for this course
+          const pendingOrders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
+          const existingPendingOrder = pendingOrders.find(o => 
+            o.studentId === currentUser.id && 
+            o.status === "Pending Approval" && 
+            (o.courseId === selectedCourse.id || (selectedCourse.id && o.courseId && o.courseId.includes(selectedCourse.id)))
+          );
+
+          const pendingBox = document.getElementById("pendingOrderExistsBox");
+
+          if (existingPendingOrder) {
+            const pendingTitle = document.getElementById("pendingOrderCourseTitle");
+            const pendingRef = document.getElementById("pendingOrderRef");
+            const pendingDate = document.getElementById("pendingOrderDate");
+            const pendingFee = document.getElementById("pendingOrderFee");
+            const pendingWaBtn = document.getElementById("pendingOrderWaBtn");
+
+            if (pendingTitle) pendingTitle.textContent = existingPendingOrder.courseTitle || selectedCourse.title;
+            if (pendingRef) pendingRef.textContent = existingPendingOrder.orderId || "ORD-XXXXXX";
+            if (pendingDate) {
+              const d = existingPendingOrder.timestamp ? new Date(existingPendingOrder.timestamp) : new Date();
+              pendingDate.textContent = d.toLocaleDateString() + " at " + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+            if (pendingFee) pendingFee.textContent = existingPendingOrder.fee || selectedCourse.fee || "LKR 3,500 / Month";
+            if (pendingWaBtn) {
+              const waFollowUp = encodeURIComponent(`Hello EduPeak Hotline, I have a pending order (${existingPendingOrder.orderId}) for course "${existingPendingOrder.courseTitle}". Could you please check the verification status?`);
+              pendingWaBtn.href = `https://wa.me/94760687578?text=${waFollowUp}`;
+            }
+
+            if (pendingBox) pendingBox.style.display = "block";
+            if (noticeBox) noticeBox.style.display = "none";
+            if (checkoutGrid) checkoutGrid.style.display = "none";
+            return;
+          } else {
+            if (pendingBox) pendingBox.style.display = "none";
+            if (checkoutGrid) checkoutGrid.style.display = "grid";
+          }
         }
 
         // CHECK FOR TARGET BATCH MISMATCH WITH STUDENT PROFILE
@@ -871,7 +959,7 @@
         const courseBatch = selectedCourse.examYear || selectedCourse.level || "2026 A/L";
         const courseYearNum = (courseBatch.match(/\d{4}/) || [""])[0];
         const userYearNum = (userExamYear.match(/\d{4}/) || [""])[0];
-        const isBatchMismatch = !!(userYearNum && courseYearNum && userYearNum !== courseYearNum && !courseBatch.toLowerCase().includes("all"));
+        const isBatchMismatch = !isTeacherOrAdmin && !!(userYearNum && courseYearNum && userYearNum !== courseYearNum && !courseBatch.toLowerCase().includes("all"));
 
         if (isBatchMismatch) {
           const alertBox = document.getElementById("checkoutBatchMismatchAlert");
@@ -884,44 +972,50 @@
       }
     });
 
-    function switchPayTab(tabId) {
-      activePayTab = tabId;
-      document.querySelectorAll(".pay-tab-btn").forEach(btn => {
-        btn.classList.toggle("active", btn.getAttribute("data-tab") === tabId);
-      });
-      document.querySelectorAll(".pay-pane").forEach(pane => {
-        pane.classList.toggle("active", pane.id === `payPane_${tabId}`);
-      });
-    }
-
-    function handleSlipFile(input) {
-      if (input.files && input.files[0]) {
-        const file = input.files[0];
-        document.getElementById("slipFileName").textContent = `✓ Attached: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-        
-        if (file.type.startsWith("image/")) {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            document.getElementById("slipPreviewImg").src = e.target.result;
-            document.getElementById("slipPreviewBox").style.display = "block";
-          };
-          reader.readAsDataURL(file);
-        } else {
-          document.getElementById("slipPreviewBox").style.display = "block";
-          document.getElementById("slipPreviewImg").style.display = "none";
-        }
-      }
-    }
-
-    async function processCheckoutEnrollment() {
-      const btn = document.getElementById("btnCompletePayment");
+    function processWhatsAppOrder() {
       if (!selectedCourse) return;
 
-      // Duplicate enrollment guard
-      if (typeof isCourseEnrolled === "function" && isCourseEnrolled(selectedCourse.id)) {
-        showToast("You are already enrolled in this course!", "info");
-        setTimeout(() => { window.location.href = "index.html?openLms=video-classroom"; }, 600);
+      const name = document.getElementById("studentNameInput").value.trim() || (currentUser && currentUser.name) || "Student";
+      const studentId = document.getElementById("studentIdInput").value.trim() || (currentUser && currentUser.id) || "EP-2027-001";
+      const phone = document.getElementById("studentPhoneInput").value.trim();
+      const district = document.getElementById("studentDistrictInput").value.trim();
+      const address = document.getElementById("studentAddressInput").value.trim();
+      const notes = document.getElementById("orderNotesInput") ? document.getElementById("orderNotesInput").value.trim() : "";
+
+      if (!phone) {
+        showToast("⚠️ Please enter your WhatsApp contact number for confirmation.", "warning");
+        document.getElementById("studentPhoneInput").focus();
         return;
+      }
+
+      if (!district) {
+        showToast("⚠️ Please enter your Home District / City.", "warning");
+        document.getElementById("studentDistrictInput").focus();
+        return;
+      }
+
+      if (!address) {
+        showToast("⚠️ Please enter your tute courier delivery postal address.", "warning");
+        document.getElementById("studentAddressInput").focus();
+        return;
+      }
+
+      // Check if duplicate pending order already exists
+      const isTeacherOrAdmin = currentUser && (currentUser.role === "teacher" || currentUser.role === "admin");
+      if (!isTeacherOrAdmin) {
+        const pendingOrders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
+        const existingPendingOrder = pendingOrders.find(o => 
+          o.studentId === studentId && 
+          (o.courseId === selectedCourse.id || (selectedCourse.id && o.courseId && o.courseId.includes(selectedCourse.id))) && 
+          o.status === "Pending Approval"
+        );
+        if (existingPendingOrder) {
+          showToast("⚠️ You already placed an order for this course! It is currently pending approval.", "warning");
+          setTimeout(() => {
+            window.location.reload();
+          }, 800);
+          return;
+        }
       }
 
       // Batch mismatch confirmation check
@@ -929,7 +1023,7 @@
       const courseBatch = selectedCourse.examYear || selectedCourse.level || "2026 A/L";
       const courseYearNum = (courseBatch.match(/\d{4}/) || [""])[0];
       const userYearNum = (userExamYear.match(/\d{4}/) || [""])[0];
-      const isBatchMismatch = !!(userYearNum && courseYearNum && userYearNum !== courseYearNum && !courseBatch.toLowerCase().includes("all"));
+      const isBatchMismatch = !isTeacherOrAdmin && !!(userYearNum && courseYearNum && userYearNum !== courseYearNum && !courseBatch.toLowerCase().includes("all"));
 
       if (isBatchMismatch) {
         const confirmBox = document.getElementById("confirmDifferentBatchCheckbox");
@@ -942,53 +1036,70 @@
         }
       }
 
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing Secure Payment...';
+      const orderRef = `ORD-${Date.now().toString().slice(-6)}`;
 
-      // Simulate payment delay
-      await new Promise(resolve => setTimeout(resolve, 900));
+      // Build structured WhatsApp message for Sri Lankan LMS
+      const waMessage = 
+`🎓 *NEW COURSE ENROLLMENT ORDER - EDUPEAK LMS*
+━━━━━━━━━━━━━━━━━━━━
+📦 *Order Ref:* ${orderRef}
+📚 *Course:* ${selectedCourse.title}
+🏷️ *Batch:* ${selectedCourse.examYear || selectedCourse.level || 'A/L'}
+👨‍🏫 *Master Lecturer:* ${selectedCourse.lecturer || 'Amalsha Wanniarachchi (MBBS UG)'}
+💰 *Tuition Fee:* ${selectedCourse.fee || 'LKR 3,500 / Month'}
 
-      // 1. Add course to user's enrolled courses in LocalStorage
-      let enrolled = [];
+👤 *STUDENT DETAILS:*
+• *Full Name:* ${name}
+• *Student ID:* ${studentId}
+• *WhatsApp No:* ${phone}
+• *District / City:* ${district}
+• *Delivery Postal Address:* ${address}${currentUser && currentUser.nic ? '\n• *NIC Number:* ' + currentUser.nic : ''}${currentUser && currentUser.stream ? '\n• *Academic Stream:* ' + currentUser.stream : ''}${notes ? '\n• *Notes / Requests:* ' + notes : ''}
+━━━━━━━━━━━━━━━━━━━━
+_Hello EduPeak Administration, I would like to order this course. Please provide official bank deposit / payment instructions to complete my enrollment and activate my LMS course access._`;
+
+      const hotline = "94760687578";
+      const waUrl = `https://wa.me/${hotline}?text=${encodeURIComponent(waMessage)}`;
+      lastGeneratedWaUrl = waUrl;
+      window.lastGeneratedWaUrl = waUrl;
+
+      // Save pending order record in LocalStorage so admin/teacher can track orders
       try {
-        const saved = localStorage.getItem("edupeak_enrolled");
-        enrolled = saved ? JSON.parse(saved) : [];
-      } catch (e) {
-        enrolled = [];
-      }
+        const pendingOrders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
+        pendingOrders.unshift({
+          orderId: orderRef,
+          studentId: studentId,
+          studentName: name,
+          studentPhone: phone,
+          district: district,
+          address: address,
+          courseId: selectedCourse.id,
+          courseTitle: selectedCourse.title,
+          fee: selectedCourse.fee,
+          timestamp: new Date().toISOString(),
+          status: "Pending Approval"
+        });
+        localStorage.setItem("edupeak_pending_orders", JSON.stringify(pendingOrders));
+      } catch (e) {}
 
-      if (!enrolled.includes(selectedCourse.id)) {
-        enrolled.push(selectedCourse.id);
-        localStorage.setItem("edupeak_enrolled", JSON.stringify(enrolled));
-      }
+      // Open WhatsApp in new window/tab
+      window.open(waUrl, "_blank");
 
-      // 2. Sync to Supabase cloud if helper exists
-      if (window.SUPABASE_HELPER && currentUser) {
-        try {
-          await window.SUPABASE_HELPER.createEnrollment({
-            userId: currentUser.id,
-            courseId: selectedCourse.id,
-            amount: selectedCourse.fee,
-            paymentMethod: activePayTab
-          });
-        } catch (err) {
-          console.warn("Supabase enrollment sync note:", err);
-        }
-      }
-
-      // 3. Populate Success Modal
-      const invId = `INV-2025-${Math.floor(10000 + Math.random() * 90000)}`;
-      document.getElementById("successInvoiceId").textContent = invId;
-      document.getElementById("successStudentId").textContent = currentUser.id || "EP-2025-001";
+      // Show Success / Order Confirmation Modal
+      document.getElementById("successInvoiceId").textContent = orderRef;
+      document.getElementById("successStudentId").textContent = studentId;
       document.getElementById("successModalMessage").innerHTML = `
-        You are now registered in <strong>${selectedCourse.title}</strong>. Your 24/7 video replay, live classes, and tute courier delivery to <strong>${document.getElementById("studentAddressInput").value || 'Embilipitiya'}</strong> are active!
+        Your enrollment order for <strong>${selectedCourse.title}</strong> has been generated! WhatsApp is opening so you can send the order details to our hotline (<strong>+94 76 068 7578</strong>). Our team will provide payment instructions and manually assign your course in the LMS upon verification.
       `;
 
       document.getElementById("checkoutSuccessModal").classList.add("active");
     }
 
-    function redirectToLMS() {
-      window.location.href = "student-dashboard.html";
+    function reopenWhatsAppOrder() {
+      if (lastGeneratedWaUrl) {
+        window.open(lastGeneratedWaUrl, "_blank");
+      } else {
+        window.open("https://wa.me/94760687578", "_blank");
+      }
     }
 
     function showToast(msg, type = "info") {
@@ -1004,3 +1115,4 @@
 
 </body>
 </html>
+

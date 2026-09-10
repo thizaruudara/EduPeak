@@ -27,20 +27,21 @@ document.addEventListener("DOMContentLoaded", () => {
   const urlParams = new URLSearchParams(window.location.search);
   const openTab = urlParams.get("openLms") || urlParams.get("lms");
   const targetCourse = urlParams.get("course");
+  const wasAdminOpen = sessionStorage.getItem("edupeak_admin_open") === "true";
   if (openTab) {
     setTimeout(() => {
       if (window.openLMSPortal) window.openLMSPortal(openTab, targetCourse);
     }, 400);
   } else if (window.location.hash === "#lms") {
     setTimeout(() => {
-      if (window.openLMSPortal) window.openLMSPortal("my-courses");
+      if (window.openLMSPortal) window.openLMSPortal("video-classroom");
     }, 400);
-  } else if (window.location.hash.startsWith("#admin") || urlParams.get("admin") !== null) {
+  } else if (window.location.hash.startsWith("#admin") || urlParams.get("admin") !== null || wasAdminOpen) {
     setTimeout(() => {
       if (window.ADMIN_CONTROLLER && window.ADMIN_CONTROLLER.checkAutoOpen) {
         window.ADMIN_CONTROLLER.checkAutoOpen();
       }
-    }, 150);
+    }, 50);
   }
 });
 
@@ -83,9 +84,32 @@ function setLanguage(lang) {
   renderInstitutes();
   renderFAQs();
   if (window.renderLMSLesson) window.renderLMSLesson(LMS_STATE.currentLessonIndex);
-  if (window.renderQuizQuestion) window.renderQuizQuestion(LMS_STATE.currentQuizIndex);
+  if (window.renderQuizCoursePicker) window.renderQuizCoursePicker();
+  if (window.renderQuizQuestion && window.LMS_STATE && window.LMS_STATE.quizActiveCourseId) window.renderQuizQuestion(LMS_STATE.currentQuizIndex);
   if (window.renderEnrolledCourses) window.renderEnrolledCourses();
+  if (window.AUTH_SYSTEM && window.AUTH_SYSTEM.updateUIForAuthState) window.AUTH_SYSTEM.updateUIForAuthState();
 }
+
+function handleSmartLMSButtonClick(e) {
+  if (e && typeof e.preventDefault === "function") e.preventDefault();
+  const user = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
+  if (user) {
+    if (user.role === "teacher") {
+      window.location.href = "teacher-portal.html";
+    } else if (user.role === "admin") {
+      if (window.openAdminPanel) window.openAdminPanel();
+    } else {
+      if (window.openLMSPortal) {
+        window.openLMSPortal("video-classroom");
+      } else {
+        window.location.href = "student-dashboard.html";
+      }
+    }
+  } else {
+    window.location.href = "register.html";
+  }
+}
+window.handleSmartLMSButtonClick = handleSmartLMSButtonClick;
 
 function toggleLanguage() {
   setLanguage(window.currentLang === "en" ? "si" : "en");
@@ -140,36 +164,77 @@ function filterTeachers(filterKey, btnEl) {
 // --------------------------------------------------------------------------
 // 3. COURSES DIRECTORY
 // --------------------------------------------------------------------------
+function isCourseOrderPending(courseId) {
+  const currentUser = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
+  if (!currentUser || !currentUser.id) return false;
+  try {
+    const orders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
+    return orders.some(o => 
+      o.studentId === currentUser.id && 
+      o.status === "Pending Approval" && 
+      (o.courseId === courseId || (courseId && o.courseId && o.courseId.includes(courseId)))
+    );
+  } catch (e) {
+    return false;
+  }
+}
+window.isCourseOrderPending = isCourseOrderPending;
+
 function renderCourses() {
   const container = document.getElementById("coursesGrid");
   if (!container) return;
 
-  const stored = localStorage.getItem("edupeak_courses_db");
-  const courses = stored ? JSON.parse(stored) : window.EDUPEAK_DATA.courses;
+  let courses = [];
+  if (typeof window.getLMSCourses === "function") {
+    courses = window.getLMSCourses();
+  } else {
+    const stored = localStorage.getItem("edupeak_courses_db");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) courses = parsed;
+      } catch (e) {}
+    }
+    if (!courses.length) {
+      courses = (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.courses : []);
+      try {
+        const customCourses = JSON.parse(localStorage.getItem("edupeak_custom_courses") || "[]");
+        if (customCourses.length) {
+          customCourses.forEach(c => {
+            if (!courses.find(item => item.id === c.id)) courses.unshift(c);
+          });
+        }
+      } catch (e) {}
+    }
+  }
+
   const lang = window.currentLang;
   const t = window.EDUPEAK_TRANSLATIONS[lang];
 
   const filtered = activeCourseFilter === "all" 
     ? courses 
     : courses.filter(c => {
-        if (activeCourseFilter === "al") return c.level.includes("A/L") && !c.title.includes("Paper");
-        if (activeCourseFilter === "papers") return c.title.includes("Paper") || c.title_si.includes("ප්‍රශ්න පත්‍ර");
-        if (activeCourseFilter === "diploma") return c.level.includes("Diploma") || c.stream.includes("Professional");
+        if (activeCourseFilter === "al") return (c.level || "").includes("A/L") && !(c.title || "").includes("Paper");
+        if (activeCourseFilter === "papers") return (c.title || "").includes("Paper") || (c.title_si || "").includes("ප්‍රශ්න පත්‍ර");
+        if (activeCourseFilter === "diploma") return (c.level || "").includes("Diploma") || (c.stream || "").includes("Professional");
         return true;
       });
+
+  const currentUser = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
+  const isTeacherOrAdmin = currentUser && (currentUser.role === "teacher" || currentUser.role === "admin");
 
   container.innerHTML = filtered.map(course => {
     const title = lang === "si" ? course.title_si : course.title;
     const stream = lang === "si" ? course.stream_si : course.stream;
     const medium = lang === "si" ? course.medium_si : course.medium;
     const fee = lang === "si" ? course.fee_si : course.fee;
-    const isEnrolled = typeof isCourseEnrolled === "function" ? isCourseEnrolled(course.id) : (window.isCourseEnrolled ? window.isCourseEnrolled(course.id) : false);
-    const currentUser = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
+    const isEnrolled = !isTeacherOrAdmin && (typeof isCourseEnrolled === "function" ? isCourseEnrolled(course.id) : (window.isCourseEnrolled ? window.isCourseEnrolled(course.id) : false));
+    const isPending = !isTeacherOrAdmin && isCourseOrderPending(course.id);
     const userExamYear = currentUser ? (currentUser.examYear || "") : "";
     const courseBatch = course.examYear || course.level || "2026 A/L";
     const courseYearNum = (courseBatch.match(/\d{4}/) || [""])[0];
     const userYearNum = (userExamYear.match(/\d{4}/) || [""])[0];
-    const isBatchMismatch = !!(userYearNum && courseYearNum && userYearNum !== courseYearNum && !courseBatch.toLowerCase().includes("all"));
+    const isBatchMismatch = !isTeacherOrAdmin && !!(userYearNum && courseYearNum && userYearNum !== courseYearNum && !courseBatch.toLowerCase().includes("all"));
 
     return `
       <article class="course-card ${isEnrolled ? 'course-card-enrolled' : ''}">
@@ -181,13 +246,17 @@ function renderCourses() {
             <span class="course-badge-pill" style="background: #10b981; color: #ffffff; font-weight: 700; box-shadow: 0 2px 8px rgba(16,185,129,0.3);">
               <i class="fa-solid fa-circle-check"></i> ${lang === 'si' ? 'ලියාපදිංචි වී ඇත' : 'Enrolled'}
             </span>
+          ` : (isPending ? `
+            <span class="course-badge-pill" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-weight: 700; box-shadow: 0 2px 8px rgba(217,119,6,0.2);">
+              <i class="fa-solid fa-clock"></i> ${lang === 'si' ? 'ඇණවුම පොරොත්තුවේ' : 'Order Pending'}
+            </span>
           ` : (isBatchMismatch ? `
             <span class="course-badge-pill" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem;">
               <i class="fa-solid fa-triangle-exclamation"></i> ${courseBatch}
             </span>
           ` : `
             <span class="course-badge-pill">${courseBatch}</span>
-          `)}
+          `))}
         </div>
 
         <div class="course-body">
@@ -217,11 +286,15 @@ function renderCourses() {
               <button class="btn btn-sm" style="background: #10b981; color: #ffffff; border: 1px solid #10b981; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem;" onclick="openLMSPortal('video-classroom', '${course.id}')">
                 <i class="fa-solid fa-circle-play"></i> ${t.course_card_enrolled || 'Enrolled • Go to LMS'}
               </button>
+            ` : (isPending ? `
+              <a href="student-dashboard.html" class="btn btn-sm" style="background: #fffbeb; color: #b45309; border: 1.5px solid #fde68a; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none;">
+                <i class="fa-solid fa-clock"></i> ${lang === 'si' ? 'ඇණවුම පොරොත්තුවේ' : 'Order Pending • View'}
+              </a>
             ` : `
               <button class="btn btn-primary btn-sm" onclick="enrollCourse('${course.id}')">
                 <i class="fa-solid fa-cart-plus"></i> ${t.course_card_enroll}
               </button>
-            `}
+            `)}
           </div>
         </div>
       </article>
@@ -295,7 +368,7 @@ function renderInstitutes() {
         </ul>
 
         <div class="inst-contact-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-          <span class="inst-phone"><i class="fa-solid fa-phone"></i> ${inst.phone || "+94 71 805 9089"}</span>
+          <span class="inst-phone"><i class="fa-solid fa-phone"></i> ${inst.phone || "+94 76 068 7578"}</span>
           <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
             ${isComingSoon ? `
               <span style="font-size: 0.75rem; font-weight: 700; color: #b45309; background: #fffbeb; padding: 4px 8px; border-radius: 6px; border: 1px solid #fde68a;">
@@ -805,6 +878,26 @@ function initHeroScrollDescentAnimation() {
 // --------------------------------------------------------------------------
 function initGoatsPreloader() {
   const preloader = document.getElementById("sitePreloader");
+  if (!preloader) return;
+
+  // Check if current page is the root home page
+  const pathname = window.location.pathname.toLowerCase();
+  const isHomePage = pathname === "/" || pathname === "" || pathname.endsWith("/index.html") || pathname.endsWith("/index");
+
+  // Check for deep links, admin portal session, or lms hashes
+  const urlParams = new URLSearchParams(window.location.search);
+  const isDeepLink = urlParams.has("openLms") || urlParams.has("lms") || urlParams.has("course") || urlParams.has("admin") || urlParams.has("tab");
+  const wasAdminOpen = sessionStorage.getItem("edupeak_admin_open") === "true";
+  const isHashDeepLink = window.location.hash.startsWith("#admin") || window.location.hash.startsWith("#lms") || wasAdminOpen;
+
+  // If not on Home page or inside Admin/LMS portal, immediately remove the preloader
+  if (!isHomePage || isDeepLink || isHashDeepLink) {
+    preloader.style.display = "none";
+    preloader.remove();
+    document.body.style.overflow = "";
+    return;
+  }
+
   const brandBox = document.getElementById("preloaderBrandBox");
   const dot = document.getElementById("preloaderDot") || document.getElementById("preloaderSparkDot");
   const subtext = document.getElementById("preloaderSubtext");
@@ -812,7 +905,10 @@ function initGoatsPreloader() {
   const counterBox = document.getElementById("preloaderCounterBox");
   const curvePath = document.getElementById("preloaderCurvePath");
 
-  if (!preloader || !counterNum) return;
+  if (!counterNum) {
+    preloader.remove();
+    return;
+  }
 
   // Prevent scroll during preloading
   document.body.style.overflow = "hidden";

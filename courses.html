@@ -288,7 +288,7 @@
           <ul class="footer-links-list">
             <li><i class="fa-solid fa-location-dot" style="color: #38bdf8; margin-right: 0.4rem;"></i> Victory Higher Educational Institute, Main Street, Embilipitiya</li>
             <li><i class="fa-solid fa-phone" style="color: #38bdf8; margin-right: 0.4rem;"></i> +94 47 223 0000</li>
-            <li><i class="fa-brands fa-whatsapp" style="color: #25d366; margin-right: 0.4rem;"></i> +94 77 123 4567</li>
+            <li><i class="fa-brands fa-whatsapp" style="color: #25d366; margin-right: 0.4rem;"></i> <a href="https://wa.me/94760687578" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none;">+94 76 068 7578</a></li>
             <li><i class="fa-solid fa-envelope" style="color: #38bdf8; margin-right: 0.4rem;"></i> info@edupeak.lk</li>
           </ul>
         </div>
@@ -337,8 +337,17 @@
     };
 
     function getAllCourses() {
+      if (typeof window.getLMSCourses === "function") {
+        return window.getLMSCourses();
+      }
       const stored = localStorage.getItem("edupeak_courses_db");
-      let courses = stored ? JSON.parse(stored) : (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.courses : []);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) return parsed;
+        } catch(e) {}
+      }
+      let courses = (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.courses : []);
 
       // Custom teacher created courses
       try {
@@ -377,21 +386,37 @@
       }
     }
 
+    function isCourseOrderPending(courseId) {
+      const currentUser = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
+      if (!currentUser || !currentUser.id) return false;
+      try {
+        const orders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
+        return orders.some(o => 
+          o.studentId === currentUser.id && 
+          o.status === "Pending Approval" && 
+          (o.courseId === courseId || (courseId && o.courseId && o.courseId.includes(courseId)))
+        );
+      } catch (e) {
+        return false;
+      }
+    }
+
     function renderCourseCardHTML(course) {
       const lang = window.currentLang || "en";
       const title = lang === "si" ? (course.title_si || course.title) : course.title;
       const stream = lang === "si" ? (course.stream_si || course.stream) : (course.stream || "Physical Science");
       const medium = lang === "si" ? (course.medium_si || course.medium) : (course.medium || "Sinhala & English Medium");
       const fee = lang === "si" ? (course.fee_si || course.fee) : (course.fee || "LKR 3,500 / Month");
-      const badge = lang === "si" ? (course.badge_si || course.badge) : (course.badge || "Enrollment Open");
-      const isEnrolled = typeof isCourseEnrolled === "function" ? isCourseEnrolled(course.id) : (window.isCourseEnrolled ? window.isCourseEnrolled(course.id) : false);
-
       const currentUser = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
+      const isTeacherOrAdmin = currentUser && (currentUser.role === "teacher" || currentUser.role === "admin");
+      const isEnrolled = !isTeacherOrAdmin && (typeof isCourseEnrolled === "function" ? isCourseEnrolled(course.id) : (window.isCourseEnrolled ? window.isCourseEnrolled(course.id) : false));
+      const isPending = !isTeacherOrAdmin && isCourseOrderPending(course.id);
+
       const userExamYear = currentUser ? (currentUser.examYear || "") : "";
       const courseBatch = course.examYear || course.level || "2026 A/L";
       const courseYearNum = (courseBatch.match(/\d{4}/) || [""])[0];
       const userYearNum = (userExamYear.match(/\d{4}/) || [""])[0];
-      const isBatchMismatch = !!(userYearNum && courseYearNum && userYearNum !== courseYearNum && !courseBatch.toLowerCase().includes("all"));
+      const isBatchMismatch = !isTeacherOrAdmin && !!(userYearNum && courseYearNum && userYearNum !== courseYearNum && !courseBatch.toLowerCase().includes("all"));
 
       return `
         <article class="course-card ${isEnrolled ? 'course-card-enrolled' : ''}">
@@ -403,6 +428,10 @@
               <span class="course-badge-pill" style="background: #10b981; color: #ffffff; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 2px 8px rgba(16,185,129,0.3);">
                 <i class="fa-solid fa-circle-check"></i> ${lang === 'si' ? 'ලියාපදිංචි වී ඇත' : 'Enrolled'}
               </span>
+            ` : (isPending ? `
+              <span class="course-badge-pill" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-weight: 800; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <i class="fa-solid fa-clock"></i> Order Pending
+              </span>
             ` : (isBatchMismatch ? `
               <span class="course-badge-pill" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem;">
                 <i class="fa-solid fa-triangle-exclamation"></i> ${courseBatch}
@@ -412,7 +441,7 @@
                 <span class="live-pulse-dot"></span>
                 ${courseBatch}
               </span>
-            `)}
+            `))}
           </div>
 
           <div class="course-body">
@@ -446,11 +475,15 @@
                   <button class="btn btn-sm" style="background: #10b981; color: #ffffff; border: 1px solid #10b981; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem;" onclick="openLMSPortal('video-classroom', '${course.id}')">
                     <i class="fa-solid fa-circle-play"></i> Enrolled
                   </button>
+                ` : (isPending ? `
+                  <a href="student-dashboard.html" class="btn btn-sm" style="background: #fef3c7; color: #92400e; border: 1.5px solid #fde68a; font-weight: 800; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none;">
+                    <i class="fa-solid fa-clock"></i> Order Pending
+                  </a>
                 ` : `
                   <button class="btn btn-primary btn-sm" onclick="enrollCourse('${course.id}')">
                     <i class="fa-solid fa-cart-plus"></i> Enroll
                   </button>
-                `}
+                `)}
               </div>
             </div>
           </div>
@@ -541,15 +574,17 @@
         return;
       }
 
-      // If "All Batches" is selected, render grouped sections by category!
+      // If "All Batches" is selected, render grouped sections by category + any custom courses!
       const catKeys = ["theory", "revision", "papers"];
       let html = "";
+      const renderedCourseIds = new Set();
 
       catKeys.forEach(catKey => {
         const streamCourses = courses.filter(c => (c.category || "theory") === catKey);
 
         if (streamCourses.length > 0) {
-          const def = BATCH_CATEGORIES[catKey];
+          streamCourses.forEach(c => renderedCourseIds.add(c.id));
+          const def = BATCH_CATEGORIES[catKey] || { title: `${catKey.toUpperCase()} Batches`, desc: "Academic study programs", icon: "fa-atom" };
           html += `
             <div class="stream-group-header">
               <div class="stream-group-title-wrap">
@@ -572,6 +607,31 @@
           `;
         }
       });
+
+      // Render any remaining custom or unclassified batches
+      const otherCourses = courses.filter(c => !renderedCourseIds.has(c.id));
+      if (otherCourses.length > 0) {
+        html += `
+          <div class="stream-group-header">
+            <div class="stream-group-title-wrap">
+              <div class="stream-group-icon">
+                <i class="fa-solid fa-graduation-cap"></i>
+              </div>
+              <div>
+                <h2 class="stream-group-title">Additional Academic Batches</h2>
+                <p class="stream-group-desc">Specialized tuition classes, masterclasses and hybrid study modules.</p>
+              </div>
+            </div>
+            <span style="font-size: 0.8rem; font-weight: 700; color: #227aff; background: #eff6ff; padding: 0.3rem 0.8rem; border-radius: 9999px; border: 1px solid #bfdbfe;">
+              ${otherCourses.length} Batches
+            </span>
+          </div>
+
+          <div class="courses-grid" style="margin-bottom: 2rem;">
+            ${otherCourses.map(c => renderCourseCardHTML(c)).join('')}
+          </div>
+        `;
+      }
 
       container.innerHTML = html;
     }
@@ -606,11 +666,12 @@
 
       // Check student profile batch vs course batch
       const currentUser = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
+      const isTeacherOrAdmin = currentUser && (currentUser.role === "teacher" || currentUser.role === "admin");
       const userExamYear = currentUser ? (currentUser.examYear || "") : "";
       const courseBatch = c.examYear || c.level || "2026 A/L";
       const courseYearNum = (courseBatch.match(/\d{4}/) || [""])[0];
       const userYearNum = (userExamYear.match(/\d{4}/) || [""])[0];
-      const isBatchMismatch = !!(userYearNum && courseYearNum && userYearNum !== courseYearNum && !courseBatch.toLowerCase().includes("all"));
+      const isBatchMismatch = !isTeacherOrAdmin && !!(userYearNum && courseYearNum && userYearNum !== courseYearNum && !courseBatch.toLowerCase().includes("all"));
 
       const batchNotice = document.getElementById("modalCourseBatchNotice");
       if (batchNotice) {
@@ -630,7 +691,8 @@
         }
       }
 
-      const isEnrolled = typeof isCourseEnrolled === "function" ? isCourseEnrolled(c.id) : (window.isCourseEnrolled ? window.isCourseEnrolled(c.id) : false);
+      const isEnrolled = !isTeacherOrAdmin && (typeof isCourseEnrolled === "function" ? isCourseEnrolled(c.id) : (window.isCourseEnrolled ? window.isCourseEnrolled(c.id) : false));
+      const isPending = !isTeacherOrAdmin && isCourseOrderPending(c.id);
       const btn = document.getElementById("modalCourseEnrollBtn");
       if (btn) {
         if (isEnrolled) {
@@ -641,6 +703,18 @@
           btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Already Enrolled • Open LMS';
           btn.onclick = () => {
             openLMSPortal("video-classroom", c.id);
+          };
+        } else if (isPending) {
+          btn.className = "btn";
+          btn.style.background = "#fef3c7";
+          btn.style.borderColor = "#fde68a";
+          btn.style.color = "#92400e";
+          btn.style.fontWeight = "800";
+          btn.innerHTML = '<i class="fa-solid fa-clock"></i> Order Pending Approval';
+          btn.onclick = () => {
+            showToast("⏳ Your order for this course is already awaiting administrative verification. Check your dashboard.", "info");
+            closeModal("courseDetailsModal");
+            window.location.href = "student-dashboard.html";
           };
         } else {
           btn.className = "btn btn-primary";
@@ -668,15 +742,30 @@
         event.preventDefault();
       }
       const wrapper = document.getElementById("userProfileDropdownWrapper");
+      const menu = document.getElementById("userProfileDropdownMenu");
       if (wrapper) {
-        wrapper.classList.toggle("open");
+        const isOpen = wrapper.classList.toggle("open");
+        if (menu) menu.classList.toggle("active", isOpen);
+        const triggerChip = document.getElementById("userProfileTriggerChip");
+        if (triggerChip) {
+          triggerChip.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        }
       }
     }
 
     function closeProfileDropdown() {
       const wrapper = document.getElementById("userProfileDropdownWrapper");
+      const menu = document.getElementById("userProfileDropdownMenu");
       if (wrapper) wrapper.classList.remove("open");
+      if (menu) menu.classList.remove("active");
+      const triggerChip = document.getElementById("userProfileTriggerChip");
+      if (triggerChip) {
+        triggerChip.setAttribute("aria-expanded", "false");
+      }
     }
+
+    window.toggleProfileDropdown = toggleProfileDropdown;
+    window.closeProfileDropdown = closeProfileDropdown;
 
     document.addEventListener("click", (e) => {
       const wrapper = document.getElementById("userProfileDropdownWrapper");
@@ -699,5 +788,10 @@
       }
     });
   </script>
+
+  <!-- Floating Direct WhatsApp Button -->
+  <a href="https://wa.me/94760687578" target="_blank" rel="noopener noreferrer" class="floating-help-btn" title="Contact EduPeak WhatsApp Hotline (+94 76 068 7578)">
+    <i class="fa-brands fa-whatsapp"></i>
+  </a>
 </body>
 </html>

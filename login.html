@@ -145,13 +145,6 @@
               Create Student Account ➔
             </a>
           </div>
-
-          <div style="text-align: center; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed #e2e8f0; font-size: 0.8rem; color: var(--text-muted);">
-            <span>Faculty Member or Staff?</span> 
-            <a href="admin-login.html" style="color: #64748b; font-weight: 700; margin-left: 0.25rem;">
-              Staff & Teacher Portal ➔
-            </a>
-          </div>
         </form>
       </div>
     </div>
@@ -240,12 +233,6 @@
           if (redirectParam) {
             sessionStorage.removeItem("edupeak_redirect_after_login");
             window.location.href = redirectParam;
-          } else if (result.user.role === "student") {
-            window.location.href = "student-dashboard.html";
-          } else if (result.user.role === "teacher") {
-            window.location.href = "teacher-portal.html";
-          } else if (result.user.role === "admin") {
-            window.location.href = "index.html";
           } else {
             window.location.href = "student-dashboard.html";
           }

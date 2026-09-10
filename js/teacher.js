@@ -24,6 +24,7 @@ const TEACHER_CONTROLLER = {
     this.renderMetrics();
     this.switchTab("courses");
     this.populateCourseDropdowns();
+    this.initYouTubeDurationProbe();
   },
 
   checkAuth() {
@@ -56,13 +57,18 @@ const TEACHER_CONTROLLER = {
 
   loadCustomData() {
     try {
-      const customCourses = JSON.parse(localStorage.getItem(this.storageKeys.customCourses) || "[]");
-      if (customCourses.length && window.EDUPEAK_DATA) {
-        customCourses.forEach(c => {
-          if (!window.EDUPEAK_DATA.courses.find(item => item.id === c.id)) {
-            window.EDUPEAK_DATA.courses.unshift(c);
-          }
-        });
+      const storedCoursesDb = JSON.parse(localStorage.getItem("edupeak_courses_db") || "null");
+      if (storedCoursesDb && Array.isArray(storedCoursesDb) && window.EDUPEAK_DATA) {
+        window.EDUPEAK_DATA.courses = storedCoursesDb;
+      } else {
+        const customCourses = JSON.parse(localStorage.getItem(this.storageKeys.customCourses || "edupeak_custom_courses") || "[]");
+        if (customCourses.length && window.EDUPEAK_DATA) {
+          customCourses.forEach(c => {
+            if (!window.EDUPEAK_DATA.courses.find(item => item.id === c.id)) {
+              window.EDUPEAK_DATA.courses.unshift(c);
+            }
+          });
+        }
       }
 
       const customLessons = JSON.parse(localStorage.getItem(this.storageKeys.customLessons) || "[]");
@@ -85,9 +91,13 @@ const TEACHER_CONTROLLER = {
   switchTab(tabId) {
     this.currentTab = tabId;
 
-    // Highlight Tab Buttons
+    // Highlight Tab Buttons & Auto-Center Active Tab on mobile/overflow
     document.querySelectorAll(".teacher-tab-btn").forEach(btn => {
-      btn.classList.toggle("active", btn.dataset.tab === tabId);
+      const isActive = btn.dataset.tab === tabId;
+      btn.classList.toggle("active", isActive);
+      if (isActive && typeof btn.scrollIntoView === "function") {
+        btn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+      }
     });
 
     // Show Selected Pane
@@ -121,13 +131,40 @@ const TEACHER_CONTROLLER = {
   },
 
   getTeacherCourses() {
-    const stored = localStorage.getItem("edupeak_courses_db");
-    let allCourses = stored ? JSON.parse(stored) : ((window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : []);
+    let allCourses = [];
+    try {
+      const stored = localStorage.getItem("edupeak_courses_db");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = parsed;
+          return parsed;
+        }
+      }
+      const customCourses = JSON.parse(localStorage.getItem(this.storageKeys.customCourses || "edupeak_custom_courses") || "[]");
+      allCourses = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? [...window.EDUPEAK_DATA.courses] : [];
+      if (Array.isArray(customCourses) && customCourses.length) {
+        customCourses.forEach(c => {
+          if (!allCourses.find(item => item.id === c.id)) {
+            allCourses.unshift(c);
+          }
+        });
+      }
+    } catch (e) {
+      allCourses = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? [...window.EDUPEAK_DATA.courses] : [];
+    }
     return allCourses;
+  },
+
+  getAllCourses() {
+    return this.getTeacherCourses();
   },
 
   saveCoursesDatabase(coursesList) {
     localStorage.setItem("edupeak_courses_db", JSON.stringify(coursesList));
+    const defaultIds = ["crs-phy-2027-theory", "crs-phy-2027-revision", "crs-phy-2028-theory", "crs-phy-2028-paper", "crs-phy-2029-theory"];
+    const customList = (coursesList || []).filter(c => !defaultIds.includes(c.id));
+    localStorage.setItem(this.storageKeys.customCourses || "edupeak_custom_courses", JSON.stringify(customList));
     if (window.EDUPEAK_DATA) {
       window.EDUPEAK_DATA.courses = coursesList;
     }
@@ -195,6 +232,70 @@ const TEACHER_CONTROLLER = {
     `).join("");
   },
 
+  formatTime12h(time24) {
+    if (!time24) return "7:30 AM";
+    const parts = time24.split(":");
+    let hours = parseInt(parts[0], 10);
+    const minutes = parts[1] || "00";
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    return `${hours}:${minutes} ${ampm}`;
+  },
+
+  parseTimeTo24h(timeStr) {
+    if (!timeStr) return "07:30";
+    const match = timeStr.trim().match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (!match) return "07:30";
+    let h = parseInt(match[1], 10);
+    const m = match[2];
+    const ampm = match[3] ? match[3].toUpperCase() : null;
+    if (ampm === "PM" && h < 12) h += 12;
+    if (ampm === "AM" && h === 12) h = 0;
+    return `${String(h).padStart(2, '0')}:${m}`;
+  },
+
+  parseScheduleString(scheduleStr) {
+    if (!scheduleStr) {
+      return { day: "Every Saturday", startTime: "07:30", endTime: "13:30" };
+    }
+    const days = [
+      "Every Saturday", "Every Sunday", "Every Monday", "Every Tuesday", 
+      "Every Wednesday", "Every Thursday", "Every Friday", 
+      "Weekends (Sat & Sun)", "Weekdays (Mon - Fri)", "Flexible / Online",
+      "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
+      "Special Live Broadcast"
+    ];
+    let matchedDay = "Every Saturday";
+    for (const d of days) {
+      if (scheduleStr.toLowerCase().includes(d.toLowerCase())) {
+        matchedDay = d.startsWith("Every") || d.includes("(") ? d : `Every ${d}`;
+        break;
+      }
+    }
+
+    const timeMatches = Array.from(scheduleStr.matchAll(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)/gi));
+    let startTime = "07:30";
+    let endTime = "13:30";
+    if (timeMatches.length >= 2) {
+      startTime = this.parseTimeTo24h(timeMatches[0][0]);
+      endTime = this.parseTimeTo24h(timeMatches[1][0]);
+    } else if (timeMatches.length === 1) {
+      startTime = this.parseTimeTo24h(timeMatches[0][0]);
+    }
+
+    return { day: matchedDay, startTime, endTime };
+  },
+
+  buildScheduleString(day, startTime24, endTime24) {
+    if (!day) day = "Every Saturday";
+    if (!startTime24) startTime24 = "07:30";
+    if (!endTime24) endTime24 = "13:30";
+    const start12 = this.formatTime12h(startTime24);
+    const end12 = this.formatTime12h(endTime24);
+    return `${day} ${start12} - ${end12}`;
+  },
+
   openNewCourseModal() {
     document.getElementById("newCourseModal").classList.add("active");
   },
@@ -206,13 +307,26 @@ const TEACHER_CONTROLLER = {
 
     document.getElementById("editCourseIdInput").value = c.id;
     document.getElementById("editCourseTitleInput").value = c.title;
-    document.getElementById("editCourseTitleSiInput").value = c.title_si || "";
+    if (document.getElementById("editCourseTitleSiInput")) {
+      document.getElementById("editCourseTitleSiInput").value = c.title_si || "";
+    }
     if (document.getElementById("editCourseExamYearSelect")) {
       document.getElementById("editCourseExamYearSelect").value = c.examYear || c.level || "2026 A/L";
     }
     document.getElementById("editCourseCategorySelect").value = c.category || "theory";
     document.getElementById("editCourseFeeInput").value = c.fee || "LKR 3,500 / Month";
-    document.getElementById("editCourseScheduleInput").value = c.liveTime || "Every Saturday 7:30 AM - 1:30 PM";
+    
+    // Populate Day and Time slot pickers
+    const parsedSchedule = this.parseScheduleString(c.liveTime || "Every Saturday 7:30 AM - 1:30 PM");
+    if (document.getElementById("editCourseScheduleDaySelect")) {
+      document.getElementById("editCourseScheduleDaySelect").value = parsedSchedule.day;
+    }
+    if (document.getElementById("editCourseScheduleStartTime")) {
+      document.getElementById("editCourseScheduleStartTime").value = parsedSchedule.startTime;
+    }
+    if (document.getElementById("editCourseScheduleEndTime")) {
+      document.getElementById("editCourseScheduleEndTime").value = parsedSchedule.endTime;
+    }
     document.getElementById("editCourseMediumInput").value = c.medium || "Sinhala & English Medium";
 
     document.getElementById("editCourseModal").classList.add("active");
@@ -226,14 +340,20 @@ const TEACHER_CONTROLLER = {
     if (index === -1) return;
 
     const examYear = document.getElementById("editCourseExamYearSelect") ? document.getElementById("editCourseExamYearSelect").value : (courses[index].examYear || "2026 A/L");
+    const title = document.getElementById("editCourseTitleInput").value.trim();
 
-    courses[index].title = document.getElementById("editCourseTitleInput").value.trim();
-    courses[index].title_si = document.getElementById("editCourseTitleSiInput").value.trim();
+    const day = document.getElementById("editCourseScheduleDaySelect")?.value || "Every Saturday";
+    const start = document.getElementById("editCourseScheduleStartTime")?.value || "07:30";
+    const end = document.getElementById("editCourseScheduleEndTime")?.value || "13:30";
+    const liveTime = this.buildScheduleString(day, start, end);
+
+    courses[index].title = title;
+    courses[index].title_si = title;
     courses[index].examYear = examYear;
     courses[index].level = examYear;
     courses[index].category = document.getElementById("editCourseCategorySelect").value;
     courses[index].fee = document.getElementById("editCourseFeeInput").value.trim() || courses[index].fee;
-    courses[index].liveTime = document.getElementById("editCourseScheduleInput").value.trim() || courses[index].liveTime;
+    courses[index].liveTime = liveTime;
     courses[index].medium = document.getElementById("editCourseMediumInput").value.trim() || courses[index].medium;
 
     this.saveCoursesDatabase(courses);
@@ -274,17 +394,21 @@ const TEACHER_CONTROLLER = {
   handleCreateCourseSubmit(e) {
     e.preventDefault();
     const title = document.getElementById("courseTitleInput").value.trim();
-    const titleSi = document.getElementById("courseTitleSiInput").value.trim();
     const examYear = document.getElementById("courseExamYearSelect") ? document.getElementById("courseExamYearSelect").value : "2026 A/L";
     const stream = document.getElementById("courseStreamSelect").value;
     const fee = document.getElementById("courseFeeInput").value.trim();
-    const schedule = document.getElementById("courseScheduleInput").value.trim();
+    
+    const day = document.getElementById("courseScheduleDaySelect")?.value || "Every Saturday";
+    const start = document.getElementById("courseScheduleStartTime")?.value || "07:30";
+    const end = document.getElementById("courseScheduleEndTime")?.value || "13:30";
+    const schedule = this.buildScheduleString(day, start, end);
+
     const icon = document.getElementById("courseIconSelect").value;
 
     const newCourse = {
       id: "crs-phy-" + Date.now().toString(36),
       title: title,
-      title_si: titleSi,
+      title_si: title,
       teacherId: "tch-physics",
       teacherName: "Amalsha Wanniarachchi",
       examYear: examYear,
@@ -292,7 +416,7 @@ const TEACHER_CONTROLLER = {
       stream_si: "භෞතික විද්‍යා අංශය",
       category: stream.includes("paper") ? "papers" : (stream.includes("rev") ? "revision" : "theory"),
       fee: fee ? (fee.startsWith("LKR") ? fee : `LKR ${fee} / Month`) : "LKR 3,500 / Month",
-      liveTime: schedule || "Every Saturday 7:30 AM - 1:30 PM",
+      liveTime: schedule,
       thumbnailIcon: icon || "fa-atom",
       medium: "Sinhala & English Medium",
       medium_si: "සිංහල හා ඉංග්‍රීසි මාධ්‍ය",
@@ -410,7 +534,15 @@ const TEACHER_CONTROLLER = {
         </td>
         <td><span class="status-tag active">${l.duration || '45 mins'}</span></td>
         <td>
-          ${l.hasPdf ? `<span style="color: #10b981; font-weight: 600; font-size: 0.8rem;"><i class="fa-solid fa-file-pdf"></i> ${l.pdfName || 'Notes.pdf'}</span>` : '<span style="color: #94a3b8; font-size: 0.8rem;">No Handout</span>'}
+          ${l.hasPdf ? (
+            l.pdfUrl ?
+              `<a href="${l.pdfUrl}" target="_blank" rel="noopener noreferrer" style="color: #059669; font-weight: 600; font-size: 0.8rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;" title="Open in Google Drive / PDF Viewer">
+                <i class="fa-brands fa-google-drive" style="color: #0f9d58;"></i>
+                <span>${l.pdfName || 'Notes.pdf'}</span>
+                <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.65rem; color: #64748b;"></i>
+              </a>` :
+              `<span style="color: #10b981; font-weight: 600; font-size: 0.8rem;"><i class="fa-solid fa-file-pdf"></i> ${l.pdfName || 'Notes.pdf'}</span>`
+          ) : '<span style="color: #94a3b8; font-size: 0.8rem;">No Handout</span>'}
         </td>
         <td>
           <div style="display: flex; gap: 0.35rem;">
@@ -426,19 +558,219 @@ const TEACHER_CONTROLLER = {
     `).join("");
   },
 
+  // --------------------------------------------------------------------------
+  // YOUTUBE VIDEO DURATION AUTO-DETECTION ENGINE
+  // --------------------------------------------------------------------------
+  extractYouTubeVideoId(url) {
+    if (!url) return null;
+    const trimmed = String(url).trim();
+    if (trimmed.length === 11 && !trimmed.includes("/") && !trimmed.includes(".")) {
+      return trimmed;
+    }
+    const match = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
+    return match ? match[1] : null;
+  },
+
+  formatDurationFromSeconds(seconds) {
+    if (!seconds || isNaN(seconds) || seconds <= 0) return "50 mins";
+    const totalSecs = Math.round(seconds);
+    const hrs = Math.floor(totalSecs / 3600);
+    const mins = Math.round((totalSecs % 3600) / 60);
+    const secs = totalSecs % 60;
+
+    if (hrs > 0) {
+      if (mins === 0) return `${hrs}h`;
+      return `${hrs}h ${mins < 10 ? '0' : ''}${mins}m`;
+    } else if (mins > 0) {
+      return `${mins} mins`;
+    } else {
+      return `${secs} secs`;
+    }
+  },
+
+  initYouTubeDurationProbe() {
+    if (this._ytProbeInitialized) return;
+    this._ytProbeInitialized = true;
+
+    if (!document.getElementById("ytDurationProbeMount")) {
+      const probeDiv = document.createElement("div");
+      probeDiv.id = "ytDurationProbeMount";
+      probeDiv.style.cssText = "position: fixed; left: -9999px; top: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; z-index: -1;";
+      document.body.appendChild(probeDiv);
+    }
+
+    const onApiReady = () => {
+      try {
+        if (!this._probePlayer && window.YT && window.YT.Player) {
+          this._probePlayer = new window.YT.Player("ytDurationProbeMount", {
+            height: "1",
+            width: "1",
+            videoId: "dQw4w9WgXcQ",
+            playerVars: {
+              autoplay: 0,
+              controls: 0,
+              disablekb: 1,
+              mute: 1,
+              rel: 0,
+              playsinline: 1
+            },
+            events: {
+              onReady: () => {
+                this._probePlayerReady = true;
+                if (this._pendingProbeVideoId) {
+                  const pending = this._pendingProbeVideoId;
+                  this._pendingProbeVideoId = null;
+                  this.probeVideoDuration(pending.videoId, pending.callback);
+                }
+              }
+            }
+          });
+        }
+      } catch (e) {
+        console.warn("YouTube probe player initialization notice:", e);
+      }
+    };
+
+    if (!window.YT) {
+      const tag = document.createElement("script");
+      tag.id = "yt-duration-probe-script";
+      tag.src = "https://www.youtube.com/iframe_api";
+      const firstScriptTag = document.getElementsByTagName("script")[0];
+      if (firstScriptTag && firstScriptTag.parentNode) {
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      } else {
+        document.head.appendChild(tag);
+      }
+
+      const prevHandler = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (typeof prevHandler === "function") prevHandler();
+        onApiReady();
+      };
+    } else if (window.YT && window.YT.Player) {
+      onApiReady();
+    }
+  },
+
+  probeVideoDuration(videoId, callback) {
+    if (!videoId) return;
+    this.initYouTubeDurationProbe();
+
+    if (!this._probePlayerReady || !this._probePlayer) {
+      this._pendingProbeVideoId = { videoId, callback };
+      return;
+    }
+
+    try {
+      this._probePlayer.mute();
+      this._probePlayer.cueVideoById(videoId);
+      
+      let checkCount = 0;
+      const interval = setInterval(() => {
+        checkCount++;
+        try {
+          const duration = this._probePlayer.getDuration();
+          if (duration && duration > 0) {
+            clearInterval(interval);
+            callback(duration);
+            return;
+          }
+        } catch (e) {}
+
+        if (checkCount > 40) {
+          clearInterval(interval);
+        }
+      }, 100);
+    } catch (err) {
+      console.warn("Probing YouTube duration error:", err);
+    }
+  },
+
+  autoDetectDuration(urlInputId, durationInputId, badgeId) {
+    const urlInput = document.getElementById(urlInputId);
+    const durInput = document.getElementById(durationInputId);
+    const badge = document.getElementById(badgeId);
+    if (!urlInput || !durInput) return;
+
+    const rawUrl = urlInput.value.trim();
+    if (!rawUrl) {
+      if (badge) badge.innerHTML = "";
+      return;
+    }
+
+    const videoId = this.extractYouTubeVideoId(rawUrl);
+    if (videoId) {
+      if (badge) {
+        badge.innerHTML = `<span style="color: #227aff; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="fa-solid fa-spinner fa-spin"></i> Detecting...</span>`;
+      }
+      this.probeVideoDuration(videoId, (durationSecs) => {
+        if (durationSecs && durationSecs > 0) {
+          const formatted = this.formatDurationFromSeconds(durationSecs);
+          durInput.value = formatted;
+          if (badge) {
+            badge.innerHTML = `<span style="color: #10b981; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="fa-solid fa-wand-magic-sparkles"></i> Auto-calculated (${formatted})</span>`;
+          }
+        }
+      });
+    } else if (rawUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i)) {
+      if (badge) {
+        badge.innerHTML = `<span style="color: #227aff; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="fa-solid fa-spinner fa-spin"></i> Detecting...</span>`;
+      }
+      const v = document.createElement("video");
+      v.preload = "metadata";
+      v.src = rawUrl;
+      v.onloadedmetadata = () => {
+        if (v.duration && v.duration > 0) {
+          const formatted = this.formatDurationFromSeconds(v.duration);
+          durInput.value = formatted;
+          if (badge) {
+            badge.innerHTML = `<span style="color: #10b981; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="fa-solid fa-wand-magic-sparkles"></i> Auto-calculated (${formatted})</span>`;
+          }
+        }
+      };
+      v.onerror = () => {
+        if (badge) badge.innerHTML = "";
+      };
+    } else {
+      if (badge) badge.innerHTML = "";
+    }
+  },
+
   openNewLessonModal() {
     const selectedCourseId = document.getElementById("lessonCourseSelect")?.value;
     const modalSelect = document.getElementById("modalLessonCourseSelect");
     if (modalSelect && selectedCourseId) {
       modalSelect.value = selectedCourseId;
     }
+    if (document.getElementById("lessonWatermarkCheckbox")) {
+      document.getElementById("lessonWatermarkCheckbox").checked = false; // Disabled by default
+    }
+    if (document.getElementById("lessonHasPdfCheckbox")) {
+      document.getElementById("lessonHasPdfCheckbox").checked = true;
+    }
+    if (document.getElementById("lessonPdfFieldsRow")) {
+      document.getElementById("lessonPdfFieldsRow").style.display = "grid";
+    }
+    if (document.getElementById("lessonPdfNameInput")) {
+      document.getElementById("lessonPdfNameInput").value = "Lesson_Summary_Notes.pdf";
+    }
+    if (document.getElementById("lessonPdfUrlInput")) {
+      document.getElementById("lessonPdfUrlInput").value = "";
+    }
     const container = document.getElementById("newLessonChaptersContainer");
     if (container) {
       container.innerHTML = "";
-      this.addChapterRowToNewModal("00:00", "Introduction & Key Concepts");
-      this.addChapterRowToNewModal("25:00", "Worked Examples & Model Problems");
     }
+    if (document.getElementById("newLessonDurationAutoBadge")) {
+      document.getElementById("newLessonDurationAutoBadge").innerHTML = "";
+    }
+
     document.getElementById("newLessonModal").classList.add("active");
+
+    // Auto-detect duration from current initial video URL
+    setTimeout(() => {
+      this.autoDetectDuration("lessonVideoUrlInput", "lessonDurationInput", "newLessonDurationAutoBadge");
+    }, 150);
   },
 
   addChapterRowToNewModal(timeVal = "00:00", titleVal = "") {
@@ -475,29 +807,38 @@ const TEACHER_CONTROLLER = {
     }
 
     const titleInput = document.getElementById("editLessonTitleInput");
-    const titleSiInput = document.getElementById("editLessonTitleSiInput");
     const durInput = document.getElementById("editLessonDurationInput");
     const videoInput = document.getElementById("editLessonVideoUrlInput");
     const pdfInput = document.getElementById("editLessonPdfNameInput");
+    const pdfUrlInput = document.getElementById("editLessonPdfUrlInput");
+    const hasPdfCheckbox = document.getElementById("editLessonHasPdfCheckbox");
+    const pdfFieldsRow = document.getElementById("editLessonPdfFieldsRow");
 
-    if (titleInput) titleInput.value = l.title || "";
-    if (titleSiInput) titleSiInput.value = l.title_si || "";
+    if (titleInput) titleInput.value = l.title || l.title_si || "";
     if (durInput) durInput.value = l.duration || "50 mins";
     if (videoInput) videoInput.value = l.videoUrl || "";
+    
+    const isPdfActive = Boolean(l.hasPdf || l.pdfName || l.pdfUrl);
+    if (hasPdfCheckbox) hasPdfCheckbox.checked = isPdfActive;
+    if (pdfFieldsRow) pdfFieldsRow.style.display = isPdfActive ? "grid" : "none";
     if (pdfInput) pdfInput.value = l.pdfName || "";
+    if (pdfUrlInput) pdfUrlInput.value = l.pdfUrl || "";
+
+    if (document.getElementById("editLessonWatermarkCheckbox")) {
+      document.getElementById("editLessonWatermarkCheckbox").checked = Boolean(l.watermarkEnabled);
+    }
+    if (document.getElementById("editLessonDurationAutoBadge")) {
+      document.getElementById("editLessonDurationAutoBadge").innerHTML = "";
+    }
 
     // Populate Chapter timeline rows
     const container = document.getElementById("editLessonChaptersContainer");
     if (container) {
       container.innerHTML = "";
       const chapters = l.chapters || [];
-      if (chapters.length === 0) {
-        this.addChapterRowToEditModal("00:00", "Introduction & Key Concepts");
-      } else {
-        chapters.forEach(ch => {
-          this.addChapterRowToEditModal(ch.time, ch.title);
-        });
-      }
+      chapters.forEach(ch => {
+        this.addChapterRowToEditModal(ch.time, ch.title);
+      });
     }
 
     const modal = document.getElementById("editLessonModal");
@@ -530,10 +871,13 @@ const TEACHER_CONTROLLER = {
 
     const courseId = document.getElementById("editModalLessonCourseSelect").value;
     const title = document.getElementById("editLessonTitleInput").value.trim();
-    const titleSi = document.getElementById("editLessonTitleSiInput").value.trim();
     const duration = document.getElementById("editLessonDurationInput").value.trim();
     const rawVideoUrl = document.getElementById("editLessonVideoUrlInput").value.trim();
-    const pdfName = document.getElementById("editLessonPdfNameInput").value.trim();
+    const hasPdfChecked = document.getElementById("editLessonHasPdfCheckbox") ? document.getElementById("editLessonHasPdfCheckbox").checked : true;
+    const pdfName = document.getElementById("editLessonPdfNameInput")?.value.trim() || "";
+    const pdfUrl = document.getElementById("editLessonPdfUrlInput")?.value.trim() || "";
+    const hasPdf = hasPdfChecked && Boolean(pdfName || pdfUrl);
+    const watermarkEnabled = Boolean(document.getElementById("editLessonWatermarkCheckbox")?.checked);
     const videoUrl = this.formatEmbedUrl(rawVideoUrl, "youtube");
 
     // Collect chapters
@@ -551,11 +895,13 @@ const TEACHER_CONTROLLER = {
       ...lessons[lIdx],
       courseId,
       title,
-      title_si: titleSi,
+      title_si: title,
       duration: duration || "50 mins",
       videoUrl,
-      hasPdf: Boolean(pdfName),
-      pdfName,
+      hasPdf: hasPdf,
+      pdfName: hasPdf ? (pdfName || (pdfUrl ? "Handout_Notes.pdf" : "Notes.pdf")) : "",
+      pdfUrl: hasPdf ? pdfUrl : "",
+      watermarkEnabled,
       chapters
     };
 
@@ -607,11 +953,13 @@ const TEACHER_CONTROLLER = {
     e.preventDefault();
     const courseId = document.getElementById("modalLessonCourseSelect").value;
     const title = document.getElementById("lessonTitleInput").value.trim();
-    const titleSi = document.getElementById("lessonTitleSiInput").value.trim();
     const rawVideoUrl = document.getElementById("lessonVideoUrlInput").value.trim();
     const duration = document.getElementById("lessonDurationInput").value.trim();
-    const hasPdf = document.getElementById("lessonHasPdfCheckbox").checked;
-    const pdfName = document.getElementById("lessonPdfNameInput").value.trim();
+    const hasPdf = document.getElementById("lessonHasPdfCheckbox")?.checked;
+    const pdfName = document.getElementById("lessonPdfNameInput")?.value.trim() || "";
+    const pdfUrl = document.getElementById("lessonPdfUrlInput")?.value.trim() || "";
+    const shouldHavePdf = hasPdf && Boolean(pdfName || pdfUrl);
+    const watermarkEnabled = Boolean(document.getElementById("lessonWatermarkCheckbox")?.checked);
 
     const videoUrl = this.formatEmbedUrl(rawVideoUrl, "youtube");
 
@@ -630,15 +978,14 @@ const TEACHER_CONTROLLER = {
       id: "lsn-" + Date.now().toString(36),
       courseId: courseId,
       title: title,
-      title_si: titleSi,
+      title_si: title,
       duration: duration || "50 mins",
       videoUrl: videoUrl,
-      hasPdf: hasPdf,
-      pdfName: hasPdf ? (pdfName || `${title} Summary Sheet.pdf`) : "",
-      chapters: chapters.length ? chapters : [
-        { time: "00:00", title: "Introduction & Theory Review" },
-        { time: "25:00", title: "Detailed Step Derivations & Calculations" }
-      ]
+      hasPdf: shouldHavePdf,
+      pdfName: shouldHavePdf ? (pdfName || (pdfUrl ? `${title} Handout.pdf` : `${title} Summary Sheet.pdf`)) : "",
+      pdfUrl: shouldHavePdf ? pdfUrl : "",
+      watermarkEnabled: watermarkEnabled,
+      chapters: chapters
     };
 
     // Save to Database
@@ -647,7 +994,7 @@ const TEACHER_CONTROLLER = {
     this.saveLessonsDatabase(lessons);
 
     if (window.showToast) {
-      window.showToast(`✓ Lesson "${title}" published with chapter timeline!`, "success");
+      window.showToast(`✓ Lesson "${title}" published successfully!`, "success");
     }
 
     this.closeModal("newLessonModal");
@@ -665,10 +1012,10 @@ const TEACHER_CONTROLLER = {
   // --------------------------------------------------------------------------
   getAllQuizzes() {
     const stored = localStorage.getItem(this.storageKeys.quizzesDb);
-    if (stored) {
+    if (stored !== null) {
       try {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length) {
+        if (Array.isArray(parsed)) {
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.quizQuestions = parsed;
           return parsed;
         }
@@ -695,8 +1042,8 @@ const TEACHER_CONTROLLER = {
     // Ensure all items have an id and normalized courseId
     defaultQuizzes.forEach((q, idx) => {
       if (!q.id) q.id = idx + 1;
-      if (q.courseId === "crs-phy-2025") q.courseId = "crs-phy-2025-theory";
-      if (q.courseId === "crs-phy-2026") q.courseId = "crs-phy-2026-theory";
+      if (q.courseId === "crs-phy-2025") q.courseId = "crs-phy-2027-theory";
+      if (q.courseId === "crs-phy-2026") q.courseId = "crs-phy-2028-theory";
     });
 
     localStorage.setItem(this.storageKeys.quizzesDb, JSON.stringify(defaultQuizzes));
@@ -1001,10 +1348,10 @@ const TEACHER_CONTROLLER = {
 
   getAllScheduledBroadcasts() {
     const stored = localStorage.getItem(this.storageKeys.schedulesDb);
-    if (stored) {
+    if (stored !== null) {
       try {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       } catch (e) {
         console.warn("Failed parsing edupeak_schedules_db", e);
       }
@@ -1014,7 +1361,7 @@ const TEACHER_CONTROLLER = {
       {
         id: "sched-phy-01",
         topic: "2027 A/L Physics - Mechanics Special Live Broadcast",
-        courseId: "crs-phy-2025-theory",
+        courseId: "crs-phy-2027-theory",
         courseTitle: "2027 A/L Physics - Complete Theory & Mechanics",
         scheduleTime: "Every Saturday 7:30 AM - 1:30 PM",
         provider: "youtube",
@@ -1026,7 +1373,7 @@ const TEACHER_CONTROLLER = {
       {
         id: "sched-phy-02",
         topic: "2028 A/L Physics - Units & Dimensional Analysis Live Masterclass",
-        courseId: "crs-phy-2026-theory",
+        courseId: "crs-phy-2028-theory",
         courseTitle: "2028 A/L Physics - Complete Theory Batch",
         scheduleTime: "Every Sunday 8:00 AM - 12:30 PM",
         provider: "youtube",
@@ -1070,7 +1417,7 @@ const TEACHER_CONTROLLER = {
       const isLive = s.status === "live";
       const isEnded = s.status === "ended";
       const statusBadge = isLive 
-        ? `<span class="status-tag active" style="background: #fee2e2; color: #dc2626; border: 1px solid #fecaca;"><i class="fa-solid fa-circle" style="font-size: 0.55rem;"></i> LIVE NOW</span>`
+        ? `<span class="status-tag active" style="background: #fee2e2; color: #dc2626; border: 1px solid #fecaca;"><i class="fa-solid fa-circle" style="font-size: 0.55rem; animation: pulse 1.5s infinite;"></i> LIVE NOW</span>`
         : (isEnded 
           ? `<span class="status-tag" style="background: #f1f5f9; color: #64748b;"><i class="fa-solid fa-check"></i> Concluded</span>`
           : `<span class="status-tag active" style="background: #fefce8; color: #854d0e; border: 1px solid #fef08a;"><i class="fa-solid fa-clock"></i> Scheduled</span>`);
@@ -1098,12 +1445,21 @@ const TEACHER_CONTROLLER = {
             </span>
           </td>
           <td>
-            <div style="display: flex; gap: 0.35rem;">
-              <button class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;" onclick="TEACHER_CONTROLLER.openEditSchedule('${s.id}')" title="Edit Schedule">
-                <i class="fa-solid fa-pen-to-square"></i> Edit
+            <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
+              ${isLive ? `
+                <button class="btn btn-sm" style="background: #475569; color: #ffffff; font-weight: 700; font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 6px;" onclick="TEACHER_CONTROLLER.endLiveBroadcast('${s.id}')" title="End Live Broadcast">
+                  <i class="fa-solid fa-stop"></i> End Live
+                </button>
+              ` : `
+                <button class="btn btn-sm" style="background: #dc2626; color: #ffffff; font-weight: 800; font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 6px; box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);" onclick="TEACHER_CONTROLLER.startLiveBroadcast('${s.id}')" title="Start Live Broadcast Now">
+                  <i class="fa-solid fa-tower-broadcast"></i> Start Live
+                </button>
+              `}
+              <button class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 0.3rem 0.55rem; border-radius: 6px;" onclick="TEACHER_CONTROLLER.openEditSchedule('${s.id}')" title="Edit Schedule">
+                <i class="fa-solid fa-pen-to-square"></i>
               </button>
-              <button class="btn btn-ghost btn-sm" style="color: #ef4444; border: 1px solid #fecaca; font-size: 0.75rem; padding: 0.3rem 0.6rem;" onclick="TEACHER_CONTROLLER.handleDeleteSchedule('${s.id}')" title="Delete / Cancel Schedule">
-                <i class="fa-solid fa-trash"></i> Delete
+              <button class="btn btn-ghost btn-sm" style="color: #ef4444; border: 1px solid #fecaca; font-size: 0.75rem; padding: 0.3rem 0.55rem; border-radius: 6px;" onclick="TEACHER_CONTROLLER.handleDeleteSchedule('${s.id}')" title="Delete / Cancel Schedule">
+                <i class="fa-solid fa-trash"></i>
               </button>
             </div>
           </td>
@@ -1122,7 +1478,22 @@ const TEACHER_CONTROLLER = {
     if (document.getElementById("liveStudioCourseSelect") && s.courseId) {
       document.getElementById("liveStudioCourseSelect").value = s.courseId;
     }
-    document.getElementById("liveStudioScheduleTime").value = s.scheduleTime || "";
+    
+    // Parse schedule into day & times
+    const parsed = this.parseScheduleString(s.scheduleTime || "Every Saturday 7:30 AM - 1:30 PM");
+    if (document.getElementById("liveStudioScheduleDay")) {
+      document.getElementById("liveStudioScheduleDay").value = parsed.day;
+    }
+    if (document.getElementById("liveStudioScheduleStartTime")) {
+      document.getElementById("liveStudioScheduleStartTime").value = parsed.startTime;
+    }
+    if (document.getElementById("liveStudioScheduleEndTime")) {
+      document.getElementById("liveStudioScheduleEndTime").value = parsed.endTime;
+    }
+    if (document.getElementById("liveStudioScheduleTime")) {
+      document.getElementById("liveStudioScheduleTime").value = s.scheduleTime || "";
+    }
+
     document.getElementById("liveStudioProvider").value = s.provider || "youtube";
     document.getElementById("liveStudioStatus").value = s.status || "scheduled";
     document.getElementById("liveStudioUrl").value = s.rawUrl || s.embedUrl || "";
@@ -1151,12 +1522,146 @@ const TEACHER_CONTROLLER = {
     }
   },
 
+  startLiveBroadcast(scheduleId) {
+    const schedules = this.getAllScheduledBroadcasts();
+    const s = schedules.find(item => item.id === scheduleId);
+    if (!s) {
+      this.handleQuickStatusChange('live');
+      return;
+    }
+
+    s.status = "live";
+    s.updatedAt = new Date().toISOString();
+
+    schedules.forEach(item => {
+      if (item.id !== scheduleId && item.status === "live") {
+        item.status = "scheduled";
+      }
+    });
+
+    this.saveScheduledBroadcasts(schedules);
+    localStorage.setItem(this.storageKeys.liveStream, JSON.stringify(s));
+
+    this.openEditSchedule(scheduleId);
+
+    if (window.showToast) {
+      window.showToast(`🔴 Live broadcast for "${s.topic}" is NOW ACTIVE on student LMS!`, "success");
+    }
+
+    this.renderLiveStudio();
+  },
+
+  endLiveBroadcast(scheduleId) {
+    const schedules = this.getAllScheduledBroadcasts();
+    const s = schedules.find(item => item.id === scheduleId);
+    if (!s) {
+      this.handleQuickStatusChange('ended');
+      return;
+    }
+
+    s.status = "ended";
+    s.updatedAt = new Date().toISOString();
+
+    this.saveScheduledBroadcasts(schedules);
+    localStorage.setItem(this.storageKeys.liveStream, JSON.stringify(s));
+
+    this.openEditSchedule(scheduleId);
+
+    if (window.showToast) {
+      window.showToast(`⏹️ Live broadcast for "${s.topic}" has been ended.`, "info");
+    }
+
+    this.renderLiveStudio();
+  },
+
+  handleLiveStudioStart(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const statusSelect = document.getElementById("liveStudioStatus");
+    if (statusSelect) statusSelect.value = "live";
+    this.handleQuickStatusChange("live");
+  },
+
+  handleLiveStudioEnd(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const statusSelect = document.getElementById("liveStudioStatus");
+    if (statusSelect) statusSelect.value = "ended";
+    this.handleQuickStatusChange("ended");
+  },
+
+  handleQuickStatusChange(status) {
+    const statusSelect = document.getElementById("liveStudioStatus");
+    if (statusSelect) statusSelect.value = status;
+
+    const topic = document.getElementById("liveStudioTopic")?.value.trim() || "Live Interactive Masterclass";
+    const rawUrl = document.getElementById("liveStudioUrl")?.value.trim() || "https://www.youtube.com/embed/dQw4w9WgXcQ";
+    const provider = document.getElementById("liveStudioProvider")?.value || "youtube";
+    const embedUrl = this.formatEmbedUrl(rawUrl, provider);
+    const scheduleId = document.getElementById("liveStudioScheduleId")?.value || ("sched-" + Date.now().toString(36));
+
+    const day = document.getElementById("liveStudioScheduleDay")?.value || "Every Saturday";
+    const start = document.getElementById("liveStudioScheduleStartTime")?.value || "07:30";
+    const end = document.getElementById("liveStudioScheduleEndTime")?.value || "13:30";
+    const scheduleTime = this.buildScheduleString(day, start, end);
+
+    const streamConfig = {
+      scheduleId,
+      id: scheduleId,
+      topic,
+      courseId: document.getElementById("liveStudioCourseSelect")?.value || "",
+      courseTitle: document.getElementById("liveStudioCourseSelect")?.selectedOptions[0]?.text || "",
+      scheduleTime,
+      provider,
+      rawUrl,
+      embedUrl,
+      status,
+      updatedAt: new Date().toISOString()
+    };
+
+    localStorage.setItem(this.storageKeys.liveStream, JSON.stringify(streamConfig));
+
+    const schedules = this.getAllScheduledBroadcasts();
+    const existingIdx = schedules.findIndex(item => item.id === scheduleId);
+    if (existingIdx >= 0) {
+      schedules[existingIdx] = streamConfig;
+    } else {
+      schedules.unshift(streamConfig);
+    }
+    this.saveScheduledBroadcasts(schedules);
+
+    const previewIframe = document.getElementById("teacherLivePreviewIframe");
+    const badgeEl = document.getElementById("livePreviewStatusBadge");
+    if (previewIframe) previewIframe.src = embedUrl;
+    if (badgeEl) {
+      const isLive = status === "live";
+      const isEnded = status === "ended";
+      badgeEl.textContent = isLive ? "🔴 LIVE NOW" : (isEnded ? "⏹️ Concluded" : "⏳ Scheduled");
+      badgeEl.style.background = isLive ? "#fee2e2" : (isEnded ? "#f1f5f9" : "#fefce8");
+      badgeEl.style.color = isLive ? "#dc2626" : (isEnded ? "#64748b" : "#854d0e");
+    }
+
+    if (window.showToast) {
+      if (status === "live") {
+        window.showToast(`🔴 Live Stream is NOW ACTIVE & BROADCASTING to students!`, "success");
+      } else if (status === "ended") {
+        window.showToast(`⏹️ Live broadcast session ended.`, "info");
+      } else {
+        window.showToast(`✓ Broadcast saved and scheduled for ${scheduleTime}.`, "success");
+      }
+    }
+
+    this.renderSchedulesTable();
+  },
+
   resetScheduleForm() {
     document.getElementById("liveStudioScheduleId").value = "";
     document.getElementById("liveStudioTopic").value = "";
-    document.getElementById("liveStudioScheduleTime").value = "";
+    if (document.getElementById("liveStudioScheduleDay")) document.getElementById("liveStudioScheduleDay").value = "Every Saturday";
+    if (document.getElementById("liveStudioScheduleStartTime")) document.getElementById("liveStudioScheduleStartTime").value = "07:30";
+    if (document.getElementById("liveStudioScheduleEndTime")) document.getElementById("liveStudioScheduleEndTime").value = "13:30";
+    if (document.getElementById("liveStudioScheduleTime")) document.getElementById("liveStudioScheduleTime").value = "";
     document.getElementById("liveStudioUrl").value = "";
     document.getElementById("liveStudioStatus").value = "scheduled";
+
     const btnText = document.getElementById("btnSaveScheduleText");
     if (btnText) btnText.textContent = "Save & Push Broadcast Schedule";
 
@@ -1170,16 +1675,15 @@ const TEACHER_CONTROLLER = {
     const s = schedules.find(item => item.id === scheduleId);
     if (!s) return;
 
-    if (confirm(`Are you sure you want to permanently delete this broadcast schedule?\n"${s.topic}"`)) {
+    if (confirm(`Are you sure you want to delete broadcast schedule "${s.topic}"?`)) {
       const updated = schedules.filter(item => item.id !== scheduleId);
       this.saveScheduledBroadcasts(updated);
 
-      // Check if this was currently saved in edupeak_live_stream_config
-      const activeStream = localStorage.getItem(this.storageKeys.liveStream);
-      if (activeStream) {
+      const activeLive = localStorage.getItem(this.storageKeys.liveStream);
+      if (activeLive) {
         try {
-          const parsed = JSON.parse(activeStream);
-          if (parsed.scheduleId === scheduleId || parsed.topic === s.topic) {
+          const cfg = JSON.parse(activeLive);
+          if (cfg.scheduleId === scheduleId || cfg.id === scheduleId) {
             const clearedConfig = {
               topic: "No Live Broadcast Scheduled",
               provider: "youtube",
@@ -1202,7 +1706,6 @@ const TEACHER_CONTROLLER = {
         } catch (e) {}
       }
 
-      // If current form was editing this schedule, clear it
       if (document.getElementById("liveStudioScheduleId")?.value === scheduleId) {
         this.resetScheduleForm();
       }
@@ -1223,7 +1726,6 @@ const TEACHER_CONTROLLER = {
       return;
     }
 
-    const topic = document.getElementById("liveStudioTopic")?.value.trim();
     if (confirm(`Are you sure you want to clear and cancel the current live broadcast session?`)) {
       const clearedConfig = {
         topic: "No Live Broadcast Scheduled",
@@ -1236,11 +1738,7 @@ const TEACHER_CONTROLLER = {
       };
       localStorage.setItem(this.storageKeys.liveStream, JSON.stringify(clearedConfig));
 
-      document.getElementById("liveStudioScheduleId").value = "";
-      document.getElementById("liveStudioTopic").value = "";
-      document.getElementById("liveStudioScheduleTime").value = "";
-      document.getElementById("liveStudioUrl").value = "";
-      document.getElementById("liveStudioStatus").value = "ended";
+      this.resetScheduleForm();
 
       const previewIframe = document.getElementById("teacherLivePreviewIframe");
       const badgeEl = document.getElementById("livePreviewStatusBadge");
@@ -1260,65 +1758,10 @@ const TEACHER_CONTROLLER = {
   },
 
   handleLiveStudioSave(e) {
-    e.preventDefault();
-    const scheduleId = document.getElementById("liveStudioScheduleId")?.value || ("sched-" + Date.now().toString(36));
-    const topic = document.getElementById("liveStudioTopic").value.trim();
-    const courseSelect = document.getElementById("liveStudioCourseSelect");
-    const courseId = courseSelect ? courseSelect.value : "";
-    const courseTitle = courseSelect && courseSelect.selectedOptions[0] ? courseSelect.selectedOptions[0].text : "";
-    const scheduleTime = document.getElementById("liveStudioScheduleTime")?.value.trim() || "Every Saturday 7:30 AM";
-    const provider = document.getElementById("liveStudioProvider").value;
-    const rawUrl = document.getElementById("liveStudioUrl").value.trim();
-    const status = document.getElementById("liveStudioStatus").value;
-
-    const embedUrl = this.formatEmbedUrl(rawUrl, provider);
-
-    const streamConfig = { 
-      scheduleId,
-      id: scheduleId,
-      topic,
-      courseId,
-      courseTitle,
-      scheduleTime,
-      provider, 
-      rawUrl, 
-      embedUrl, 
-      status, 
-      updatedAt: new Date().toISOString() 
-    };
-
-    // Save active live stream for student LMS and LMS classroom player
-    localStorage.setItem(this.storageKeys.liveStream, JSON.stringify(streamConfig));
-
-    // Also update schedules directory
-    const schedules = this.getAllScheduledBroadcasts();
-    const existingIdx = schedules.findIndex(item => item.id === scheduleId);
-    if (existingIdx >= 0) {
-      schedules[existingIdx] = streamConfig;
-    } else {
-      schedules.unshift(streamConfig);
-    }
-    this.saveScheduledBroadcasts(schedules);
-
-    // Update Teacher Live Monitor Preview
-    const previewIframe = document.getElementById("teacherLivePreviewIframe");
-    const badgeEl = document.getElementById("livePreviewStatusBadge");
-    if (previewIframe) previewIframe.src = embedUrl;
-    if (badgeEl) {
-      const isLive = status === "live";
-      badgeEl.textContent = isLive ? "🔴 LIVE NOW" : (status === "ended" ? "⏹️ Concluded" : "⏳ Scheduled");
-      badgeEl.style.background = isLive ? "#fee2e2" : "#fefce8";
-      badgeEl.style.color = isLive ? "#dc2626" : "#854d0e";
-    }
-
-    const btnText = document.getElementById("btnSaveScheduleText");
-    if (btnText) btnText.textContent = "Save & Push Broadcast Schedule";
-
-    if (window.showToast) {
-      window.showToast(`✓ Broadcast schedule "${topic}" saved and published to LMS!`, "success");
-    }
-
-    this.renderSchedulesTable();
+    if (e && e.preventDefault) e.preventDefault();
+    const statusSelect = document.getElementById("liveStudioStatus");
+    const status = statusSelect ? statusSelect.value : "scheduled";
+    this.handleQuickStatusChange(status);
   },
 
   renderLiveStudio() {
@@ -1410,6 +1853,7 @@ const TEACHER_CONTROLLER = {
         name_si: "කසුන් ජයසුන්දර",
         email: "student@edupeak.lk",
         phone: "0771234567",
+        nic: "200512345678",
         stream: "Physical Science (Combined Maths)",
         examYear: "2027 A/L",
         institute: "Victory Embilipitiya",
@@ -1528,7 +1972,211 @@ const TEACHER_CONTROLLER = {
     return students;
   },
 
+  renderPendingOrders() {
+    const tbody = document.getElementById("teacherPendingOrdersTbody");
+    const countBadge = document.getElementById("teacherPendingOrdersCountBadge");
+    const metricCountEl = document.getElementById("metricPendingOrdersCount");
+    if (!tbody) return;
+
+    let orders = [];
+    try {
+      orders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
+    } catch (e) {
+      orders = [];
+    }
+
+    const pendingOnly = orders.filter(o => o.status === "Pending Approval");
+
+    if (metricCountEl) {
+      metricCountEl.textContent = `${pendingOnly.length} Pending`;
+    }
+
+    if (countBadge) {
+      countBadge.textContent = `${pendingOnly.length} Pending Order${pendingOnly.length === 1 ? '' : 's'}`;
+      if (pendingOnly.length > 0) {
+        countBadge.style.background = "#fef3c7";
+        countBadge.style.color = "#92400e";
+        countBadge.style.borderColor = "#fde68a";
+      } else {
+        countBadge.style.background = "#ecfdf5";
+        countBadge.style.color = "#059669";
+        countBadge.style.borderColor = "#a7f3d0";
+      }
+    }
+
+    if (pendingOnly.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align: center; color: #64748b; padding: 2rem;">
+            <i class="fa-solid fa-circle-check" style="font-size: 1.75rem; color: #10b981; margin-bottom: 0.35rem; display: block;"></i>
+            No pending enrollment orders awaiting approval. All student requests are up to date!
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = pendingOnly.map(order => {
+      const d = order.timestamp ? new Date(order.timestamp) : new Date();
+      const dateFormatted = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const phoneClean = (order.studentPhone || "").replace(/[^0-9]/g, '');
+      const waLink = phoneClean ? `https://wa.me/${phoneClean.startsWith('0') ? '94' + phoneClean.slice(1) : phoneClean}` : '';
+
+      return `
+        <tr>
+          <td>
+            <strong style="font-family: monospace; color: #92400e; background: #fef3c7; padding: 0.2rem 0.5rem; border-radius: 4px; border: 1px solid #fde68a; font-size: 0.85rem;">
+              ${order.orderId}
+            </strong>
+          </td>
+          <td>
+            <div style="font-weight: 700; color: #0f172a; font-size: 0.9rem;">${order.studentName}</div>
+            <div style="font-size: 0.75rem; color: #64748b;">ID: <strong style="color: #227aff;">${order.studentId}</strong></div>
+            <div style="font-size: 0.75rem; color: #475569;">
+              <i class="fa-solid fa-phone" style="font-size: 0.7rem;"></i> ${order.studentPhone}
+              ${waLink ? `<a href="${waLink}" target="_blank" rel="noopener noreferrer" style="color: #16a34a; font-weight: 700; margin-left: 0.35rem; text-decoration: none;"><i class="fa-brands fa-whatsapp"></i> Chat</a>` : ''}
+            </div>
+            <div style="font-size: 0.72rem; color: #64748b; max-width: 220px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${order.district || ''} - ${order.address || ''}">
+              <i class="fa-solid fa-location-dot" style="font-size: 0.7rem; color: #227aff;"></i> ${order.district || ''} - ${order.address || ''}
+            </div>
+          </td>
+          <td>
+            <div style="font-weight: 700; color: #0f172a; font-size: 0.88rem;">${order.courseTitle}</div>
+            <span style="font-size: 0.72rem; color: #227aff; background: #eff6ff; padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid #bfdbfe;">
+              ID: ${order.courseId}
+            </span>
+          </td>
+          <td>
+            <strong style="color: #0f172a; font-size: 0.88rem;">${order.fee || 'LKR 3,500'}</strong>
+          </td>
+          <td>
+            <div style="font-size: 0.78rem; color: #64748b;">${dateFormatted}</div>
+          </td>
+          <td>
+            <span class="status-tag" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-size: 0.72rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem;">
+              <i class="fa-solid fa-clock"></i> Pending
+            </span>
+          </td>
+          <td>
+            <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+              <button class="btn btn-sm" 
+                      onclick="TEACHER_CONTROLLER.approvePendingOrder('${order.orderId}')"
+                      style="background: #16a34a; color: #ffffff; border: 1px solid #16a34a; font-size: 0.75rem; padding: 0.35rem 0.65rem; font-weight: 700; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.3rem; cursor: pointer;"
+                      title="Verify payment and grant course access to student">
+                <i class="fa-solid fa-check"></i> Approve
+              </button>
+              <button class="btn btn-sm btn-ghost" 
+                      onclick="TEACHER_CONTROLLER.cancelPendingOrder('${order.orderId}')"
+                      style="color: #ef4444; border: 1px solid #fecaca; font-size: 0.75rem; padding: 0.35rem 0.65rem; font-weight: 700; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.3rem; cursor: pointer;"
+                      title="Cancel/reject order and release duplicate lock">
+                <i class="fa-solid fa-xmark"></i> Cancel
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  },
+
+  approvePendingOrder(orderId) {
+    if (!orderId) return;
+    let orders = [];
+    try {
+      orders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
+    } catch (e) {
+      orders = [];
+    }
+
+    const orderIndex = orders.findIndex(o => o.orderId === orderId);
+    if (orderIndex === -1) {
+      if (window.showToast) window.showToast("Order not found.", "error");
+      return;
+    }
+
+    const order = orders[orderIndex];
+
+    // Grant course access to the student
+    let studentCourses = [];
+    if (window.AUTH_SYSTEM && typeof window.AUTH_SYSTEM.getStudentEnrolledCourses === "function") {
+      studentCourses = window.AUTH_SYSTEM.getStudentEnrolledCourses(order.studentId) || [];
+    }
+
+    if (!studentCourses.includes(order.courseId)) {
+      studentCourses.push(order.courseId);
+    }
+
+    if (window.AUTH_SYSTEM && typeof window.AUTH_SYSTEM.setStudentEnrolledCourses === "function") {
+      window.AUTH_SYSTEM.setStudentEnrolledCourses(order.studentId, studentCourses);
+    } else {
+      localStorage.setItem(`edupeak_student_courses_${order.studentId}`, JSON.stringify(studentCourses));
+    }
+
+    // Also update general edupeak_enrolled and active student session
+    try {
+      let generalEnrolled = JSON.parse(localStorage.getItem("edupeak_enrolled") || "[]");
+      if (!generalEnrolled.includes(order.courseId)) {
+        generalEnrolled.push(order.courseId);
+        localStorage.setItem("edupeak_enrolled", JSON.stringify(generalEnrolled));
+      }
+
+      const current = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
+      if (current && (
+        current.id === order.studentId || 
+        (current.phone && order.studentPhone && current.phone.replace(/\D/g, '') === String(order.studentPhone).replace(/\D/g, '')) ||
+        (current.name && order.studentName && current.name.toLowerCase().trim() === String(order.studentName).toLowerCase().trim()) ||
+        (current.email && order.studentEmail && current.email.toLowerCase() === String(order.studentEmail).toLowerCase())
+      )) {
+        if (!Array.isArray(current.enrolledCourses)) current.enrolledCourses = [];
+        if (!current.enrolledCourses.includes(order.courseId)) {
+          current.enrolledCourses.push(order.courseId);
+          localStorage.setItem("edupeak_active_session", JSON.stringify(current));
+        }
+      }
+    } catch (e) {}
+
+    // Update order status
+    orders[orderIndex].status = "Approved";
+    orders[orderIndex].approvedAt = new Date().toISOString();
+    localStorage.setItem("edupeak_pending_orders", JSON.stringify(orders));
+
+    if (window.showToast) {
+      window.showToast(`🎉 Order ${order.orderId} approved! Access to "${order.courseTitle}" granted for ${order.studentName}.`, "success");
+    }
+
+    this.renderPendingOrders();
+    this.renderStudents();
+  },
+
+  cancelPendingOrder(orderId) {
+    if (!orderId) return;
+    if (!confirm(`Are you sure you want to cancel order ${orderId}? This will remove the pending status and allow the student to place a new order.`)) {
+      return;
+    }
+
+    let orders = [];
+    try {
+      orders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
+    } catch (e) {
+      orders = [];
+    }
+
+    const orderIndex = orders.findIndex(o => o.orderId === orderId);
+    if (orderIndex === -1) return;
+
+    orders[orderIndex].status = "Cancelled";
+    orders[orderIndex].cancelledAt = new Date().toISOString();
+    localStorage.setItem("edupeak_pending_orders", JSON.stringify(orders));
+
+    if (window.showToast) {
+      window.showToast(`❌ Order ${orderId} has been cancelled. The course restriction has been released for the student.`, "info");
+    }
+
+    this.renderPendingOrders();
+    this.renderStudents();
+  },
+
   renderStudents() {
+    this.renderPendingOrders();
     const tbody = document.getElementById("teacherStudentsTbody");
     if (!tbody) return;
 
@@ -1543,6 +2191,7 @@ const TEACHER_CONTROLLER = {
         (s.name && s.name.toLowerCase().includes(query)) ||
         (s.name_si && s.name_si.toLowerCase().includes(query)) ||
         (s.id && s.id.toLowerCase().includes(query)) ||
+        (s.nic && s.nic.toLowerCase().includes(query)) ||
         (s.email && s.email.toLowerCase().includes(query)) ||
         (s.phone && s.phone.includes(query)) ||
         (s.enrolledModule && s.enrolledModule.toLowerCase().includes(query))
@@ -1574,10 +2223,21 @@ const TEACHER_CONTROLLER = {
     }
 
     tbody.innerHTML = students.map(s => {
-      const avatarChar = (s.avatarLetter || s.name.charAt(0)).toUpperCase();
+      const studentName = s.name || "Student";
+      const avatarChar = (s.avatarLetter || studentName.charAt(0) || "S").toUpperCase();
       const examBadge = s.examYear 
         ? `<span class="status-tag active" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 700; font-size: 0.75rem;"><i class="fa-solid fa-graduation-cap"></i> ${s.examYear}</span>`
         : `<span class="status-tag" style="background: #f1f5f9; color: #64748b;">General Batch</span>`;
+
+      const enrolledCourses = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getStudentEnrolledCourses(s.id) : (s.enrolledCourses || []);
+      const courseCount = enrolledCourses.length;
+      const courseBadge = courseCount > 0
+        ? `<span class="status-tag active" style="background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; font-size: 0.72rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem;" onclick="TEACHER_CONTROLLER.openManageCourseAccessModal('${s.id}')" title="${enrolledCourses.join(', ')}">
+             <i class="fa-solid fa-graduation-cap"></i> ${courseCount} Course${courseCount === 1 ? '' : 's'}
+           </span>`
+        : `<span class="status-tag" style="background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; font-size: 0.72rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem;" onclick="TEACHER_CONTROLLER.openManageCourseAccessModal('${s.id}')">
+             <i class="fa-regular fa-circle"></i> None
+           </span>`;
 
       return `
         <tr>
@@ -1594,6 +2254,11 @@ const TEACHER_CONTROLLER = {
             </div>
           </td>
           <td>
+            <span style="font-family: monospace; font-weight: 700; color: #1e40af; background: #eff6ff; padding: 0.25rem 0.55rem; border-radius: 6px; border: 1px solid #bfdbfe; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+              <i class="fa-solid fa-id-card" style="color: #227aff;"></i> ${s.nic || '200512345678'}
+            </span>
+          </td>
+          <td>
             <div style="font-size: 0.8rem; color: #334155; font-weight: 600;"><i class="fa-solid fa-envelope" style="color: #64748b; font-size: 0.75rem;"></i> ${s.email || '-'}</div>
             <div style="font-size: 0.75rem; color: #64748b;"><i class="fa-solid fa-phone" style="color: #64748b; font-size: 0.7rem;"></i> ${s.phone || 'Contact via Institute'}</div>
           </td>
@@ -1603,23 +2268,142 @@ const TEACHER_CONTROLLER = {
             <div style="font-size: 0.72rem; color: #64748b;"><i class="fa-solid fa-location-dot" style="color: #227aff; font-size: 0.7rem;"></i> ${s.branch || s.institute || 'Victory Embilipitiya'}</div>
           </td>
           <td>
-            <span style="font-size: 0.78rem; font-weight: 600; color: #1e293b; background: #f8fafc; padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px solid #e2e8f0; display: inline-block; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${s.enrolledModule || s.batch || '2027 A/L Physics'}">
-              ${s.enrolledModule || s.batch || '2027 A/L Physics'}
-            </span>
+            ${courseBadge}
           </td>
           <td>
-            <div style="display: flex; align-items: center; gap: 0.4rem;">
-              <span class="status-tag active" style="background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; font-size: 0.72rem;">
-                <i class="fa-solid fa-circle-check"></i> Enrolled
-              </span>
-              <span style="font-size: 0.7rem; font-weight: 600; color: #64748b; background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.15rem 0.45rem; border-radius: 4px;" title="Read-Only View">
-                <i class="fa-solid fa-eye"></i> Read-Only
-              </span>
-            </div>
+            <button class="btn btn-sm btn-primary" 
+                    onclick="TEACHER_CONTROLLER.openManageCourseAccessModal('${s.id}')"
+                    style="font-size: 0.75rem; padding: 0.35rem 0.7rem; font-weight: 700; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.35rem;">
+              <i class="fa-solid fa-graduation-cap"></i> Grant Access
+            </button>
           </td>
         </tr>
       `;
     }).join("");
+  },
+
+  openManageCourseAccessModal(studentId) {
+    if (!studentId) return;
+
+    const students = this.getRegisteredStudents();
+    let s = students.find(u => u.id === studentId || (u.email && u.email.toLowerCase() === studentId.toLowerCase()));
+    if (!s && window.AUTH_SYSTEM) {
+      const allUsers = window.AUTH_SYSTEM.getUsers() || [];
+      s = allUsers.find(u => u.id === studentId);
+    }
+    if (!s) {
+      s = { id: studentId, name: "Student", email: "", examYear: "2027 A/L" };
+    }
+
+    const studentNameEl = document.getElementById("teacherCourseAccessStudentName");
+    const studentDetailsEl = document.getElementById("teacherCourseAccessStudentDetails");
+    const examBadgeEl = document.getElementById("teacherCourseAccessExamBadge");
+    const studentIdInput = document.getElementById("teacherCourseAccessStudentId");
+    const listContainer = document.getElementById("teacherCourseAccessList");
+
+    if (studentNameEl) studentNameEl.textContent = s.name || "Student";
+    if (studentDetailsEl) studentDetailsEl.textContent = `ID: ${s.id} • ${s.email || 'No email'}${s.phone ? ` • ${s.phone}` : ''}`;
+    if (examBadgeEl) examBadgeEl.textContent = s.examYear || s.stream || "2027 A/L";
+    if (studentIdInput) studentIdInput.value = s.id;
+
+    // Get current enrolled courses
+    const enrolled = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getStudentEnrolledCourses(s.id) : (s.enrolledCourses || []);
+
+    // Get all teacher courses & system courses
+    let allCourses = this.getAllCourses ? this.getAllCourses() : [];
+    if (!allCourses || allCourses.length === 0) {
+      allCourses = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
+    }
+
+    if (listContainer) {
+      if (allCourses.length === 0) {
+        listContainer.innerHTML = `<div style="text-align: center; color: #94a3b8; padding: 1.5rem;">No courses available in catalog.</div>`;
+      } else {
+        listContainer.innerHTML = allCourses.map(course => {
+          const isEnrolled = enrolled.some(eid => {
+            const cleanEid = String(eid).toLowerCase().replace(/-theory|-revision|-paper/g, '');
+            const cleanCid = String(course.id).toLowerCase().replace(/-theory|-revision|-paper/g, '');
+            return eid === course.id || cleanEid === cleanCid;
+          });
+
+          return `
+            <label style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: ${isEnrolled ? '#f0fdf4' : '#ffffff'}; border: 1.5px solid ${isEnrolled ? '#86efac' : '#e2e8f0'}; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <input type="checkbox" class="teacher-course-checkbox" value="${course.id}" ${isEnrolled ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #227aff; cursor: pointer;" onchange="TEACHER_CONTROLLER.onCourseCheckboxToggle(this)">
+                <div>
+                  <div style="font-weight: 700; color: #0f172a; font-size: 0.88rem;">${course.title}</div>
+                  <div style="font-size: 0.74rem; color: #64748b;">
+                    <span style="font-weight: 600; color: #227aff;">${course.examYear || course.level || '2027 A/L'}</span> • 
+                    ${course.teacherName || course.teacher || 'Amalsha Wanniarachchi'} • 
+                    <span style="text-transform: capitalize;">${course.category || 'Theory'}</span>
+                  </div>
+                </div>
+              </div>
+              <span class="course-grant-badge status-tag ${isEnrolled ? 'active' : ''}" style="font-size: 0.7rem; font-weight: 700;">
+                ${isEnrolled ? '<i class="fa-solid fa-circle-check"></i> Access Granted' : 'Not Enrolled'}
+              </span>
+            </label>
+          `;
+        }).join("");
+      }
+    }
+
+    const modal = document.getElementById("teacherCourseAccessModal");
+    if (modal) modal.classList.add("active");
+  },
+
+  onCourseCheckboxToggle(checkbox) {
+    const parent = checkbox.closest("label");
+    const badge = parent ? parent.querySelector(".course-grant-badge") : null;
+    if (checkbox.checked) {
+      if (parent) {
+        parent.style.background = "#f0fdf4";
+        parent.style.borderColor = "#86efac";
+      }
+      if (badge) {
+        badge.className = "course-grant-badge status-tag active";
+        badge.innerHTML = '<i class="fa-solid fa-circle-check"></i> Access Granted';
+      }
+    } else {
+      if (parent) {
+        parent.style.background = "#ffffff";
+        parent.style.borderColor = "#e2e8f0";
+      }
+      if (badge) {
+        badge.className = "course-grant-badge status-tag";
+        badge.textContent = 'Not Enrolled';
+      }
+    }
+  },
+
+  toggleAllCourseAccess(select) {
+    const checkboxes = document.querySelectorAll("#teacherCourseAccessList input[type='checkbox']");
+    checkboxes.forEach(cb => {
+      cb.checked = select;
+      this.onCourseCheckboxToggle(cb);
+    });
+  },
+
+  saveStudentCourseAccess() {
+    const studentIdInput = document.getElementById("teacherCourseAccessStudentId");
+    const studentId = studentIdInput ? studentIdInput.value : "";
+    if (!studentId) return;
+
+    const checkedBoxes = document.querySelectorAll("#teacherCourseAccessList input[type='checkbox']:checked");
+    const selectedCourseIds = Array.from(checkedBoxes).map(cb => cb.value);
+
+    if (window.AUTH_SYSTEM && typeof window.AUTH_SYSTEM.setStudentEnrolledCourses === "function") {
+      window.AUTH_SYSTEM.setStudentEnrolledCourses(studentId, selectedCourseIds);
+    } else {
+      localStorage.setItem(`edupeak_student_courses_${studentId}`, JSON.stringify(selectedCourseIds));
+    }
+
+    if (window.showToast) {
+      window.showToast(`🎉 Access updated for ${studentId} (${selectedCourseIds.length} course${selectedCourseIds.length === 1 ? '' : 's'} granted)!`, "success");
+    }
+
+    this.closeModal("teacherCourseAccessModal");
+    this.renderStudents();
   },
 
   logout() {
@@ -1634,9 +2418,11 @@ const TEACHER_CONTROLLER = {
       window.showToast("👋 You have been logged out successfully.", "info");
     }
 
-    setTimeout(() => {
-      window.location.href = "index.html";
-    }, 350);
+    if (typeof checkTeacherAuth === "function") {
+      checkTeacherAuth();
+    } else {
+      window.location.reload();
+    }
   }
 };
 

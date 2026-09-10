@@ -93,10 +93,6 @@
 
         <!-- Authenticated User Actions (When Logged In) -->
         <div class="user-actions-group" id="headerUserActions">
-          <button class="btn btn-primary btn-sm" id="headerAdminPanelBtn" style="display: none;" onclick="openAdminPanel()" title="Open Admin Dashboard">
-            <i class="fa-solid fa-gauge-high"></i> Admin Panel
-          </button>
-          
           <!-- User Profile Dropdown Capsule & Menu -->
           <div class="user-profile-dropdown-wrapper" id="userProfileDropdownWrapper">
             <div class="user-profile-chip" id="userProfileTriggerChip" onclick="toggleProfileDropdown(event)" title="My Account & Portals" aria-haspopup="true" aria-expanded="false">
@@ -515,7 +511,7 @@
         </div>
 
         <div class="lms-center-cta">
-          <a href="register.html" class="btn btn-primary btn-lg" id="lmsTryDemoRegisterBtn" onclick="window.location.href='register.html'; return true;">
+          <a href="register.html" class="btn btn-primary btn-lg" id="lmsTryDemoRegisterBtn" onclick="handleSmartLMSButtonClick(event)">
             <i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="lms_launch_demo">Register to Access LMS Portal</span>
           </a>
         </div>
@@ -695,9 +691,9 @@
           </div>
           <h3 class="support-title" data-i18n="support_card_1_title">LMS Technical Support</h3>
           <p class="support-desc" data-i18n="support_card_1_desc">Login issues, video playback troubleshooting and mobile app support.</p>
-          <button class="btn btn-ghost btn-sm" onclick="showToast('Connecting to Technical Support Desk...', 'info')">
+          <a href="https://wa.me/94760687578" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm" style="text-decoration: none;">
             <i class="fa-brands fa-whatsapp"></i> Chat with Tech Team
-          </button>
+          </a>
         </div>
 
         <div class="support-card">
@@ -802,7 +798,7 @@
             <a href="https://facebook.com" class="social-icon-btn" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
             <a href="https://youtube.com" class="social-icon-btn" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
             <a href="https://tiktok.com" class="social-icon-btn" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
-            <a href="https://whatsapp.com" class="social-icon-btn" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+            <a href="https://wa.me/94760687578" target="_blank" rel="noopener noreferrer" class="social-icon-btn" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
           </div>
         </div>
 
@@ -833,7 +829,7 @@
           <ul class="footer-links-list">
             <li><i class="fa-solid fa-location-dot" style="color: #38bdf8; margin-right: 0.4rem;"></i> Victory Higher Educational Institute, Main Street, Embilipitiya</li>
             <li><i class="fa-solid fa-phone" style="color: #38bdf8; margin-right: 0.4rem;"></i> +94 47 223 0000</li>
-            <li><i class="fa-brands fa-whatsapp" style="color: #25d366; margin-right: 0.4rem;"></i> +94 77 123 4567</li>
+            <li><i class="fa-brands fa-whatsapp" style="color: #25d366; margin-right: 0.4rem;"></i> <a href="https://wa.me/94760687578" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none;">+94 76 068 7578</a></li>
             <li><i class="fa-solid fa-envelope" style="color: #38bdf8; margin-right: 0.4rem;"></i> info@edupeak.lk</li>
           </ul>
         </div>
@@ -874,9 +870,6 @@
         <button class="lms-tab-btn" data-tab="speed-quiz" onclick="switchLMSTab('speed-quiz')">
           <i class="fa-solid fa-stopwatch-20"></i> <span>MCQ Speed Tests</span>
         </button>
-        <button class="lms-tab-btn" data-tab="my-courses" onclick="switchLMSTab('my-courses')">
-          <i class="fa-solid fa-book-bookmark"></i> <span>My Courses</span>
-        </button>
       </div>
 
       <!-- LMS User Bar -->
@@ -900,171 +893,270 @@
       
       <!-- TAB 1: VIDEO CLASSROOM & CLOUD NOTEBOOK -->
       <div class="lms-view-pane active" id="lmsView_video-classroom">
-        <div class="classroom-layout-grid">
-          
-          <div class="video-player-container">
-            <!-- Custom EduPeak DRM Video Player (Completely Masked YouTube) -->
-            <div class="edupeak-player-wrapper" id="edupeakPlayerWrapper">
-              <div class="edupeak-player-viewport" id="edupeakPlayerViewport">
-                
-                <!-- YouTube IFrame Hidden Container (Masked & Cropped) -->
-                <div class="edupeak-yt-frame-cropper">
-                  <div id="edupeakYTPlayerMount"></div>
+        
+        <!-- SUBVIEW A: COURSE SELECTION GRID (Shown First) -->
+        <div class="lms-course-picker-section" id="lmsCoursePickerView">
+          <div class="lms-course-picker-header">
+            <div>
+              <div style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0.65rem; background: #dbeafe; border-radius: 9999px; font-size: 0.725rem; font-weight: 700; color: #1e40af; margin-bottom: 0.4rem;">
+                <i class="fa-solid fa-graduation-cap"></i> Course Library & Video Masterclasses
+              </div>
+              <h3 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0 0 0.25rem;">Select Course to Start Learning</h3>
+              <p style="color: #64748b; font-size: 0.875rem; margin: 0;">Choose from your enrolled physics theory masterclasses, revision batches, or speed paper classes below.</p>
+            </div>
+          </div>
+
+          <!-- Video Classes Interactive Filter & Search Bar -->
+          <div class="lms-filter-controls-bar" id="lmsCourseFilterBar">
+            <div class="lms-search-box-wrapper">
+              <i class="fa-solid fa-magnifying-glass lms-search-icon"></i>
+              <input type="text" id="lmsCourseSearchInput" class="lms-search-input" 
+                     placeholder="Search by course title, teacher, exam year (e.g. 2027, Theory, Revision)..." 
+                     oninput="onLMSCourseSearchInput(this.value)">
+              <button type="button" id="lmsCourseSearchClearBtn" class="lms-search-clear-btn" onclick="clearLMSCourseSearch()" style="display: none;" title="Clear search">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <div class="lms-filter-row">
+              <!-- Status Filter Tabs -->
+              <div class="lms-filter-pills" id="lmsStatusFilterPills">
+                <button type="button" class="lms-filter-pill active" data-filter-status="all" onclick="setLMSCourseStatusFilter('all')">
+                  <i class="fa-solid fa-layer-group"></i> <span>All Classes</span> <span class="pill-count" id="countStatusAll">0</span>
+                </button>
+                <button type="button" class="lms-filter-pill" data-filter-status="enrolled" onclick="setLMSCourseStatusFilter('enrolled')">
+                  <i class="fa-solid fa-circle-check" style="color: #10b981;"></i> <span>My Enrolled</span> <span class="pill-count" id="countStatusEnrolled">0</span>
+                </button>
+                <button type="button" class="lms-filter-pill" data-filter-status="available" onclick="setLMSCourseStatusFilter('available')">
+                  <i class="fa-solid fa-compass" style="color: #227aff;"></i> <span>Explore More</span> <span class="pill-count" id="countStatusAvailable">0</span>
+                </button>
+              </div>
+
+              <!-- Select Dropdowns for Type & Year -->
+              <div class="lms-filter-selects">
+                <div class="lms-select-wrapper">
+                  <i class="fa-solid fa-filter select-icon"></i>
+                  <select id="lmsCourseTypeSelect" class="lms-filter-select" onchange="setLMSCourseTypeFilter(this.value)">
+                    <option value="all">All Class Types</option>
+                    <option value="theory">Theory Masterclass</option>
+                    <option value="revision">Unit Revision</option>
+                    <option value="paper">Paper & Model Exam</option>
+                  </select>
                 </div>
-                
-                <!-- Transparent Click Shield (Intercepts user clicks, prevents YouTube menus) -->
-                <div class="edupeak-player-click-shield" id="playerClickShield" onclick="EDUPEAK_PLAYER.togglePlayPause()"></div>
 
-                <!-- Floating Anti-Piracy DRM Watermark -->
-                <div class="edupeak-drm-watermark" id="playerDrmWatermark">
-                  <i class="fa-solid fa-shield-halved"></i>
-                  <span id="playerWatermarkText">Kasun (EP-2027-001) • Victory Embilipitiya • EduPeak DRM Protected</span>
+                <div class="lms-select-wrapper">
+                  <i class="fa-solid fa-calendar-days select-icon"></i>
+                  <select id="lmsCourseYearSelect" class="lms-filter-select" onchange="setLMSCourseYearFilter(this.value)">
+                    <option value="all">All Exam Years</option>
+                    <option value="2027">2027 A/L</option>
+                    <option value="2026">2026 A/L</option>
+                    <option value="2025">2025 A/L</option>
+                  </select>
                 </div>
+              </div>
+            </div>
+          </div>
 
-                <!-- Top DRM Status Bar -->
-                <div class="edupeak-player-top-bar" id="playerTopBar">
-                  <div class="edupeak-player-brand">
-                    <span class="drm-badge"><i class="fa-solid fa-shield-halved"></i> EduPeak DRM Stream</span>
-                    <span class="res-badge"><i class="fa-solid fa-bolt"></i> 1080p Ultra HD</span>
+          <div class="lms-course-picker-grid" id="lmsCoursePickerGrid">
+            <!-- Populated dynamically by js/lms.js -->
+          </div>
+        </div>
+
+        <!-- SUBVIEW B: VIDEO CLASSROOM PLAYER & LESSONS VIEW -->
+        <div id="lmsVideoClassroomPlayerView" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.6rem 1rem;">
+            <button class="btn btn-sm btn-outline" onclick="showCoursePickerInLMS()" style="font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem;">
+              <i class="fa-solid fa-arrow-left"></i> <span>Switch Course / Back to Courses</span>
+            </button>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Active Course:</span>
+              <span class="status-tag active" id="lmsActiveCourseBadge" style="font-weight: 700; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">
+                2027 A/L Physics Complete Theory
+              </span>
+            </div>
+          </div>
+
+          <div class="classroom-layout-grid">
+            
+            <div class="video-player-container">
+              <!-- Custom EduPeak DRM Video Player (Completely Masked YouTube) -->
+              <div class="edupeak-player-wrapper" id="edupeakPlayerWrapper">
+                <div class="edupeak-player-viewport" id="edupeakPlayerViewport">
+                  
+                  <!-- YouTube IFrame Hidden Container (Masked & Cropped) -->
+                  <div class="edupeak-yt-frame-cropper">
+                    <div id="edupeakYTPlayerMount"></div>
                   </div>
-                  <div class="edupeak-player-status-tag">
-                    <span class="live-pulse-dot"></span> Protected Session
-                  </div>
-                </div>
+                  
+                  <!-- Transparent Click Shield (Intercepts user clicks, prevents YouTube menus) -->
+                  <div class="edupeak-player-click-shield" id="playerClickShield" onclick="EDUPEAK_PLAYER.togglePlayPause()"></div>
 
-                <!-- Big Center Glassmorphic Play/Pause Button -->
-                <div class="edupeak-big-play-btn" id="playerBigPlayBtn" onclick="EDUPEAK_PLAYER.togglePlayPause()">
-                  <div class="big-play-icon-circle">
-                    <i class="fa-solid fa-play" id="bigPlayIcon"></i>
-                  </div>
-                </div>
-
-                <!-- Bottom Controls Overlay Bar -->
-                <div class="edupeak-player-controls-overlay" id="playerControlsOverlay">
-                  <!-- Progress Bar with Buffer and Tooltip -->
-                  <div class="edupeak-progress-container" id="playerProgressContainer">
-                    <div class="edupeak-buffer-bar" id="playerBufferBar"></div>
-                    <div class="edupeak-progress-bar" id="playerProgressBar"></div>
-                    <div class="edupeak-progress-thumb" id="playerProgressThumb"></div>
-                    <div class="edupeak-hover-time-tooltip" id="playerHoverTooltip">00:00</div>
+                  <!-- Floating Anti-Piracy DRM Watermark (Displays Student NIC Only, Disabled by Default) -->
+                  <div class="edupeak-drm-watermark" id="playerDrmWatermark" style="display: none;">
+                    <span id="playerWatermarkText">200512345678</span>
                   </div>
 
-                  <!-- Controls Row -->
-                  <div class="edupeak-controls-row">
-                    <div class="controls-left">
-                      <button class="player-btn" id="btnPlayPause" onclick="EDUPEAK_PLAYER.togglePlayPause()" title="Play / Pause (Space)">
-                        <i class="fa-solid fa-play" id="ctrlPlayIcon"></i>
-                      </button>
+                  <!-- Top DRM Status Bar -->
+                  <div class="edupeak-player-top-bar" id="playerTopBar">
+                    <div class="edupeak-player-brand">
+                      <span class="drm-badge"><i class="fa-solid fa-shield-halved"></i> EduPeak DRM Stream</span>
+                      <span class="res-badge"><i class="fa-solid fa-bolt"></i> 1080p Ultra HD</span>
+                    </div>
+                    <div class="edupeak-player-status-tag">
+                      <span class="live-pulse-dot"></span> Protected Session
+                    </div>
+                  </div>
 
-                      <button class="player-btn" onclick="EDUPEAK_PLAYER.seekRelative(-10)" title="Rewind 10s (←)">
-                        <i class="fa-solid fa-rotate-left"></i> <span style="font-size: 0.72rem; font-weight: 700; margin-left: 2px;">10s</span>
-                      </button>
+                  <!-- Big Center Glassmorphic Play/Pause Button -->
+                  <div class="edupeak-big-play-btn" id="playerBigPlayBtn" onclick="EDUPEAK_PLAYER.togglePlayPause()">
+                    <div class="big-play-icon-circle">
+                      <i class="fa-solid fa-play" id="bigPlayIcon"></i>
+                    </div>
+                  </div>
 
-                      <button class="player-btn" onclick="EDUPEAK_PLAYER.seekRelative(10)" title="Forward 10s (→)">
-                        <i class="fa-solid fa-rotate-right"></i> <span style="font-size: 0.72rem; font-weight: 700; margin-left: 2px;">10s</span>
-                      </button>
-
-                      <!-- Volume Controls -->
-                      <div class="volume-control-box">
-                        <button class="player-btn" id="btnMuteToggle" onclick="EDUPEAK_PLAYER.toggleMute()" title="Mute / Unmute">
-                          <i class="fa-solid fa-volume-high" id="ctrlVolumeIcon"></i>
-                        </button>
-                        <input type="range" class="volume-slider" id="playerVolumeSlider" min="0" max="100" value="100" oninput="EDUPEAK_PLAYER.setVolume(this.value)">
-                      </div>
-
-                      <!-- Time Display -->
-                      <div class="player-time-display">
-                        <span id="playerCurrentTime">00:00</span>
-                        <span class="time-sep">/</span>
-                        <span id="playerTotalDuration">00:00</span>
-                      </div>
+                  <!-- Bottom Controls Overlay Bar -->
+                  <div class="edupeak-player-controls-overlay" id="playerControlsOverlay">
+                    <!-- Progress Bar with Buffer and Tooltip -->
+                    <div class="edupeak-progress-container" id="playerProgressContainer">
+                      <div class="edupeak-buffer-bar" id="playerBufferBar"></div>
+                      <div class="edupeak-progress-bar" id="playerProgressBar"></div>
+                      <div class="edupeak-progress-thumb" id="playerProgressThumb"></div>
+                      <div class="edupeak-hover-time-tooltip" id="playerHoverTooltip">00:00</div>
                     </div>
 
-                    <div class="controls-right">
-                      <!-- Playback Speed Dropdown -->
-                      <div class="speed-selector-wrapper">
-                        <button class="player-btn speed-btn-trigger" onclick="EDUPEAK_PLAYER.toggleSpeedMenu(event)" id="btnSpeedTrigger" title="Playback Speed">
-                          <span id="currentSpeedText">1.0x</span>
+                    <!-- Controls Row -->
+                    <div class="edupeak-controls-row">
+                      <div class="controls-left">
+                        <button class="player-btn" id="btnPlayPause" onclick="EDUPEAK_PLAYER.togglePlayPause()" title="Play / Pause (Space)">
+                          <i class="fa-solid fa-play" id="ctrlPlayIcon"></i>
                         </button>
-                        <div class="speed-dropdown-menu" id="playerSpeedMenu">
-                          <button onclick="EDUPEAK_PLAYER.setPlaybackRate(0.75, true)">0.75x</button>
-                          <button onclick="EDUPEAK_PLAYER.setPlaybackRate(1.0, true)" class="active">1.0x (Normal)</button>
-                          <button onclick="EDUPEAK_PLAYER.setPlaybackRate(1.25, true)">1.25x</button>
-                          <button onclick="EDUPEAK_PLAYER.setPlaybackRate(1.5, true)">1.5x</button>
-                          <button onclick="EDUPEAK_PLAYER.setPlaybackRate(2.0, true)">2.0x</button>
+
+                        <button class="player-btn" onclick="EDUPEAK_PLAYER.seekRelative(-10)" title="Rewind 10s (←)">
+                          <i class="fa-solid fa-rotate-left"></i> <span style="font-size: 0.72rem; font-weight: 700; margin-left: 2px;">10s</span>
+                        </button>
+
+                        <button class="player-btn" onclick="EDUPEAK_PLAYER.seekRelative(10)" title="Forward 10s (→)">
+                          <i class="fa-solid fa-rotate-right"></i> <span style="font-size: 0.72rem; font-weight: 700; margin-left: 2px;">10s</span>
+                        </button>
+
+                        <!-- Volume Controls -->
+                        <div class="volume-control-box">
+                          <button class="player-btn" id="btnMuteToggle" onclick="EDUPEAK_PLAYER.toggleMute()" title="Mute / Unmute">
+                            <i class="fa-solid fa-volume-high" id="ctrlVolumeIcon"></i>
+                          </button>
+                          <input type="range" class="volume-slider" id="playerVolumeSlider" min="0" max="100" value="100" oninput="EDUPEAK_PLAYER.setVolume(this.value)">
+                        </div>
+
+                        <!-- Time Display -->
+                        <div class="player-time-display">
+                          <span id="playerCurrentTime">00:00</span>
+                          <span class="time-sep">/</span>
+                          <span id="playerTotalDuration">00:00</span>
                         </div>
                       </div>
 
-                      <!-- Stream Quality Badge -->
-                      <div class="quality-badge" title="High Definition Stream">
-                        <i class="fa-solid fa-shield-halved" style="color: #38bdf8;"></i> 1080p DRM
-                      </div>
+                      <div class="controls-right">
+                        <!-- Playback Speed Dropdown -->
+                        <div class="speed-selector-wrapper">
+                          <button class="player-btn speed-btn-trigger" onclick="EDUPEAK_PLAYER.toggleSpeedMenu(event)" id="btnSpeedTrigger" title="Playback Speed">
+                            <span id="currentSpeedText">1.0x</span>
+                          </button>
+                          <div class="speed-dropdown-menu" id="playerSpeedMenu">
+                            <button onclick="EDUPEAK_PLAYER.setPlaybackRate(0.75, true)">0.75x</button>
+                            <button onclick="EDUPEAK_PLAYER.setPlaybackRate(1.0, true)" class="active">1.0x (Normal)</button>
+                            <button onclick="EDUPEAK_PLAYER.setPlaybackRate(1.25, true)">1.25x</button>
+                            <button onclick="EDUPEAK_PLAYER.setPlaybackRate(1.5, true)">1.5x</button>
+                            <button onclick="EDUPEAK_PLAYER.setPlaybackRate(2.0, true)">2.0x</button>
+                          </div>
+                        </div>
 
-                      <!-- Fullscreen Button -->
-                      <button class="player-btn" onclick="EDUPEAK_PLAYER.toggleFullscreen()" title="Fullscreen (F)">
-                        <i class="fa-solid fa-expand" id="ctrlFullscreenIcon"></i>
-                      </button>
+                        <!-- Interactive Video Quality Selector Dropdown -->
+                        <div class="quality-selector-wrapper">
+                          <button class="player-btn quality-btn-trigger" id="playerQualityTriggerBtn" onclick="EDUPEAK_PLAYER.toggleQualityMenu()" title="Stream Video Quality">
+                            <i class="fa-solid fa-gear" style="font-size: 0.85rem; margin-right: 0.25rem;"></i>
+                            <span id="playerQualityLabel">Auto</span>
+                          </button>
+                          <div class="quality-dropdown-menu" id="playerQualityMenu">
+                            <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('auto', this)" class="active" data-quality="auto"><span>Auto (1080p Max)</span></button>
+                            <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('hd1080', this)" data-quality="hd1080"><span>1080p HD</span></button>
+                            <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('hd720', this)" data-quality="hd720"><span>720p HD</span></button>
+                            <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('large', this)" data-quality="large"><span>480p</span></button>
+                            <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('medium', this)" data-quality="medium"><span>360p</span></button>
+                            <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('small', this)" data-quality="small"><span>240p</span></button>
+                            <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('tiny', this)" data-quality="tiny"><span>144p</span></button>
+                          </div>
+                        </div>
+
+                        <!-- Fullscreen Button -->
+                        <button class="player-btn" onclick="EDUPEAK_PLAYER.toggleFullscreen()" title="Fullscreen (F)">
+                          <i class="fa-solid fa-expand" id="ctrlFullscreenIcon"></i>
+                        </button>
+                      </div>
                     </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <div class="video-meta-bar">
+                <div class="video-title-box" style="flex: 1;">
+                  <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem; flex-wrap: wrap;">
+                    <span class="badge-pill" style="font-size: 0.7rem; background: #eff6ff; color: #227aff; border: 1px solid #bfdbfe;" id="lmsLessonBadge">PHYSICS MASTERCLASS</span>
+                    <select id="lmsLessonSelector" onchange="renderLMSLesson(parseInt(this.value))" style="font-size: 0.825rem; font-weight: 700; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.3rem 0.6rem; background: #ffffff; cursor: pointer; max-width: 380px;">
+                      <!-- Populated dynamically by js/lms.js -->
+                    </select>
+                  </div>
+                  <h3 id="lmsLessonTitle" style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0.2rem 0;">Module 01: Complete Mechanics Masterclass</h3>
+                  <div class="video-instructor" id="lmsLessonTeacher" style="font-size: 0.85rem; color: #64748b;">
+                    <i class="fa-solid fa-chalkboard-user"></i> Amalsha Wanniarachchi (MBBS UG) &bull; G.C.E. A/L Physics
                   </div>
                 </div>
 
+                <div class="video-actions-box">
+                  <button class="btn-video-tool" onclick="downloadCurrentPdf()" id="btnDownloadTute">
+                    <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> <span id="lmsPdfBtnText">Tute PDF</span>
+                  </button>
+                  <div class="speed-toggle-group" style="display: inline-flex; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #ffffff;">
+                    <button class="speed-btn active" onclick="setPlaybackSpeed(1.0, this)" style="padding: 0.35rem 0.55rem; font-size: 0.75rem; border: none; background: #eff6ff; color: #227aff; font-weight: 700; cursor: pointer;">1.0x</button>
+                    <button class="speed-btn" onclick="setPlaybackSpeed(1.25, this)" style="padding: 0.35rem 0.55rem; font-size: 0.75rem; border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer;">1.25x</button>
+                    <button class="speed-btn" onclick="setPlaybackSpeed(1.5, this)" style="padding: 0.35rem 0.55rem; font-size: 0.75rem; border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer;">1.5x</button>
+                  </div>
+                  <button class="btn-video-tool" onclick="showToast('📌 Current frame bookmarked to Revision timeline!', 'success')">
+                    <i class="fa-solid fa-bookmark" style="color: #f59e0b;"></i> Bookmark
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div class="video-meta-bar">
-              <div class="video-title-box" style="flex: 1;">
-                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem; flex-wrap: wrap;">
-                  <span class="badge-pill" style="font-size: 0.7rem; background: #eff6ff; color: #227aff; border: 1px solid #bfdbfe;" id="lmsLessonBadge">PHYSICS MASTERCLASS</span>
-                  <select id="lmsLessonSelector" onchange="renderLMSLesson(parseInt(this.value))" style="font-size: 0.825rem; font-weight: 700; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.3rem 0.6rem; background: #ffffff; cursor: pointer; max-width: 380px;">
-                    <!-- Populated dynamically by js/lms.js -->
-                  </select>
+            <!-- Side Panel: Chapters & Notes -->
+            <div class="classroom-sidebar">
+              <div class="sidebar-card-box">
+                <div class="sidebar-box-header">
+                  <h4><i class="fa-solid fa-list-ol" style="color: var(--primary);"></i> Chapter Timeline</h4>
+                  <span style="font-size: 0.75rem; color: var(--text-dim);" id="lmsChaptersCount">4 Chapters</span>
                 </div>
-                <h3 id="lmsLessonTitle" style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0.2rem 0;">Module 01: Complete Mechanics Masterclass</h3>
-                <div class="video-instructor" id="lmsLessonTeacher" style="font-size: 0.85rem; color: #64748b;">
-                  <i class="fa-solid fa-chalkboard-user"></i> Amalsha Wanniarachchi (MBBS UG) &bull; G.C.E. A/L Physics
+                <div class="chapters-timeline-list" id="lmsChaptersList">
+                  <!-- Injected dynamically by js/lms.js -->
                 </div>
               </div>
 
-              <div class="video-actions-box">
-                <button class="btn-video-tool" onclick="downloadCurrentPdf()" id="btnDownloadTute">
-                  <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> <span id="lmsPdfBtnText">Tute PDF</span>
-                </button>
-                <div class="speed-toggle-group" style="display: inline-flex; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #ffffff;">
-                  <button class="speed-btn active" onclick="setPlaybackSpeed(1.0, this)" style="padding: 0.35rem 0.55rem; font-size: 0.75rem; border: none; background: #eff6ff; color: #227aff; font-weight: 700; cursor: pointer;">1.0x</button>
-                  <button class="speed-btn" onclick="setPlaybackSpeed(1.25, this)" style="padding: 0.35rem 0.55rem; font-size: 0.75rem; border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer;">1.25x</button>
-                  <button class="speed-btn" onclick="setPlaybackSpeed(1.5, this)" style="padding: 0.35rem 0.55rem; font-size: 0.75rem; border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer;">1.5x</button>
+              <!-- Student Cloud Notebook -->
+              <div class="sidebar-card-box">
+                <div class="sidebar-box-header">
+                  <h4><i class="fa-regular fa-pen-to-square" style="color: var(--primary);"></i> Student Cloud Notes</h4>
+                  <button class="btn btn-primary btn-sm" onclick="saveStudentNotes()">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Notes
+                  </button>
                 </div>
-                <button class="btn-video-tool" onclick="showToast('📌 Current frame bookmarked to Revision timeline!', 'success')">
-                  <i class="fa-solid fa-bookmark" style="color: #f59e0b;"></i> Bookmark
-                </button>
+                <div class="notebook-area">
+                  <textarea class="note-editor" id="lmsNotePad" placeholder="Type your personal theory notes, equations, and revision points here. Auto-saved to your student profile..."></textarea>
+                </div>
               </div>
             </div>
+
           </div>
-
-          <!-- Side Panel: Chapters & Notes -->
-          <div class="classroom-sidebar">
-            <div class="sidebar-card-box">
-              <div class="sidebar-box-header">
-                <h4><i class="fa-solid fa-list-ol" style="color: var(--primary);"></i> Chapter Timeline</h4>
-                <span style="font-size: 0.75rem; color: var(--text-dim);" id="lmsChaptersCount">4 Chapters</span>
-              </div>
-              <div class="chapters-list" id="lmsChaptersList">
-                <!-- Chapters rendered by js/lms.js -->
-              </div>
-            </div>
-
-            <div class="sidebar-card-box">
-              <div class="sidebar-box-header">
-                <h4><i class="fa-solid fa-pen-to-square" style="color: var(--primary);"></i> Student Cloud Notes</h4>
-                <button class="btn btn-primary btn-sm" onclick="saveStudentNote()">
-                  <i class="fa-solid fa-floppy-disk"></i> Save Notes
-                </button>
-              </div>
-              <textarea class="lms-notepad-textarea" id="lmsNotePad" placeholder="Type your personal lecture notes and key formulas here... (auto-saved to cloud)"></textarea>
-            </div>
-          </div>
-
         </div>
+
       </div>
 
       <!-- TAB 2: LIVE CLASSROOM & INTERACTIVE CHAT -->
@@ -1096,11 +1188,82 @@
         </div>
 
         <div class="live-room-grid">
+          <!-- Live EduPeak Custom Player (Masked YouTube, Click Shield, Quality, NIC Watermark) -->
           <div class="live-whiteboard-feed" style="position: relative; padding: 0; aspect-ratio: 16 / 9; overflow: hidden; background: #000; border-radius: 14px; width: 100%;">
-            <iframe id="lmsLiveStreamIframe" src="https://www.youtube.com/embed/dQw4w9WgXcQ" allowfullscreen allow="autoplay; encrypted-media" style="width: 100%; height: 100%; border: none; aspect-ratio: 16 / 9;"></iframe>
+            <div class="edupeak-player-wrapper live-player-wrapper" id="edupeakLivePlayerWrapper" style="width: 100%; height: 100%; aspect-ratio: unset;">
+              <div class="edupeak-player-viewport" id="edupeakLivePlayerViewport">
+                
+                <!-- Cropper -->
+                <div class="edupeak-yt-frame-cropper">
+                  <div id="edupeakLiveYTPlayerMount"></div>
+                </div>
+
+                <!-- Click Shield (Non-pausable live stream) -->
+                <div class="edupeak-player-click-shield" id="livePlayerClickShield" onclick="EDUPEAK_LIVE_PLAYER.onShieldClick()"></div>
+
+                <!-- Floating Anti-Piracy Watermark (Student NIC Only) -->
+                <div class="edupeak-drm-watermark" id="livePlayerDrmWatermark" style="display: none;">
+                  <span id="livePlayerWatermarkText">200512345678</span>
+                </div>
+
+                <!-- Top Live Bar -->
+                <div class="edupeak-player-top-bar" id="livePlayerTopBar">
+                  <div class="edupeak-player-brand">
+                    <span class="drm-badge" style="background: rgba(239, 68, 68, 0.25); border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;"><i class="fa-solid fa-tower-broadcast"></i> EduPeak Live Studio</span>
+                    <span class="res-badge"><i class="fa-solid fa-bolt"></i> 1080p Ultra HD</span>
+                  </div>
+                  <div class="edupeak-player-status-tag" style="background: rgba(239, 68, 68, 0.25); border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;">
+                    <span class="live-pulse-dot" style="background: #ef4444; box-shadow: 0 0 8px #ef4444;"></span> Protected Live Session
+                  </div>
+                </div>
+
+                <!-- Big Center Play Button (Click to Join Stream) -->
+                <div class="edupeak-big-play-btn" id="livePlayerBigPlayBtn" onclick="EDUPEAK_LIVE_PLAYER.joinStream()">
+                  <div class="big-play-icon-circle" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);">
+                    <i class="fa-solid fa-play"></i>
+                  </div>
+                </div>
+
+                <!-- Controls Overlay Bar (No Pause for Students in Live Stream) -->
+                <div class="edupeak-player-controls-overlay" id="livePlayerControlsOverlay">
+                  <div class="edupeak-controls-row">
+                    <div class="controls-left">
+                      <div style="background: #ef4444; color: #fff; font-size: 0.72rem; font-weight: 800; padding: 0.25rem 0.6rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.35rem; letter-spacing: 0.02em;">
+                        <span class="live-pulse-dot" style="width: 6px; height: 6px; background: #fff; box-shadow: none;"></span> LIVE BROADCAST
+                      </div>
+                      <div class="volume-control-box">
+                        <button class="player-btn" id="livePlayerVolumeBtn" onclick="EDUPEAK_LIVE_PLAYER.toggleMute()" title="Mute / Unmute">
+                          <i class="fa-solid fa-volume-high" id="livePlayerVolumeIcon"></i>
+                        </button>
+                        <input type="range" class="volume-slider" id="livePlayerVolumeSlider" min="0" max="100" value="100" oninput="EDUPEAK_LIVE_PLAYER.setVolume(this.value)">
+                      </div>
+                    </div>
+                    <div class="controls-right">
+                      <div class="quality-selector-wrapper">
+                        <button class="player-btn quality-btn-trigger" id="livePlayerQualityTriggerBtn" onclick="EDUPEAK_LIVE_PLAYER.toggleQualityMenu()" title="Stream Quality">
+                          <i class="fa-solid fa-gear" style="font-size: 0.85rem; margin-right: 0.25rem;"></i>
+                          <span id="livePlayerQualityLabel">Auto</span>
+                        </button>
+                        <div class="quality-dropdown-menu" id="livePlayerQualityMenu">
+                          <button onclick="EDUPEAK_LIVE_PLAYER.setPlaybackQuality('auto', this)" class="active"><span>Auto (1080p Max)</span></button>
+                          <button onclick="EDUPEAK_LIVE_PLAYER.setPlaybackQuality('hd1080', this)"><span>1080p HD</span></button>
+                          <button onclick="EDUPEAK_LIVE_PLAYER.setPlaybackQuality('hd720', this)"><span>720p HD</span></button>
+                          <button onclick="EDUPEAK_LIVE_PLAYER.setPlaybackQuality('large', this)"><span>480p</span></button>
+                          <button onclick="EDUPEAK_LIVE_PLAYER.setPlaybackQuality('medium', this)"><span>360p</span></button>
+                        </div>
+                      </div>
+                      <button class="player-btn" onclick="EDUPEAK_LIVE_PLAYER.toggleFullscreen()" title="Fullscreen">
+                        <i class="fa-solid fa-expand"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
           </div>
 
-          <!-- Real-Time Simulated Chat Stream -->
+          <!-- Real-Time Student Q&A Chat Stream (Real messages only) -->
           <div class="live-chat-panel">
             <div class="chat-header">
               <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main);"><i class="fa-regular fa-comments"></i> Live Student Q&A Stream</h4>
@@ -1108,12 +1271,12 @@
             </div>
 
             <div class="chat-messages-scroll" id="liveChatMessagesScroll">
-              <!-- Chat rendered by js/lms.js -->
+              <!-- Rendered by js/lms.js -->
             </div>
 
             <div class="chat-input-bar">
               <input type="text" class="chat-input-field" id="liveChatInputField" placeholder="Ask sir a question or physics doubt..." onkeydown="if(event.key==='Enter') sendLiveChatMessage()">
-              <button class="btn btn-primary btn-sm" onclick="sendLiveChatMessage()">
+              <button class="btn btn-primary btn-sm" onclick="sendLiveChatMessage()" title="Send Question">
                 <i class="fa-solid fa-paper-plane"></i>
               </button>
             </div>
@@ -1124,83 +1287,154 @@
 
       <!-- TAB 3: TIMED SPEED MCQ EXAMINATION SYSTEM -->
       <div class="lms-view-pane" id="lmsView_speed-quiz">
-        <div class="quiz-container-box">
+
+        <!-- 3A. MCQ COURSE SELECTION GRID (Shown First) -->
+        <div id="lmsQuizCoursePickerView">
+          <div class="lms-course-picker-hero" style="margin-bottom: 1.5rem; background: linear-gradient(135deg, #f0f7ff 0%, #e0f2fe 100%); border: 1px solid #bae6fd; border-radius: 16px; padding: 1.5rem 1.75rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <span class="badge" style="background: #227aff; color: #ffffff; font-weight: 700; font-size: 0.75rem; padding: 0.25rem 0.65rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.5rem;">
+                  <i class="fa-solid fa-stopwatch"></i> Speed Evaluation Arena
+                </span>
+                <h3 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0 0 0.25rem 0;">Select Course for MCQ Speed Test</h3>
+                <p style="font-size: 0.875rem; color: #475569; margin: 0;">Choose from your registered courses to view available timed MCQ speed evaluations and begin testing your knowledge.</p>
+              </div>
+            </div>
+          </div>
           
-          <div class="quiz-header-bar">
-            <div>
-              <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.2rem;">
-                <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">EduPeak Speed Assessment Engine</span>
-                <span class="badge-pill" style="font-size: 0.65rem; background: #eff6ff; color: #227aff; border: 1px solid #bfdbfe;">A/L PHYSICS 2025/2026</span>
-              </div>
-              <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0;" id="quizPaperTitle">Unit Speed Test - Mechanics & Vectors Evaluation</h3>
-            </div>
-
-            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-              <div class="quiz-timer-pill" id="quizTimerPill" style="background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; padding: 0.4rem 0.85rem; border-radius: 9999px; font-weight: 800; font-size: 0.875rem; display: flex; align-items: center; gap: 0.45rem;">
-                <i class="fa-regular fa-clock"></i>
-                <span id="quizTimerText">10:00 Left</span>
-              </div>
-              <div class="quiz-progress-dots" id="quizDotsContainer">
-                <!-- Dots rendered by js/lms.js -->
-              </div>
-            </div>
+          <div class="lms-course-picker-grid" id="lmsQuizCoursePickerGrid">
+            <!-- Rendered by js/lms.js -->
           </div>
-
-          <!-- Question Content -->
-          <div class="question-text-box" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; margin: 1.25rem 0;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-              <span class="question-subject-tag" id="quizSubjectTag" style="font-size: 0.75rem; font-weight: 800; color: #227aff; background: #eff6ff; padding: 0.2rem 0.6rem; border-radius: 6px;">Physics - Mechanics</span>
-              <span style="font-size: 0.8rem; font-weight: 700; color: #64748b;" id="quizQuestionCounter">Question 1 of 5</span>
-            </div>
-            <h4 class="question-main-text" id="quizQuestionMain" style="font-size: 1.05rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem; line-height: 1.5;">Question Loading...</h4>
-            <p class="question-sinhala-text" id="quizQuestionSinhala" style="font-size: 0.95rem; color: #334155; line-height: 1.6; margin: 0;"></p>
-          </div>
-
-          <!-- Options List -->
-          <div class="options-list-grid" id="quizOptionsList">
-            <!-- Options rendered by js/lms.js -->
-          </div>
-
-          <!-- Step Explanation Box (Shown after submission) -->
-          <div class="quiz-explanation-box" id="quizExplanationBox" style="display: none; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 1.25rem; margin-top: 1.25rem;"></div>
-
-          <!-- Quiz Bottom Actions -->
-          <div class="quiz-footer-actions" style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-            <button class="btn btn-ghost btn-sm" id="quizPrevBtn" onclick="prevQuizQuestion()">
-              <i class="fa-solid fa-arrow-left"></i> Previous
-            </button>
-
-            <div style="display: flex; gap: 0.5rem;">
-              <button class="btn btn-ghost btn-sm" onclick="resetQuiz()">
-                <i class="fa-solid fa-rotate-right"></i> Reset Test
-              </button>
-              <button class="btn btn-primary btn-sm" id="quizNextBtn" onclick="nextQuizQuestion()">
-                Next Question <i class="fa-solid fa-arrow-right"></i>
-              </button>
-              <button class="btn btn-accent btn-sm" id="quizSubmitBtn" onclick="submitQuiz()" style="display: none; background: #10b981; border-color: #10b981;">
-                <i class="fa-solid fa-check-double"></i> Submit Speed Test
-              </button>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- TAB 4: MY ENROLLED COURSES DASHBOARD -->
-      <div class="lms-view-pane" id="lmsView_my-courses">
-        <div class="enrolled-dashboard-topbar">
-          <div>
-            <h3 style="font-size: 1.4rem; font-weight: 800; color: var(--text-main);">My Registered Academic Modules</h3>
-            <p style="font-size: 0.85rem; color: var(--text-muted);">Access your active classes, downloaded materials and progress reports.</p>
-          </div>
-          <button class="btn btn-ghost btn-sm" onclick="closeLMSPortal(); window.location.href='courses.html';">
-            <i class="fa-solid fa-plus"></i> Enroll in New Course
-          </button>
         </div>
 
-        <div class="student-dashboard-grid" id="enrolledCoursesGrid">
-          <!-- Rendered by js/lms.js -->
+        <!-- 3B. PRE-TEST BRIEFING & START SCREEN -->
+        <div id="lmsQuizStartScreenView" style="display: none;">
+          <div class="quiz-container-box" style="max-width: 780px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #e2e8f0;">
+              <button class="btn btn-ghost btn-sm" onclick="showQuizCoursePicker()" style="display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 8px;">
+                <i class="fa-solid fa-arrow-left"></i> Change Course
+              </button>
+              <span class="badge-pill" id="lmsQuizStartCourseBadge" style="font-size: 0.75rem; background: #eff6ff; color: #227aff; border: 1px solid #bfdbfe; font-weight: 700;">2027 A/L Physics</span>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 2rem;">
+              <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); color: #227aff; display: inline-flex; align-items: center; justify-content: center; font-size: 1.75rem; margin-bottom: 1rem; box-shadow: 0 4px 12px rgba(34,122,255,0.15);">
+                <i class="fa-solid fa-bolt"></i>
+              </div>
+              <h2 style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0 0 0.5rem 0;" id="lmsQuizStartPaperTitle">Unit Speed Test - Mechanics & Vectors Evaluation</h2>
+              <p style="font-size: 0.925rem; color: #64748b; margin: 0 auto; max-width: 550px;" id="lmsQuizStartPaperDesc">
+                Timed assessment designed to test problem-solving velocity, conceptual accuracy, and exam time management.
+              </p>
+            </div>
+
+            <!-- Stat Cards Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; text-align: center;">
+                <div style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 0.25rem;">Duration</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: #ef4444;"><i class="fa-regular fa-clock"></i> 10 Mins</div>
+              </div>
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; text-align: center;">
+                <div style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 0.25rem;">Questions</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: #227aff;" id="lmsQuizStartQuestionCount"><i class="fa-solid fa-list-check"></i> 5 MCQs</div>
+              </div>
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; text-align: center;">
+                <div style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 0.25rem;">Passing Standard</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: #10b981;"><i class="fa-solid fa-trophy"></i> 80%</div>
+              </div>
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; text-align: center;">
+                <div style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 0.25rem;">Explanations</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: #8b5cf6;"><i class="fa-solid fa-brain"></i> Step-by-Step</div>
+              </div>
+            </div>
+
+            <!-- Instructions Notice -->
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 2rem;">
+              <h4 style="font-size: 0.875rem; font-weight: 800; color: #166534; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.4rem;">
+                <i class="fa-solid fa-circle-info"></i> Examination Guidelines:
+              </h4>
+              <ul style="font-size: 0.825rem; color: #15803d; margin: 0; padding-left: 1.2rem; line-height: 1.6;">
+                <li>The countdown timer starts immediately once you click the <strong>Start MCQ Speed Test</strong> button.</li>
+                <li>You can freely navigate between questions or change your answers before final submission.</li>
+                <li>Instant score calculation and comprehensive analytical step-by-step solutions are revealed upon submission.</li>
+              </ul>
+            </div>
+
+            <!-- Start Action Button -->
+            <div style="text-align: center;">
+              <button class="btn btn-primary" onclick="startActiveQuiz()" style="font-size: 1.1rem; font-weight: 800; padding: 0.85rem 2.5rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(34,122,255,0.4); display: inline-flex; align-items: center; gap: 0.6rem;">
+                <i class="fa-solid fa-play"></i> <span>Start MCQ Speed Test</span>
+              </button>
+            </div>
+          </div>
         </div>
+
+        <!-- 3C. ACTIVE TIMED MCQ TEST VIEW -->
+        <div id="lmsQuizActiveTestView" style="display: none;">
+          <div class="quiz-container-box">
+            
+            <div class="quiz-header-bar">
+              <div>
+                <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.2rem;">
+                  <button class="btn btn-ghost btn-sm" onclick="confirmExitActiveQuiz()" style="font-size: 0.75rem; padding: 0.2rem 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: 700;">
+                    <i class="fa-solid fa-arrow-left"></i> Change Course
+                  </button>
+                  <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">EduPeak Speed Assessment Engine</span>
+                  <span class="badge-pill" id="quizActiveCourseBadge" style="font-size: 0.65rem; background: #eff6ff; color: #227aff; border: 1px solid #bfdbfe;">A/L PHYSICS</span>
+                </div>
+                <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0;" id="quizPaperTitle">Unit Speed Test - Mechanics & Vectors Evaluation</h3>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                <div class="quiz-timer-pill" id="quizTimerPill" style="background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; padding: 0.4rem 0.85rem; border-radius: 9999px; font-weight: 800; font-size: 0.875rem; display: flex; align-items: center; gap: 0.45rem;">
+                  <i class="fa-regular fa-clock"></i>
+                  <span id="quizTimerText">10:00 Left</span>
+                </div>
+                <div class="quiz-progress-dots" id="quizDotsContainer">
+                  <!-- Dots rendered by js/lms.js -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Question Content -->
+            <div class="question-text-box" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; margin: 1.25rem 0;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <span class="question-subject-tag" id="quizSubjectTag" style="font-size: 0.75rem; font-weight: 800; color: #227aff; background: #eff6ff; padding: 0.2rem 0.6rem; border-radius: 6px;">Physics - Mechanics</span>
+                <span style="font-size: 0.8rem; font-weight: 700; color: #64748b;" id="quizQuestionCounter">Question 1 of 5</span>
+              </div>
+              <h4 class="question-main-text" id="quizQuestionMain" style="font-size: 1.05rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem; line-height: 1.5;">Question Loading...</h4>
+              <p class="question-sinhala-text" id="quizQuestionSinhala" style="font-size: 0.95rem; color: #334155; line-height: 1.6; margin: 0;"></p>
+            </div>
+
+            <!-- Options List -->
+            <div class="options-list-grid" id="quizOptionsList">
+              <!-- Options rendered by js/lms.js -->
+            </div>
+
+            <!-- Step Explanation Box (Shown after submission) -->
+            <div class="quiz-explanation-box" id="quizExplanationBox" style="display: none; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 1.25rem; margin-top: 1.25rem;"></div>
+
+            <!-- Quiz Bottom Actions -->
+            <div class="quiz-footer-actions" style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+              <button class="btn btn-ghost btn-sm" id="quizPrevBtn" onclick="prevQuizQuestion()">
+                <i class="fa-solid fa-arrow-left"></i> Previous
+              </button>
+
+              <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-ghost btn-sm" onclick="resetQuiz()">
+                  <i class="fa-solid fa-rotate-right"></i> Reset Test
+                </button>
+                <button class="btn btn-primary btn-sm" id="quizNextBtn" onclick="nextQuizQuestion()">
+                  Next Question <i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <button class="btn btn-accent btn-sm" id="quizSubmitBtn" onclick="submitQuiz()" style="display: none; background: #10b981; border-color: #10b981;">
+                  <i class="fa-solid fa-check-double"></i> Submit Speed Test
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
       </div>
 
     </div>
@@ -1329,6 +1563,13 @@
                 <label class="form-label"><i class="fa-brands fa-whatsapp"></i> WhatsApp / Mobile Number <span style="color: #ef4444;">*</span></label>
                 <input type="tel" class="form-control" id="regPhoneInput" placeholder="e.g. 077 123 4567" required>
               </div>
+            </div>
+
+            <!-- Student National Identity Card (NIC) -->
+            <div class="form-group">
+              <label class="form-label"><i class="fa-solid fa-id-card"></i> Student National Identity Card (NIC) Number <span style="color: #ef4444;">*</span></label>
+              <input type="text" class="form-control" id="regNicInput" placeholder="e.g. 200412345678 or 200012345V" required maxlength="12">
+              <small style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem; display: block;">Enter 12-digit new NIC or 9-digit old NIC with 'V' / 'X'. Required for video player DRM security.</small>
             </div>
 
             <!-- Institute Selection (Victory Embilipitiya, Coming Soon, Coming Soon) -->
@@ -1503,729 +1744,8 @@
     </div>
   </div>
 
-  <!-- =========================================================================
-       ADMIN PANEL DASHBOARD MODAL
-       ========================================================================= -->
-  <div class="admin-modal-wrapper" id="adminModalWrapper">
-    <!-- Sidebar -->
-    <aside class="admin-sidebar">
-      <div class="admin-sidebar-brand" style="display: flex; align-items: center; gap: 0.75rem; padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
-        <img src="assets/img/edupeak_logo.png" alt="EduPeak Admin" style="height: 36px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(34, 122, 255, 0.3));">
-        <span class="lms-badge-tag" style="background: rgba(34, 122, 255, 0.2); color: #60a5fa; font-size: 0.7rem; font-weight: 800; padding: 2px 8px; border-radius: 6px;">ADMIN</span>
-      </div>
-
-      <nav class="admin-nav-menu">
-        <button class="admin-nav-item active" data-tab="overview" onclick="ADMIN_CONTROLLER.switchTab('overview')">
-          <i class="fa-solid fa-chart-pie"></i> Overview
-        </button>
-        <button class="admin-nav-item" data-tab="students" onclick="ADMIN_CONTROLLER.switchTab('students')">
-          <i class="fa-solid fa-users"></i> Students
-        </button>
-        <button class="admin-nav-item" data-tab="courses" onclick="ADMIN_CONTROLLER.switchTab('courses')">
-          <i class="fa-solid fa-book-open-reader"></i> Courses
-        </button>
-        <button class="admin-nav-item" data-tab="teachers" onclick="ADMIN_CONTROLLER.switchTab('teachers')">
-          <i class="fa-solid fa-chalkboard-user"></i> Lecturers
-        </button>
-        <button class="admin-nav-item" data-tab="institutes" onclick="ADMIN_CONTROLLER.switchTab('institutes')">
-          <i class="fa-solid fa-school-flag"></i> Institutes & Branches
-        </button>
-        <button class="admin-nav-item" data-tab="papers" onclick="ADMIN_CONTROLLER.switchTab('papers')">
-          <i class="fa-solid fa-file-pdf"></i> Paper Vault (PDFs)
-        </button>
-        <button class="admin-nav-item" data-tab="supabase" onclick="ADMIN_CONTROLLER.switchTab('supabase')">
-          <i class="fa-solid fa-database"></i> Supabase Sync
-        </button>
-      </nav>
-
-      <div class="admin-sidebar-footer">
-        <button class="admin-close-btn" onclick="ADMIN_CONTROLLER.close()">
-          <i class="fa-solid fa-power-off"></i> Exit Admin
-        </button>
-      </div>
-    </aside>
-
-    <!-- Main Workspace -->
-    <main class="admin-main-area">
-      <!-- Top Header -->
-      <header class="admin-top-header">
-        <div class="admin-header-title">
-          <h2 id="adminHeaderTitle">Dashboard & Key Metrics</h2>
-        </div>
-        <div class="admin-header-right">
-          <div class="supabase-badge-status" id="adminSupabaseStatusBadge">
-            <span class="status-indicator disconnected" id="supabaseStatusBadge"></span>
-            <span id="supabaseStatusText">Supabase Ready</span>
-          </div>
-        </div>
-      </header>
-
-      <!-- Scrollable Tab Content -->
-      <div class="admin-scroll-body">
-        
-        <!-- TAB 1: OVERVIEW -->
-        <div class="admin-tab-pane active" id="adminTab_overview">
-          <div class="admin-stats-grid">
-            <div class="admin-stat-card">
-              <div class="stat-card-info">
-                <h4>Total Students</h4>
-                <div class="stat-val" id="adminStatTotalStudents">1,240+</div>
-              </div>
-              <div class="stat-card-icon">
-                <i class="fa-solid fa-user-graduate"></i>
-              </div>
-            </div>
-            <div class="admin-stat-card">
-              <div class="stat-card-info">
-                <h4>Active Courses</h4>
-                <div class="stat-val" id="adminStatActiveCourses">12</div>
-              </div>
-              <div class="stat-card-icon">
-                <i class="fa-solid fa-layer-group"></i>
-              </div>
-            </div>
-            <div class="admin-stat-card">
-              <div class="stat-card-info">
-                <h4>Master Lecturers</h4>
-                <div class="stat-val" id="adminStatTotalTeachers">5</div>
-              </div>
-              <div class="stat-card-icon">
-                <i class="fa-solid fa-chalkboard-user"></i>
-              </div>
-            </div>
-            <div class="admin-stat-card">
-              <div class="stat-card-info">
-                <h4>Live Streams</h4>
-                <div class="stat-val" id="adminStatLiveClasses">4 Active</div>
-              </div>
-              <div class="stat-card-icon">
-                <i class="fa-solid fa-video"></i>
-              </div>
-            </div>
-          </div>
-
-          <div class="admin-card-container">
-            <div class="admin-card-header">
-              <h3><i class="fa-solid fa-clock-rotate-left"></i> Recent Student Registrations</h3>
-              <button class="btn btn-primary btn-sm" onclick="ADMIN_CONTROLLER.switchTab('students')">
-                View All Students
-              </button>
-            </div>
-            <div style="overflow-x: auto;">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>Student ID</th>
-                    <th>Full Name</th>
-                    <th>A/L Stream</th>
-                    <th>WhatsApp Mobile</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="adminRecentStudentsTbody">
-                  <!-- Injected by JS -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- TAB 2: STUDENTS -->
-        <div class="admin-tab-pane" id="adminTab_students">
-          <div class="admin-card-container">
-            <div class="admin-card-header">
-              <h3><i class="fa-solid fa-users"></i> Registered Students Directory</h3>
-              <div class="admin-actions-bar">
-                <input type="text" class="admin-search-input" id="adminStudentSearch" placeholder="Search by name, ID, or phone...">
-                <select class="admin-filter-select" id="adminStudentStreamFilter">
-                  <option value="all">All Streams</option>
-                  <option value="Physical Science">Physical Science</option>
-                  <option value="Biological Science">Biological Science</option>
-                  <option value="Technology">Technology</option>
-                  <option value="Commerce">Commerce</option>
-                </select>
-              </div>
-            </div>
-            <div style="overflow-x: auto;">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Student Details</th>
-                    <th>Stream</th>
-                    <th>Phone</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="adminStudentsTbody">
-                  <!-- Injected by JS -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- TAB 3: COURSES -->
-        <div class="admin-tab-pane" id="adminTab_courses">
-          <div class="admin-card-container">
-            <div class="admin-card-header">
-              <h3><i class="fa-solid fa-book-open-reader"></i> Course Catalog & Fees</h3>
-              <button class="btn btn-primary btn-sm" onclick="ADMIN_CONTROLLER.openAddCourseModal()">
-                <i class="fa-solid fa-plus"></i> Add New Course
-              </button>
-            </div>
-            <div style="overflow-x: auto;">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>Course ID</th>
-                    <th>Title & Lecturer</th>
-                    <th>Category</th>
-                    <th>Monthly Fee</th>
-                    <th>Schedule</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="adminCoursesTbody">
-                  <!-- Injected by JS -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- TAB 4: TEACHERS -->
-        <div class="admin-tab-pane" id="adminTab_teachers">
-          <div class="admin-card-container">
-            <div class="admin-card-header">
-              <h3><i class="fa-solid fa-chalkboard-user"></i> Faculty Members (Main Page Showcase)</h3>
-              <button class="btn btn-primary btn-sm" onclick="ADMIN_CONTROLLER.openAddTeacherModal()">
-                <i class="fa-solid fa-plus"></i> Add New Lecturer
-              </button>
-            </div>
-            <div style="overflow-x: auto;">
-              <table class="admin-table teachers-table">
-                <thead>
-                  <tr>
-                    <th>Photo</th>
-                    <th>Lecturer Name</th>
-                    <th>Login Email</th>
-                    <th>Account Password</th>
-                    <th>Subject</th>
-                    <th>Academic Degree</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="adminTeachersTbody">
-                  <!-- Injected by JS -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- TAB 5: PAST PAPERS & PDF VAULT -->
-        <div class="admin-tab-pane" id="adminTab_papers">
-          <div class="admin-card">
-            <div class="admin-card-header">
-              <div>
-                <h3 class="admin-card-title">
-                  <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> Past Paper & Model Exam PDF Vault
-                </h3>
-                <p class="admin-card-desc">
-                  Upload, rename, edit, preview, and delete G.C.E. A/L past papers and model exams for students. (Restricted to Administrators)
-                </p>
-              </div>
-              <button class="btn btn-primary btn-sm" onclick="ADMIN_CONTROLLER.openAddPaperModal()">
-                <i class="fa-solid fa-cloud-arrow-up"></i> Upload New PDF Paper
-              </button>
-            </div>
-
-            <!-- Filter & Search Controls -->
-            <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap;">
-              <div style="flex-grow: 1; max-width: 380px; position: relative;">
-                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
-                <input type="text" id="adminPaperSearchInput" placeholder="Search papers by title, year, or unit..." class="form-control" style="padding-left: 2.5rem; font-size: 0.85rem;" oninput="ADMIN_CONTROLLER.renderPapers()">
-              </div>
-              <select class="form-control" id="adminPaperCategoryFilter" style="width: auto; font-size: 0.85rem;" onchange="ADMIN_CONTROLLER.renderPapers()">
-                <option value="all">All Categories</option>
-                <option value="national">G.C.E. A/L Past Papers</option>
-                <option value="school">Top School Papers</option>
-                <option value="model">Victory Embilipitiya Models</option>
-              </select>
-              <select class="form-control" id="adminPaperUnitFilter" style="width: auto; font-size: 0.85rem;" onchange="ADMIN_CONTROLLER.renderPapers()">
-                <option value="all">All Physics Units</option>
-                <option value="mechanics">01. Mechanics</option>
-                <option value="waves">02. Waves & Oscillations</option>
-                <option value="thermal">03. Thermal Physics</option>
-                <option value="fields">04. Fields</option>
-                <option value="electricity">05. Electricity</option>
-                <option value="electronics">06. Electronics & Modern Physics</option>
-              </select>
-            </div>
-
-            <div class="admin-table-responsive">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>Type & Year</th>
-                    <th>Paper Title & Details</th>
-                    <th>Physics Unit</th>
-                    <th>File / Size</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="adminPapersTableBody">
-                  <!-- Populated by JavaScript -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- TAB: INSTITUTES & CAMPUS BRANCHES -->
-        <div class="admin-tab-pane" id="adminTab_institutes">
-          <div class="admin-card-container">
-            <div class="admin-card-header">
-              <h3><i class="fa-solid fa-school-flag"></i> Educational Institutes & Campus Branches</h3>
-              <button class="btn btn-primary btn-sm" onclick="ADMIN_CONTROLLER.openAddInstituteModal()">
-                <i class="fa-solid fa-plus"></i> Add New Branch
-              </button>
-            </div>
-
-            <div style="overflow-x: auto;">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th style="width: 140px; white-space: nowrap;">Branch ID</th>
-                    <th style="min-width: 220px;">Campus Branch</th>
-                    <th>Type & Location</th>
-                    <th style="width: 130px; text-align: center;">Status</th>
-                    <th>Contact</th>
-                    <th style="width: 120px; text-align: right;">Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="adminInstitutesTbody">
-                  <!-- Injected dynamically by admin.js -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- TAB 6: SUPABASE DATABASE INTEGRATION -->
-        <div class="admin-tab-pane" id="adminTab_supabase">
-          <div class="supabase-config-grid">
-            
-            <!-- Credentials Config Box -->
-            <div class="supabase-config-box">
-              <h3 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem;">
-                <i class="fa-solid fa-database" style="color: #227aff;"></i> Supabase Project Settings
-              </h3>
-              <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1.5rem;">
-                Connect your EduPeak LMS to Supabase cloud PostgreSQL. Enter your Project URL & Anon Public Key from your Supabase Dashboard Settings -> API.
-              </p>
-
-              <form onsubmit="ADMIN_CONTROLLER.handleSaveSupabaseConfig(event)">
-                <div class="form-group">
-                  <label class="form-label">Supabase Project URL</label>
-                  <input type="url" class="form-control" id="supabaseUrlInput" placeholder="https://xyzcompany.supabase.co" required>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Supabase Anon Public API Key</label>
-                  <input type="password" class="form-control" id="supabaseAnonKeyInput" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required>
-                </div>
-
-                <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem; flex-wrap: wrap;">
-                  <button type="submit" class="btn btn-primary">
-                    <i class="fa-solid fa-plug"></i> Save & Test Connection
-                  </button>
-                  <button type="button" class="btn btn-ghost" onclick="ADMIN_CONTROLLER.handleSyncToSupabase()">
-                    <i class="fa-solid fa-cloud-arrow-up"></i> Sync Local Data to Cloud
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            <!-- SQL Schema Generator Box -->
-            <div class="supabase-sql-box">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h4 style="font-size: 1rem; font-weight: 700; color: #fff;">
-                  <i class="fa-solid fa-code"></i> 1-Click SQL Schema Script
-                </h4>
-                <button class="btn btn-primary btn-sm" onclick="ADMIN_CONTROLLER.copySqlSchema()">
-                  <i class="fa-solid fa-copy"></i> Copy SQL
-                </button>
-              </div>
-              <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 0.5rem;">
-                Copy and run this in your Supabase Project -> <strong>SQL Editor</strong> to instantly generate the tables, indexes, and RLS security policies.
-              </p>
-              <pre><code id="supabaseSqlPreview">-- SQL Schema will load here</code></pre>
-            </div>
-
-          </div>
-        </div>
-
-      </div>
-    </main>
-  </div>
-
-  <!-- =========================================================================
-       ADMIN DRAWER: ADD / EDIT TEACHER MODAL
-       ========================================================================= -->
-  <div class="admin-drawer-modal" id="adminTeacherDrawerModal">
-    <div class="admin-drawer-card">
-      <div class="modal-header">
-        <h3 id="teacherModalTitle" style="font-size: 1.15rem; font-weight: 700; color: var(--text-main);">Add New Master Lecturer & Teacher Account</h3>
-        <button class="modal-close-btn" onclick="document.getElementById('adminTeacherDrawerModal').classList.remove('active')">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form onsubmit="ADMIN_CONTROLLER.handleSaveTeacherSubmit(event)">
-          <input type="hidden" id="teacherFormId">
-          
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label">Lecturer Full Name (English) *</label>
-              <input type="text" class="form-control" id="teacherFormName" placeholder="e.g. Amalsha Wanniarachchi" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Lecturer Full Name (Sinhala - සිංහල)</label>
-              <input type="text" class="form-control" id="teacherFormNameSi" placeholder="e.g. අමල්ෂ වන්නිආරච්චි">
-            </div>
-          </div>
-
-          <!-- Login Credentials Group -->
-          <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 1rem; margin-bottom: 1.25rem;">
-            <div style="font-size: 0.825rem; font-weight: 800; color: #1e40af; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
-              <i class="fa-solid fa-key"></i> Teacher Portal Login Credentials
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-              <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label" style="color: #1e3a8a;">Teacher Login Email *</label>
-                <input type="email" class="form-control" id="teacherFormEmail" placeholder="e.g. amalsha@edupeak.lk" required style="background: #ffffff;">
-              </div>
-              <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label" style="color: #1e3a8a;">Account Password *</label>
-                <div style="position: relative;">
-                  <input type="text" class="form-control" id="teacherFormPassword" placeholder="e.g. teacher123" required style="background: #ffffff; padding-right: 2.5rem;">
-                  <button type="button" onclick="ADMIN_CONTROLLER.generateTeacherPassword()" title="Generate Random Password" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #227aff; font-size: 0.95rem;">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label">Subject (English) *</label>
-              <input type="text" class="form-control" id="teacherFormSubject" placeholder="e.g. G.C.E. Advanced Level Physics" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Subject (Sinhala - සිංහල)</label>
-              <input type="text" class="form-control" id="teacherFormSubjectSi" placeholder="e.g. උසස් පෙළ භෞතික විද්‍යාව">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Academic Degree & Qualifications (Required) *</label>
-            <input type="text" class="form-control" id="teacherFormDegree" placeholder="e.g. MBBS (UG / University of Sri Jayewardenepura)" required>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label">Phone / WhatsApp Number</label>
-              <input type="tel" class="form-control" id="teacherFormPhone" placeholder="e.g. 0718059089">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Assigned Branch / Campus</label>
-              <select class="form-control" id="teacherFormBranch">
-                <option value="Victory Embilipitiya">Victory Embilipitiya</option>
-                <option value="EduPeak Global Online">EduPeak Global Online</option>
-                <option value="All Branches">All Branches</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Profile Picture Path / URL</label>
-            <input type="text" class="form-control" id="teacherFormImage" placeholder="assets/img/hero_lecturer.png" required>
-          </div>
-
-          <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
-            <button type="button" class="btn btn-ghost" onclick="document.getElementById('adminTeacherDrawerModal').classList.remove('active')">
-              Cancel
-            </button>
-            <button type="submit" class="btn btn-primary">
-              <i class="fa-solid fa-user-plus"></i> Save Lecturer & Create Account
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- =========================================================================
-       ADMIN DRAWER: ADD / EDIT COURSE MODAL
-       ========================================================================= -->
-  <div class="admin-drawer-modal" id="adminCourseDrawerModal">
-    <div class="admin-drawer-card">
-      <div class="modal-header">
-        <h3 id="courseModalTitle" style="font-size: 1.15rem; font-weight: 700; color: var(--text-main);">Add New Course</h3>
-        <button class="modal-close-btn" onclick="document.getElementById('adminCourseDrawerModal').classList.remove('active')">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form onsubmit="ADMIN_CONTROLLER.handleSaveCourseSubmit(event)">
-          <input type="hidden" id="courseFormId">
-          <div class="form-group">
-            <label class="form-label">Course Title (English)</label>
-            <input type="text" class="form-control" id="courseFormTitle" placeholder="e.g. 2025 A/L Physics Complete Theory" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Course Title (Sinhala - සිංහල)</label>
-            <input type="text" class="form-control" id="courseFormTitleSi" placeholder="e.g. 2025 උ/පෙළ භෞතික විද්‍යාව පූර්ණ සිද්ධාන්ත">
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label">Category</label>
-              <select class="form-control" id="courseFormCategory">
-                <option value="theory">Theory Class</option>
-                <option value="revision">Revision Class</option>
-                <option value="papers">Speed Paper Class</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Monthly Fee</label>
-              <input type="text" class="form-control" id="courseFormFee" placeholder="e.g. LKR 3,500 / Month" required>
-            </div>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label"><i class="fa-solid fa-calendar-check" style="color: #227aff;"></i> Target Exam Batch</label>
-              <select class="form-control" id="courseFormLevel" style="font-weight: 700;">
-                <option value="2025 A/L">2025 A/L Batch (2025 උසස් පෙළ)</option>
-                <option value="2026 A/L" selected>2026 A/L Batch (2026 උසස් පෙළ)</option>
-                <option value="2027 A/L">2027 A/L Batch (2027 නවක කණ්ඩායම)</option>
-                <option value="2028 A/L">2028 A/L Batch (2028 ආරම්භක කණ්ඩායම)</option>
-                <option value="2029 A/L">2029 A/L Batch (2029 Foundation Batch)</option>
-                <option value="All Batches">General / Open to All Batches (විවෘත)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Assigned Lecturer</label>
-              <input type="text" class="form-control" id="courseFormTeacher" value="Amalsha Wanniarachchi" required>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Lecture Schedule & Time</label>
-            <input type="text" class="form-control" id="courseFormSchedule" placeholder="e.g. Every Saturday 7:30 AM" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Medium</label>
-            <input type="text" class="form-control" id="courseFormMedium" value="Sinhala & English Medium" required>
-          </div>
-
-          <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
-            <button type="button" class="btn btn-ghost" onclick="document.getElementById('adminCourseDrawerModal').classList.remove('active')">
-              Cancel
-            </button>
-            <button type="submit" class="btn btn-primary">
-              <i class="fa-solid fa-floppy-disk"></i> Save Course
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- =========================================================================
-       ADMIN DRAWER: ADD / EDIT / RENAME / UPLOAD PDF PAPER MODAL
-       ========================================================================= -->
-  <div class="admin-drawer-modal" id="adminPaperDrawerModal">
-    <div class="admin-drawer-card">
-      <div class="modal-header">
-        <h3 id="paperModalTitle" style="font-size: 1.15rem; font-weight: 700; color: var(--text-main);">Upload / Edit PDF Paper</h3>
-        <button class="modal-close-btn" onclick="document.getElementById('adminPaperDrawerModal').classList.remove('active')">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form onsubmit="ADMIN_CONTROLLER.handleSavePaperSubmit(event)">
-          <input type="hidden" id="paperFormId">
-
-          <div class="form-group">
-            <label class="form-label">Paper Title (English) *</label>
-            <input type="text" class="form-control" id="paperFormTitle" placeholder="e.g. 2024 G.C.E. A/L Physics Past Paper & Marking Scheme" required>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Paper Title (Sinhala - සිංහල)</label>
-            <input type="text" class="form-control" id="paperFormTitleSi" placeholder="e.g. 2024 අ.පො.ස. උ/පෙළ භෞතික විද්‍යාව පසුගිය ප්‍රශ්න පත්‍රය">
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label">Paper Category *</label>
-              <select class="form-control" id="paperFormType" required>
-                <option value="national">G.C.E. A/L Past Paper</option>
-                <option value="school">Top School Term Paper</option>
-                <option value="model">Victory Embilipitiya Model Paper</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Exam Year *</label>
-              <input type="number" class="form-control" id="paperFormYear" placeholder="2024" min="2010" max="2035" required>
-            </div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label">Physics Unit *</label>
-              <select class="form-control" id="paperFormUnit" required>
-                <option value="all">Complete Past Paper Exam (සියලු ඒකක)</option>
-                <option value="mechanics">01. Mechanics (යාන්ත්‍ර විද්‍යාව)</option>
-                <option value="waves">02. Waves & Oscillations (තරංග)</option>
-                <option value="thermal">03. Thermal Physics (තාපය)</option>
-                <option value="fields">04. Gravitational & Electrostatic Fields</option>
-                <option value="electricity">05. Current Electricity (ධාරාව)</option>
-                <option value="electronics">06. Electronics & Modern Physics</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Unit / Topic Description *</label>
-              <input type="text" class="form-control" id="paperFormUnitName" placeholder="e.g. Mechanics & Circular Motion" required>
-            </div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label">Upload Local PDF File</label>
-              <input type="file" class="form-control" id="paperFormFileInput" accept="application/pdf" onchange="ADMIN_CONTROLLER.handlePdfFileSelected(this)">
-            </div>
-            <div class="form-group">
-              <label class="form-label">File Size (e.g. 4.2 MB) *</label>
-              <input type="text" class="form-control" id="paperFormSize" placeholder="e.g. 3.5 MB" required>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">PDF Document URL / Path</label>
-            <input type="text" class="form-control" id="paperFormUrl" placeholder="assets/docs/physics_paper.pdf or online cloud link">
-            <small style="color: #64748b; font-size: 0.75rem;">Admins can either upload a local PDF file or enter an external document URL.</small>
-          </div>
-
-          <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
-            <button type="button" class="btn btn-ghost" onclick="document.getElementById('adminPaperDrawerModal').classList.remove('active')">
-              Cancel
-            </button>
-            <button type="submit" class="btn btn-primary">
-              <i class="fa-solid fa-cloud-arrow-up"></i> Save & Publish PDF Paper
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- =========================================================================
-       ADMIN DRAWER: ADD / EDIT EDUCATIONAL INSTITUTE BRANCH MODAL
-       ========================================================================= -->
-  <div class="admin-drawer-modal" id="adminInstituteDrawerModal">
-    <div class="admin-drawer-card">
-      <div class="modal-header">
-        <h3 id="instModalTitle" style="font-size: 1.15rem; font-weight: 700; color: var(--text-main);">
-          Add New Educational Institute / Campus Branch
-        </h3>
-        <button class="modal-close-btn" onclick="document.getElementById('adminInstituteDrawerModal').classList.remove('active')">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form onsubmit="ADMIN_CONTROLLER.handleSaveInstituteSubmit(event)">
-          <input type="hidden" id="instFormId">
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label">Campus / Branch Name (English) *</label>
-              <input type="text" class="form-control" id="instFormName" placeholder="e.g. EduPeak Galle Royal Campus" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Campus Name (Sinhala) *</label>
-              <input type="text" class="form-control" id="instFormNameSi" placeholder="e.g. එඩියුපීක් ගාල්ල රෝයල් මණ්ඩපය" required>
-            </div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label"><i class="fa-solid fa-toggle-on" style="color: #227aff;"></i> Student Registration Status *</label>
-              <select class="form-control" id="instFormStatus" style="font-weight: 700;">
-                <option value="active" selected>🟢 Active Branch (Selectable by students in registration)</option>
-                <option value="coming_soon">🟡 Coming Soon (Disabled & non-selectable in registration)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Campus Type / Category</label>
-              <input type="text" class="form-control" id="instFormType" placeholder="e.g. Physical Campus & Smart Auditorium" value="Physical Campus & Smart Auditorium">
-            </div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label">Badge Label on Home Page</label>
-              <input type="text" class="form-control" id="instFormBadge" placeholder="e.g. Physical Campus Hub" value="Physical Campus Hub">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Display Icon (Emoji)</label>
-              <input type="text" class="form-control" id="instFormIcon" placeholder="e.g. 🏫, 🏛️, 🏢, 🌐" value="🏫">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Physical Location / Address *</label>
-            <input type="text" class="form-control" id="instFormLocation" placeholder="e.g. Main Street, Galle Fort, Sri Lanka" required>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label">Hotline / WhatsApp Phone</label>
-              <input type="text" class="form-control" id="instFormPhone" placeholder="e.g. +94 91 223 4567 / +94 71 805 9089">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Official Email</label>
-              <input type="email" class="form-control" id="instFormEmail" placeholder="e.g. galle@edupeak.lk">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Google Maps Link</label>
-            <input type="url" class="form-control" id="instFormMapUrl" placeholder="https://www.google.com/maps/search/?api=1&query=...">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Key Facilities (Separate with new lines)</label>
-            <textarea class="form-control" id="instFormFacilities" rows="3" placeholder="Air Conditioned 1,000-seat Auditorium&#10;Smart LMS Campus Wi-Fi&#10;Physics Demonstration Lab"></textarea>
-          </div>
-
-          <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
-            <button type="button" class="btn btn-ghost" onclick="document.getElementById('adminInstituteDrawerModal').classList.remove('active')">
-              Cancel
-            </button>
-            <button type="submit" class="btn btn-primary">
-              <i class="fa-solid fa-cloud-arrow-up"></i> Save & Publish Institute Branch
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
   <!-- Floating Direct WhatsApp Button -->
-  <a href="https://wa.me/94771234567" target="_blank" rel="noopener noreferrer" class="floating-help-btn" title="Contact EduPeak WhatsApp Hotline (+94 77 123 4567)">
+  <a href="https://wa.me/94760687578" target="_blank" rel="noopener noreferrer" class="floating-help-btn" title="Contact EduPeak WhatsApp Hotline (+94 76 068 7578)">
     <i class="fa-brands fa-whatsapp"></i>
   </a>
 
@@ -2238,7 +1758,6 @@
   <script src="js/auth.js"></script>
   <script src="js/custom-player.js"></script>
   <script src="js/lms.js"></script>
-  <script src="js/admin.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

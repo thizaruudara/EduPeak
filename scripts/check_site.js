@@ -8,6 +8,7 @@ const files = [
   'js/lms.js',
   'js/admin.js',
   'js/teacher.js',
+  'js/custom-player.js',
   'js/app.js'
 ];
 

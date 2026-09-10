@@ -26,22 +26,44 @@
   background: #000000;
 }
 
-/* Scaling and cropping YouTube to strip top titles and bottom watermark */
+/* Bottom Right Corner Mask (Blocks YouTube watermark logo without cropping video) */
+.edupeak-player-viewport::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 140px;
+  height: 52px;
+  background: linear-gradient(135deg, transparent 0%, rgba(0, 0, 0, 0.75) 45%, rgba(0, 0, 0, 0.95) 100%);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* 100% Clean YouTube Brand-Free Cropper (Eliminates YouTube titles, avatar, logo, and captions) */
 .edupeak-yt-frame-cropper {
   position: absolute;
-  top: -65px;
-  left: -35px;
-  width: calc(100% + 70px);
-  height: calc(100% + 130px);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
+  overflow: hidden;
+  background: #000000;
 }
 
 .edupeak-yt-frame-cropper iframe,
-.edupeak-yt-frame-cropper #edupeakYTPlayerMount {
-  width: 100%;
-  height: 100%;
-  border: none;
-  pointer-events: none;
+.edupeak-yt-frame-cropper #edupeakYTPlayerMount,
+.edupeak-yt-frame-cropper #edupeakLiveYTPlayerMount {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) scale(1.36) !important;
+  transform-origin: center center !important;
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  pointer-events: none !important;
+  display: block !important;
 }
 
 /* Transparent click shield on top of YouTube */
@@ -53,7 +75,7 @@
   background: transparent;
 }
 
-/* Top Protection Header */
+/* Top Protection Header - Masks YouTube native title bar without cropping */
 .edupeak-player-top-bar {
   position: absolute;
   top: 0;
@@ -61,18 +83,17 @@
   right: 0;
   height: 56px;
   padding: 0.75rem 1.25rem;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0) 100%);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0.85) 60%, rgba(0, 0, 0, 0) 100%);
   display: flex;
   justify-content: space-between;
   align-items: center;
   z-index: 15;
   pointer-events: none;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity 0.3s ease;
 }
 
 .edupeak-player-top-bar.fade-out {
-  opacity: 0;
-  transform: translateY(-10px);
+  opacity: 0.85; /* Keep subtle top gradient mask active to mask YouTube title */
 }
 
 .edupeak-player-brand {
@@ -417,6 +438,64 @@
   font-weight: 700;
 }
 
+.quality-selector-wrapper {
+  position: relative;
+}
+
+.quality-btn-trigger {
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: inline-flex;
+  align-items: center;
+}
+
+.quality-dropdown-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 0.35rem;
+  display: none;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 140px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  z-index: 50;
+}
+
+.quality-dropdown-menu.active {
+  display: flex;
+}
+
+.quality-dropdown-menu button {
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.35rem 0.6rem;
+  border-radius: 4px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.quality-dropdown-menu button:hover, .quality-dropdown-menu button.active {
+  background: #227aff;
+  color: #ffffff;
+  font-weight: 700;
+}
+
 .quality-badge {
   font-size: 0.72rem;
   font-weight: 700;
@@ -430,6 +509,32 @@
   gap: 0.3rem;
 }
 
+/* Floating Anti-Piracy Watermark (NIC-Only Clean Display) */
+.edupeak-drm-watermark {
+  position: absolute;
+  top: 25%;
+  left: 25%;
+  transform: translate(-50%, -50%);
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.6);
+  font-family: 'Outfit', 'Inter', monospace;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 0.3rem 0.75rem;
+  border-radius: 6px;
+  z-index: 12;
+  pointer-events: none;
+  transition: all 4s cubic-bezier(0.25, 1, 0.5, 1);
+  display: none; /* Disabled by default */
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
 /* Fullscreen Mode */
 .fullscreen-mode {
   border-radius: 0 !important;
@@ -437,3 +542,324 @@
   height: 100vh !important;
   max-width: none !important;
 }
+
+/* =========================================================================
+   LMS VIDEO COURSE SELECTION GRID STYLES
+   ========================================================================= */
+.lms-course-picker-section {
+  padding: 1rem 0 2rem;
+}
+
+.lms-course-picker-header {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 1.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.lms-course-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
+}
+
+.lms-course-picker-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.25rem;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.lms-course-picker-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(34, 122, 255, 0.12);
+  border-color: #93c5fd;
+}
+
+.lms-course-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.lms-course-badge {
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid #bfdbfe;
+}
+
+.lms-course-stream {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+}
+
+.lms-course-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.4;
+}
+
+.lms-course-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.825rem;
+  color: #64748b;
+  margin-bottom: 1.25rem;
+}
+
+.lms-course-meta span {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.lms-course-meta span i {
+  color: #227aff;
+  width: 14px;
+}
+
+.lms-course-select-btn {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  background: linear-gradient(135deg, #227aff 0%, #1d4ed8 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(34, 122, 255, 0.25);
+}
+
+.lms-course-select-btn:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  transform: scale(1.02);
+  box-shadow: 0 6px 16px rgba(34, 122, 255, 0.35);
+}
+
+/* =========================================================================
+   LMS Course Search & Filter Bar Controls
+   ========================================================================= */
+.lms-filter-controls-bar {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.lms-search-box-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.lms-search-icon {
+  position: absolute;
+  left: 1rem;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  pointer-events: none;
+}
+
+.lms-search-input {
+  width: 100%;
+  padding: 0.7rem 2.5rem 0.7rem 2.6rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  color: #0f172a;
+  background: #f8fafc;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.lms-search-input:focus {
+  background: #ffffff;
+  border-color: #227aff;
+  box-shadow: 0 0 0 3px rgba(34, 122, 255, 0.15);
+}
+
+.lms-search-clear-btn {
+  position: absolute;
+  right: 0.75rem;
+  background: #e2e8f0;
+  border: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.lms-search-clear-btn:hover {
+  background: #cbd5e1;
+  color: #0f172a;
+}
+
+.lms-filter-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.lms-filter-pills {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.lms-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.42rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.lms-filter-pill:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.lms-filter-pill.active {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #93c5fd;
+  box-shadow: 0 2px 6px rgba(34, 122, 255, 0.12);
+}
+
+.lms-filter-pill .pill-count {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.1rem 0.42rem;
+  border-radius: 9999px;
+  background: #e2e8f0;
+  color: #475569;
+  transition: all 0.15s ease;
+}
+
+.lms-filter-pill.active .pill-count {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.lms-filter-selects {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.lms-select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.lms-select-wrapper .select-icon {
+  position: absolute;
+  left: 0.65rem;
+  color: #64748b;
+  font-size: 0.75rem;
+  pointer-events: none;
+}
+
+.lms-filter-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0.42rem 1.85rem 0.42rem 1.95rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  outline: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.55rem center;
+  background-size: 13px;
+  transition: all 0.15s ease;
+}
+
+.lms-filter-select:focus {
+  border-color: #227aff;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 2px rgba(34, 122, 255, 0.12);
+}
+
+@media (max-width: 768px) {
+  .lms-filter-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+  .lms-filter-pills {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .lms-filter-selects {
+    width: 100%;
+  }
+  .lms-select-wrapper {
+    flex: 1 1 48%;
+  }
+  .lms-filter-select {
+    width: 100%;
+  }
+}
+

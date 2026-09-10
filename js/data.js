@@ -9,7 +9,9 @@ const EDUPEAK_DATA = {
     name_si: "එඩියුපීක් උසස් අධ්‍යාපන ආයතනය",
     tagline: "Empowering Sri Lanka's Future Leaders with Hybrid Smart Learning",
     tagline_si: "ස්මාර්ට් තාක්ෂණයෙන් සවිබල ගැන්වූ ශ්‍රී ලංකාවේ ප්‍රමුඛතම උසස් අධ්‍යාපන පීඨය",
-    hotline: "+94 11 759 2000 / +94 77 123 4567",
+    hotline: "+94 76 068 7578",
+    whatsapp: "+94 76 068 7578",
+    whatsappLink: "https://wa.me/94760687578",
     email: "info@edupeak.lk",
     address: "No. 450, High Level Road, Nugegoda, Colombo, Sri Lanka",
     stats: {
@@ -192,7 +194,7 @@ const EDUPEAK_DATA = {
       location: "Victory College Embilipitiya, Embilipitiya Pallegama, Sri Lanka, 70200",
       location_si: "වික්ටරි කොලේජ්, ඇඹිලිපිටිය පල්ලෙගම, ශ්‍රී ලංකාව, 70200",
       mapUrl: "https://www.google.com/maps/search/?api=1&query=Victory+College+Embilipitiya+Pallegama",
-      phone: "+94 47 226 2808 / +94 71 805 9089 (WhatsApp)",
+      phone: "+94 47 226 2808 / +94 76 068 7578 (WhatsApp)",
       email: "victorycollege.emb@gmail.com",
       website: "https://victorycollegeemb.edu.lk",
       facebook: "https://www.facebook.com/Embilipitiya.edu",
@@ -203,14 +205,14 @@ const EDUPEAK_DATA = {
         "High-Speed Smart LMS Campus Wi-Fi",
         "Digital Physics Demonstration Lab & Visual Projection",
         "Dedicated Tute Counter & Student Helpdesk (047 226 2808)",
-        "Official WhatsApp Support: +94 71 805 9089"
+        "Official WhatsApp Support: +94 76 068 7578"
       ],
       facilities_si: [
         "වායුසමනය කළ ආසන 1,500ක අතිනවීන ශ්‍රවණාගාරය",
         "අධිවේගී Smart LMS Wi-Fi පද්ධතිය",
         "භෞතික විද්‍යා ආදර්ශන සහ ඩිජිටල් ප්‍රක්ෂේපණ පද්ධතිය",
         "නිබන්ධන කවුළුව සහ ශිෂ්‍ය තාක්ෂණික සහාය (047 226 2808)",
-        "නිල WhatsApp සහාය: +94 71 805 9089"
+        "නිල WhatsApp සහාය: +94 76 068 7578"
       ],
       badge: "Physical Campus Hub",
       badge_si: "ප්‍රධාන භෞතික මධ්‍යස්ථානය",
@@ -224,7 +226,7 @@ const EDUPEAK_DATA = {
       hasPhysicalLocation: false,
       location: "Online Hybrid Cloud Platform (Island-Wide)",
       location_si: "සමස්ත ලංකා මාර්ගගත ක්ලවුඩ් පද්ධතිය (Online)",
-      phone: "+94 71 805 9089 (WhatsApp / Hotline)",
+      phone: "+94 76 068 7578 (WhatsApp / Hotline)",
       email: "support@edupeak.lk",
       type: "Online Educational Platform & LMS",
       type_si: "100% ක්ලවුඩ් LMS පද්ධතිය",
@@ -307,7 +309,7 @@ const EDUPEAK_DATA = {
   lmsLessons: [
     {
       id: "les-01",
-      courseId: "crs-phy-2025-theory",
+      courseId: "crs-phy-2027-theory",
       title: "Module 01: Complete Mechanics & Dynamic Equilibrium Masterclass",
       title_si: "මොඩියුලය 01: යාන්ත්‍ර විද්‍යාව සහ ගතික සමතුලිතතාව මාස්ටර්ක්ලාස්",
       teacher: "Amalsha Wanniarachchi (MBBS UG)",
@@ -317,6 +319,7 @@ const EDUPEAK_DATA = {
       status: "Completed",
       hasPdf: true,
       pdfName: "Physics_Mechanics_Master_Tute_2025.pdf",
+      pdfUrl: "https://drive.google.com/file/d/1ExampleDrivePdfMechanics/view?usp=sharing",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       chapters: [
         { time: "00:00", title: "Vector Resolution & Coplanar Force Systems" },
@@ -328,7 +331,7 @@ const EDUPEAK_DATA = {
     },
     {
       id: "les-02",
-      courseId: "crs-phy-2026-theory",
+      courseId: "crs-phy-2028-theory",
       title: "Module 02: Fundamental Principles, Dimensions & Units Masterclass",
       title_si: "මොඩියුලය 02: මිනුම් ඒකක, මාන සහ දෛශික මූලධර්ම",
       teacher: "Amalsha Wanniarachchi (MBBS UG)",
@@ -338,6 +341,7 @@ const EDUPEAK_DATA = {
       status: "In Progress",
       hasPdf: true,
       pdfName: "Physics_Units_Dimensions_Complete_Tute.pdf",
+      pdfUrl: "https://drive.google.com/file/d/1ExampleDrivePdfUnits/view?usp=sharing",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       chapters: [
         { time: "00:00", title: "SI Base Units & Dimensional Homogeneity" },
@@ -348,7 +352,7 @@ const EDUPEAK_DATA = {
     },
     {
       id: "les-03",
-      courseId: "crs-phy-2025-revision",
+      courseId: "crs-phy-2027-revision",
       title: "Module 03: Rapid Unit Revision - Simple Harmonic Motion & Waves",
       title_si: "මොඩියුලය 03: ඒකක පුනරීක්ෂණය - සරල අනුවර්තී චලිතය සහ තරංග",
       teacher: "Amalsha Wanniarachchi (MBBS UG)",
@@ -358,6 +362,7 @@ const EDUPEAK_DATA = {
       status: "Available",
       hasPdf: true,
       pdfName: "Physics_SHM_Waves_Rapid_Revision.pdf",
+      pdfUrl: "https://drive.google.com/file/d/1ExampleDrivePdfWaves/view?usp=sharing",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       chapters: [
         { time: "00:00", title: "SHM Acceleration Condition: a = -ω²x" },
@@ -368,7 +373,7 @@ const EDUPEAK_DATA = {
     },
     {
       id: "les-04",
-      courseId: "crs-phy-2025-paper",
+      courseId: "crs-phy-2028-paper",
       title: "Module 04: 50 Timed Speed MCQ Arena - Past Paper & Model Test Breakdown",
       title_si: "මොඩියුලය 04: තත්පර 60 වේගවත් MCQ විසඳුම් ක්‍රම හා ආදර්ශ ප්‍රශ්නාවලි",
       teacher: "Amalsha Wanniarachchi (MBBS UG)",
@@ -378,6 +383,7 @@ const EDUPEAK_DATA = {
       status: "Available",
       hasPdf: true,
       pdfName: "50_Speed_MCQ_Model_Paper_01.pdf",
+      pdfUrl: "https://drive.google.com/file/d/1ExampleDrivePdfMCQ/view?usp=sharing",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       chapters: [
         { time: "00:00", title: "Speed Tactic 01: Dimensional Analysis Elimination" },
@@ -391,7 +397,7 @@ const EDUPEAK_DATA = {
   quizQuestions: [
     {
       id: 1,
-      courseId: "crs-phy-2025",
+      courseId: "crs-phy-2027-theory",
       subject: "Physics - Mechanics",
       subject_si: "භෞතික විද්‍යාව - යාන්ත්‍ර විද්‍යාව",
       question: "A projectile is launched with velocity u at an angle θ to the horizontal. At the highest point of its trajectory, what is its acceleration?",
@@ -408,7 +414,7 @@ const EDUPEAK_DATA = {
     },
     {
       id: 2,
-      courseId: "crs-phy-2025",
+      courseId: "crs-phy-2027-theory",
       subject: "Physics - Oscillations & Waves",
       subject_si: "භෞතික විද්‍යාව - සරල අනුවර්තී චලිතය",
       question: "In simple harmonic motion (SHM), when the displacement from equilibrium is maximum (x = A), what is the velocity of the particle?",
@@ -425,7 +431,7 @@ const EDUPEAK_DATA = {
     },
     {
       id: 3,
-      courseId: "crs-phy-rev-2025",
+      courseId: "crs-phy-2027-revision",
       subject: "Physics - Thermal Physics",
       subject_si: "භෞතික විද්‍යාව - තාප භෞතික විද්‍යාව",
       question: "An ideal gas undergoes an adiabatic expansion. What is the relation between heat absorbed Q, work done W, and internal energy change ΔU?",
@@ -442,7 +448,7 @@ const EDUPEAK_DATA = {
     },
     {
       id: 4,
-      courseId: "crs-phy-pap-2025",
+      courseId: "crs-phy-2027-revision",
       subject: "Physics - Electric Fields",
       subject_si: "භෞතික විද්‍යාව - විද්‍යුත් ක්ෂේත්‍ර",
       question: "Two point charges +q and +4q are separated by a distance d. At what distance from +q along the line joining them is the resultant electric field zero?",
@@ -459,7 +465,7 @@ const EDUPEAK_DATA = {
     },
     {
       id: 5,
-      courseId: "crs-phy-2026",
+      courseId: "crs-phy-2027-theory",
       subject: "Physics - Gravitation",
       subject_si: "භෞතික විද්‍යාව - ගුරුත්වාකර්ෂණ ක්ෂේත්‍ර",
       question: "If the radius of the Earth shrinks by 1% while its mass remains constant, what is the approximate percentage change in the gravitational acceleration g at the surface?",
@@ -473,6 +479,23 @@ const EDUPEAK_DATA = {
       correctAnswer: 0,
       explanation: "Surface gravity g = GM/R^2. Fractional change: dg/g = -2 (dR/R). If dR/R = -1% (shrinkage), dg/g = -2(-1%) = +2%. Thus g increases by approximately 2%.",
       explanation_si: "පෘෂ්ඨික ගුරුත්වජ ත්වරණය g = GM/R^2 වේ. ආසන්න වෙනස්වීම් සඳහා dg/g = -2 (dR/R) වේ. අරය 1% කින් අඩු වන විට (dR/R = -1%), dg/g = +2% ක් වේ. එනම් g ආසන්න වශයෙන් 2% කින් වැඩි වේ."
+    },
+    {
+      id: 6,
+      courseId: "crs-phy-2028-paper",
+      subject: "Physics - Circular Motion",
+      subject_si: "භෞතික විද්‍යාව - වෘත්ත චලිතය",
+      question: "A car negotiates a curved horizontal road of radius R with friction coefficient μ. The maximum safe speed without skidding is:",
+      question_si: "ඝර්ෂණ සංගුණකය μ වන R අරයක් සහිත තිරස් වක්‍ර මාර්ගයක ලිස්සා යාමකින් තොරව ධාවනය කළ හැකි උපරිම ආරක්ෂිත ප්‍රවේගය කුමක්ද?",
+      options: [
+        "√(μgR)",
+        "μgR",
+        "√(gR / μ)",
+        "μ√(gR)"
+      ],
+      correctAnswer: 0,
+      explanation: "Centripetal force is provided by limiting static friction: mv^2 / R = μmg => v = √(μgR).",
+      explanation_si: "කේන්ද්‍රාභිසාරී බලය සපයන්නේ උපරිම ස්ථිතික ඝර්ෂණ බලය මගිනි: mv^2 / R = μmg => v = √(μgR) වේ."
     }
   ],
 

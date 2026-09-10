@@ -567,6 +567,9 @@
             <span class="student-badge-pill">
               <i class="fa-solid fa-school"></i> <span id="dashStudentBranch">Victory Embilipitiya</span>
             </span>
+            <span class="student-badge-pill" id="heroNicBadge" style="color: #60a5fa;">
+              <i class="fa-solid fa-id-card"></i> NIC: <span id="dashStudentNic">200512345678</span>
+            </span>
             <span class="student-badge-pill" style="color: #34d399;">
               <i class="fa-solid fa-circle-check"></i> Verified Student
             </span>
@@ -575,7 +578,7 @@
             Welcome back, <span id="dashStudentName">Kasun</span>! 👋
           </h1>
           <p class="hero-welcome-subtitle">
-            Your syllabus milestones, live video classroom recordings, speed tests, and printed tute courier deliveries are active.
+            Your syllabus milestones, live video classroom recordings, speed tests, and course study materials are active.
           </p>
         </div>
 
@@ -629,6 +632,26 @@
         
         <!-- Left Column: Active Enrolled Courses & Study Progress -->
         <div>
+
+          <!-- Pending Course Orders Card (Shown if student has pending WhatsApp checkout orders) -->
+          <div class="dash-card" id="dashPendingOrdersCard" style="display: none; margin-bottom: 1.5rem; background: #fffdf5; border: 1.5px solid #fde68a; box-shadow: 0 4px 16px rgba(245, 158, 11, 0.08);">
+            <div class="card-header-flex">
+              <h2 class="card-header-title" style="color: #92400e; font-size: 1.05rem;">
+                <i class="fa-solid fa-clock-rotate-left" style="color: #d97706;"></i> Pending Course Orders & Approvals
+              </h2>
+              <span class="status-tag" id="dashPendingOrdersCountBadge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 0.75rem; font-weight: 700;">
+                ⏳ 1 Pending Order
+              </span>
+            </div>
+            
+            <p style="font-size: 0.825rem; color: #78350f; line-height: 1.5; margin: 0 0 1rem 0;">
+              The following course order is awaiting administrative payment verification. Once approved by our team, this course will automatically activate in your enrolled classes list below.
+            </p>
+
+            <div id="dashPendingOrdersList">
+              <!-- Dynamically Populated by JavaScript -->
+            </div>
+          </div>
 
           <!-- Enrolled Courses Card -->
           <div class="dash-card">
@@ -712,23 +735,7 @@
             </div>
           </div>
 
-          <!-- Monthly Tute Courier Delivery Tracker Card -->
-          <div class="dash-card" style="margin-top: 1.5rem;">
-            <div class="card-header-flex">
-              <h3 class="card-header-title" style="font-size: 1rem;">
-                <i class="fa-solid fa-truck-fast" style="color: #10b981;"></i> Monthly Tute Courier
-              </h3>
-              <span class="courier-badge dispatched">DISPATCHED</span>
-            </div>
-            <p style="font-size: 0.8rem; color: #475569; margin-bottom: 0.5rem;">
-              Tracking ID: <strong>PRX-94821038</strong> (Promex Speed Courier)<br>
-              Destination: <span id="dashDeliveryAddress">Ratnapura / Embilipitiya</span>
-            </p>
-            <div style="background: #f1f5f9; height: 6px; border-radius: 9999px; overflow: hidden; margin-bottom: 0.5rem;">
-              <div style="background: #10b981; width: 85%; height: 100%;"></div>
-            </div>
-            <span style="font-size: 0.75rem; color: #64748b;"><i class="fa-solid fa-clock"></i> Estimated Delivery: Tomorrow by 2:00 PM</span>
-          </div>
+
 
           <!-- Telegram Support Hotline Card -->
           <div class="dash-card" style="margin-top: 1.5rem; background: #f0f9ff; border-color: #bae6fd;">
@@ -744,6 +751,24 @@
             <div style="margin-top: 0.75rem;">
               <a href="https://t.me/edupeakbot" target="_blank" class="btn btn-sm" style="width: 100%; background: #0284c7; color: #ffffff; text-align: center; font-weight: 700; text-decoration: none; display: block; border-radius: 8px; padding: 0.5rem 0;">
                 Open @edupeakbot in Telegram
+              </a>
+            </div>
+          </div>
+
+          <!-- WhatsApp Student Hotline Card -->
+          <div class="dash-card" style="margin-top: 1rem; background: #f0fdf4; border-color: #bbf7d0;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div style="width: 40px; height: 40px; border-radius: 50%; background: #16a34a; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                <i class="fa-brands fa-whatsapp"></i>
+              </div>
+              <div>
+                <strong style="font-size: 0.9rem; color: #15803d; display: block;">WhatsApp Support Desk</strong>
+                <span style="font-size: 0.75rem; color: #16a34a;">+94 76 068 7578 (Direct LMS Hotline)</span>
+              </div>
+            </div>
+            <div style="margin-top: 0.75rem;">
+              <a href="https://wa.me/94760687578" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="width: 100%; background: #16a34a; color: #ffffff; text-align: center; font-weight: 700; text-decoration: none; display: block; border-radius: 8px; padding: 0.5rem 0;">
+                Chat on WhatsApp (+94 76 068 7578)
               </a>
             </div>
           </div>
@@ -962,14 +987,23 @@
       }
 
       // 2. Populate User Profile Info
+      const userActions = document.getElementById("headerUserActions");
+      if (userActions) userActions.style.display = "flex";
+      const guestActions = document.getElementById("headerGuestActions");
+      if (guestActions) guestActions.style.display = "none";
+
       const firstName = currentUser.name.split(" ")[0];
       const initial = firstName.charAt(0).toUpperCase();
+
+      const studentNic = currentUser.nic || "200512345678";
+      const nicBadgeVal = document.getElementById("dashStudentNic");
+      if (nicBadgeVal) nicBadgeVal.textContent = studentNic;
 
       document.getElementById("dashStudentName").textContent = firstName;
       document.getElementById("headerUserNameDisplay").textContent = firstName;
       document.getElementById("dropdownUserName").textContent = currentUser.name;
       document.getElementById("dropdownUserId").textContent = currentUser.id || "EP-2027-001";
-      document.getElementById("dropdownUserMeta").textContent = `${currentUser.email || 'student@edupeak.lk'} • ${currentUser.examYear || '2027 A/L'}`;
+      document.getElementById("dropdownUserMeta").textContent = `${currentUser.email || 'student@edupeak.lk'} • ${currentUser.examYear || '2027 A/L'} • NIC: ${studentNic}`;
       
       const avatarLetterEl = document.getElementById("headerUserAvatarLetter");
       const dropdownAvatarEl = document.getElementById("dropdownUserAvatar");
@@ -985,12 +1019,10 @@
       document.getElementById("dashStudentBatch").textContent = currentUser.examYear || "2027 A/L";
       document.getElementById("dashStudentBranch").textContent = currentUser.branch || "Victory Embilipitiya";
       document.getElementById("countdownBatchLabel").textContent = `${currentUser.examYear || '2027 A/L'} Exam Countdown`;
-      if (currentUser.address) {
-        document.getElementById("dashDeliveryAddress").textContent = currentUser.address;
-      }
 
-      // 3. Render Enrolled Courses
+      // 3. Render Enrolled Courses & Pending Orders
       renderEnrolledCourses();
+      renderPendingOrders();
 
       // 4. Start Live Exam Countdown Clock
       initExamCountdown(currentUser.examYear || "2027 A/L");
@@ -1052,8 +1084,17 @@
     // STUDENT COURSES CATALOG SYSTEM
     // --------------------------------------------------------------------------
     function getAllStudentCourses() {
+      if (typeof window.getLMSCourses === "function") {
+        return window.getLMSCourses();
+      }
       const stored = localStorage.getItem("edupeak_courses_db");
-      let courses = stored ? JSON.parse(stored) : (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.courses : []);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) return parsed;
+        } catch(e) {}
+      }
+      let courses = (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.courses : []);
 
       try {
         const customCourses = JSON.parse(localStorage.getItem("edupeak_custom_courses") || "[]");
@@ -1083,6 +1124,89 @@
       }
     }
 
+    function isCourseOrderPending(courseId) {
+      if (!currentUser || !currentUser.id) return false;
+      try {
+        const orders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
+        return orders.some(o => 
+          o.studentId === currentUser.id && 
+          o.status === "Pending Approval" && 
+          (o.courseId === courseId || (courseId && o.courseId && o.courseId.includes(courseId)))
+        );
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function renderPendingOrders() {
+      const card = document.getElementById("dashPendingOrdersCard");
+      const listEl = document.getElementById("dashPendingOrdersList");
+      const badgeEl = document.getElementById("dashPendingOrdersCountBadge");
+      if (!card || !listEl) return;
+
+      const currentUserId = currentUser ? (currentUser.id || "EP-2027-001") : "EP-2027-001";
+      let pendingOrders = [];
+      try {
+        const stored = localStorage.getItem("edupeak_pending_orders");
+        if (stored) pendingOrders = JSON.parse(stored);
+      } catch (e) {
+        pendingOrders = [];
+      }
+
+      const studentPending = pendingOrders.filter(o => 
+        o.studentId === currentUserId && o.status === "Pending Approval"
+      );
+
+      if (studentPending.length === 0) {
+        card.style.display = "none";
+        return;
+      }
+
+      card.style.display = "block";
+      if (badgeEl) {
+        badgeEl.textContent = `⏳ ${studentPending.length} Pending Order${studentPending.length === 1 ? '' : 's'}`;
+      }
+
+      listEl.innerHTML = studentPending.map(order => {
+        const d = order.timestamp ? new Date(order.timestamp) : new Date();
+        const dateFormatted = d.toLocaleDateString() + ' at ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const waMsg = encodeURIComponent(`Hello EduPeak Hotline, I am inquiring about my pending course order ${order.orderId} for "${order.courseTitle}". Could you please check verification status?`);
+        const hotlineUrl = `https://wa.me/94760687578?text=${waMsg}`;
+
+        return `
+          <div style="background: #ffffff; border: 1.5px solid #fde68a; border-radius: 12px; padding: 1.15rem; margin-bottom: 0.75rem; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; align-items: flex-start; gap: 0.85rem;">
+              <div style="width: 42px; height: 42px; border-radius: 10px; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0; margin-top: 2px;">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+              </div>
+              <div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; flex-wrap: wrap;">
+                  <span style="font-family: monospace; font-size: 0.78rem; font-weight: 800; background: #fef3c7; color: #92400e; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #fde68a;">
+                    ${order.orderId}
+                  </span>
+                  <span style="display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.725rem; font-weight: 700; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; padding: 0.15rem 0.5rem; border-radius: 9999px;">
+                    <i class="fa-solid fa-hourglass-half"></i> Awaiting Admin Verification
+                  </span>
+                </div>
+                <h4 style="margin: 0 0 0.25rem 0; font-size: 0.95rem; font-weight: 800; color: #0f172a;">
+                  ${order.courseTitle}
+                </h4>
+                <div style="font-size: 0.78rem; color: #64748b; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                  <span><i class="fa-regular fa-calendar"></i> Ordered: ${dateFormatted}</span>
+                  <span><i class="fa-solid fa-tag"></i> Fee: <strong>${order.fee || 'LKR 3,500 / Month'}</strong></span>
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <a href="${hotlineUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="background: #16a34a; color: #ffffff; font-weight: 700; border-radius: 8px; padding: 0.45rem 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem;">
+                <i class="fa-brands fa-whatsapp"></i> WhatsApp Hotline
+              </a>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
     function renderStudentCourseCardHTML(course) {
       const title = course.title;
       const stream = course.stream || "Physical Science";
@@ -1090,6 +1214,7 @@
       const fee = course.fee || "LKR 3,500 / Month";
       const badge = course.badge || "Enrollment Open";
       const isEnrolled = typeof isCourseEnrolled === "function" ? isCourseEnrolled(course.id) : (window.isCourseEnrolled ? window.isCourseEnrolled(course.id) : false);
+      const isPending = isCourseOrderPending(course.id);
 
       const userExamYear = currentUser ? (currentUser.examYear || "") : "";
       const courseBatch = course.examYear || course.level || "2027 A/L";
@@ -1135,11 +1260,15 @@
                   <a href="index.html?openLms=video-classroom&course=${encodeURIComponent(course.id)}" class="btn btn-sm" style="background: #10b981; color: #ffffff; border: 1px solid #10b981; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 8px; padding: 0.4rem 0.85rem; text-decoration: none;">
                     <i class="fa-solid fa-circle-play"></i> Enrolled
                   </a>
+                ` : (isPending ? `
+                  <button type="button" class="btn btn-sm" onclick="showToast('⏳ Your enrollment order for this course is already pending approval. Check your dashboard.', 'info')" style="background: #fef3c7; color: #92400e; border: 1.5px solid #fde68a; font-weight: 800; display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 8px; padding: 0.4rem 0.85rem; cursor: pointer;">
+                    <i class="fa-solid fa-clock"></i> Order Pending
+                  </button>
                 ` : `
                   <button type="button" class="btn btn-primary btn-sm" onclick="enrollStudentInCourse('${course.id}')" style="font-weight: 700; border-radius: 8px; padding: 0.4rem 0.85rem; cursor: pointer;">
                     <i class="fa-solid fa-cart-plus"></i> Enroll
                   </button>
-                `}
+                `)}
               </div>
             </div>
           </div>
@@ -1316,6 +1445,7 @@
       }
 
       const isEnrolled = typeof isCourseEnrolled === "function" ? isCourseEnrolled(c.id) : (window.isCourseEnrolled ? window.isCourseEnrolled(c.id) : false);
+      const isPending = isCourseOrderPending(c.id);
       const btn = document.getElementById("studentModalEnrollBtn");
       if (btn) {
         if (isEnrolled) {
@@ -1326,6 +1456,18 @@
           btn.innerHTML = '<i class="fa-solid fa-circle-play"></i> Enrolled • Open LMS Player';
           btn.onclick = () => {
             window.location.href = `index.html?openLms=video-classroom&course=${encodeURIComponent(c.id)}`;
+          };
+        } else if (isPending) {
+          btn.className = "btn";
+          btn.style.background = "#fef3c7";
+          btn.style.borderColor = "#fde68a";
+          btn.style.color = "#92400e";
+          btn.style.fontWeight = "800";
+          btn.innerHTML = '<i class="fa-solid fa-clock"></i> Order Pending Approval';
+          btn.onclick = () => {
+            showToast("⏳ Your order for this course is already awaiting administrative verification. Check your dashboard.", "info");
+            closeStudentModal("studentCourseDetailsModal");
+            switchStudentPortalTab("dashboard");
           };
         } else {
           btn.className = "btn btn-primary";
@@ -1349,33 +1491,20 @@
     }
 
     function enrollStudentInCourse(courseId) {
-      try {
-        let enrolled = [];
-        const saved = localStorage.getItem("edupeak_enrolled");
-        if (saved) enrolled = JSON.parse(saved);
-
-        if (!enrolled.includes(courseId)) {
-          enrolled.push(courseId);
-          localStorage.setItem("edupeak_enrolled", JSON.stringify(enrolled));
-        }
-
-        // Sync with Supabase if online
-        if (window.SUPABASE_HELPER && currentUser) {
-          window.SUPABASE_HELPER.saveEnrollment({
-            student_id: currentUser.id || "EP-2027-001",
-            course_id: courseId,
-            payment_status: "paid"
-          });
-        }
-
-        showToast("🎉 Successfully enrolled! You now have full access to this course.", "success");
+      if (isCourseOrderPending(courseId)) {
+        showToast("⏳ You already have a pending order for this course awaiting verification.", "info");
         closeStudentModal("studentCourseDetailsModal");
-        renderEnrolledCourses();
-        renderStudentCourses();
-      } catch (e) {
-        console.error("Enrollment error:", e);
-        showToast("Could not complete enrollment: " + e.message, "info");
+        switchStudentPortalTab("dashboard");
+        return;
       }
+
+      const isTeacherOrAdmin = currentUser && (currentUser.role === "teacher" || currentUser.role === "admin");
+      if (!isTeacherOrAdmin && typeof isCourseEnrolled === "function" && isCourseEnrolled(courseId)) {
+        window.location.href = `index.html?openLms=video-classroom&course=${encodeURIComponent(courseId)}`;
+        return;
+      }
+
+      window.location.href = `checkout.html?course=${encodeURIComponent(courseId)}`;
     }
 
     function showToast(message, type = "info") {
@@ -1401,24 +1530,29 @@
       if (!container) return;
 
       const allCourses = getAllStudentCourses();
-      let enrolledIds = [];
-      try {
-        const saved = localStorage.getItem("edupeak_enrolled");
-        enrolledIds = saved ? JSON.parse(saved) : [];
-      } catch (e) {
-        enrolledIds = [];
-      }
+      
+      const checkEnrolled = (courseId) => {
+        if (typeof isCourseEnrolled === "function") return isCourseEnrolled(courseId);
+        if (window.isCourseEnrolled) return window.isCourseEnrolled(courseId);
+        return false;
+      };
 
-      let myCourses = allCourses.filter(c => enrolledIds.includes(c.id));
+      let myCourses = allCourses.filter(c => checkEnrolled(c.id));
+
       if (myCourses.length === 0) {
-        myCourses = [allCourses[0] || {
-          id: "crs-phy-2027-theory",
-          title: "2027 A/L Physics - Complete Theory & Mechanics Masterclass",
-          teacherName: "Amalsha Wanniarachchi",
-          liveTime: "Every Saturday 7:30 AM",
-          level: "2027 A/L",
-          thumbnailIcon: "fa-atom"
-        }];
+        container.innerHTML = `
+          <div style="padding: 2.5rem 1.5rem; text-align: center; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 12px;">
+            <div style="width: 44px; height: 44px; border-radius: 50%; background: #eff6ff; color: #227aff; display: inline-flex; align-items: center; justify-content: center; font-size: 1.25rem; margin-bottom: 0.65rem;">
+              <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <h4 style="font-size: 1rem; font-weight: 800; color: #0f172a; margin: 0 0 0.25rem 0;">No Active Course Enrollments</h4>
+            <p style="color: #64748b; font-size: 0.85rem; margin: 0 0 1rem 0;">You have not enrolled in any physics masterclasses yet. Enroll in a course to start learning!</p>
+            <a href="courses.html" class="btn btn-primary btn-sm" style="font-weight: 700; text-decoration: none; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.4rem;">
+              <i class="fa-solid fa-compass"></i> Explore Courses
+            </a>
+          </div>
+        `;
+        return;
       }
 
       container.innerHTML = myCourses.map(course => `
@@ -1478,26 +1612,41 @@
     }
 
     function toggleProfileDropdown(event) {
-      if (event) event.stopPropagation();
+      if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+      const wrapper = document.getElementById("userProfileDropdownWrapper");
       const menu = document.getElementById("userProfileDropdownMenu");
       const chevron = document.getElementById("profileDropdownChevron");
-      if (!menu) return;
+      if (!wrapper || !menu) return;
 
-      const isOpen = menu.classList.contains("active");
-      if (isOpen) {
-        menu.classList.remove("active");
-        if (chevron) chevron.style.transform = "rotate(0deg)";
-      } else {
-        menu.classList.add("active");
-        if (chevron) chevron.style.transform = "rotate(180deg)";
+      const isOpen = wrapper.classList.toggle("open");
+      menu.classList.toggle("active", isOpen);
+      if (chevron) {
+        chevron.style.transform = isOpen ? "rotate(180deg)" : "rotate(0deg)";
+        chevron.style.color = isOpen ? "var(--primary)" : "";
+      }
+      const triggerChip = document.getElementById("userProfileTriggerChip");
+      if (triggerChip) {
+        triggerChip.setAttribute("aria-expanded", isOpen ? "true" : "false");
       }
     }
 
     function closeProfileDropdown() {
+      const wrapper = document.getElementById("userProfileDropdownWrapper");
       const menu = document.getElementById("userProfileDropdownMenu");
       const chevron = document.getElementById("profileDropdownChevron");
+      if (wrapper) wrapper.classList.remove("open");
       if (menu) menu.classList.remove("active");
-      if (chevron) chevron.style.transform = "rotate(0deg)";
+      if (chevron) {
+        chevron.style.transform = "rotate(0deg)";
+        chevron.style.color = "";
+      }
+      const triggerChip = document.getElementById("userProfileTriggerChip");
+      if (triggerChip) {
+        triggerChip.setAttribute("aria-expanded", "false");
+      }
     }
 
     document.addEventListener("click", (e) => {
@@ -1521,5 +1670,10 @@
       window.location.href = "login.html";
     }
   </script>
+
+  <!-- Floating Direct WhatsApp Button -->
+  <a href="https://wa.me/94760687578" target="_blank" rel="noopener noreferrer" class="floating-help-btn" title="Contact EduPeak WhatsApp Hotline (+94 76 068 7578)">
+    <i class="fa-brands fa-whatsapp"></i>
+  </a>
 </body>
 </html>

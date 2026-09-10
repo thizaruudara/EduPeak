@@ -4,6 +4,8 @@ package-lock.json
 
 # Scratch and test scripts
 scratch/
+test-screenshots/
+artifacts/
 
 # Logs
 *.log
