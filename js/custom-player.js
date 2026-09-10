@@ -904,6 +904,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
         videoId: videoId,
         playerVars: {
           autoplay: 1,
+          mute: 1,        // muted autoplay is allowed by all browsers
           controls: 0,
           disablekb: 1,
           enablejsapi: 1,
@@ -921,7 +922,6 @@ const EDUPEAK_LIVE_PLAYER = (function() {
         events: {
           'onReady': () => {
             try {
-              liveYtPlayer.setVolume(liveVolume);
               enforceLiveNoCaptions(liveYtPlayer);
 
               const currentElapsed = getElapsedSeconds();
@@ -934,10 +934,16 @@ const EDUPEAK_LIVE_PLAYER = (function() {
                 return;
               }
 
+              // Force muted play immediately — browsers always allow muted autoplay
+              liveYtPlayer.mute();
+              liveYtPlayer.setVolume(0);
               if (currentElapsed > 0) {
                 liveYtPlayer.seekTo(currentElapsed, true);
               }
+              liveYtPlayer.playVideo();
 
+              // Show unmute prompt so student knows stream is playing
+              _showUnmutePrompt();
               startDurationWatchdog();
             } catch (e) {
               console.warn("Live player init notice:", e);
@@ -955,9 +961,13 @@ const EDUPEAK_LIVE_PLAYER = (function() {
               enforceLiveNoCaptions(liveYtPlayer);
               updateLiveWatermark();
               startDurationWatchdog();
+              // Keep showing unmute prompt if still muted
+              if (_isMuted()) _showUnmutePrompt();
             } else if (event.data === PAUSED) {
               isLivePlaying = false;
-              if (bigPlayBtn) bigPlayBtn.classList.remove("hidden");
+              // Don't show big play btn — try to resume muted playback automatically
+              try { liveYtPlayer.mute(); liveYtPlayer.playVideo(); } catch(e) {}
+              _showUnmutePrompt();
             } else if (event.data === ENDED) {
               isLivePlaying = false;
               if (bigPlayBtn) bigPlayBtn.classList.remove("hidden");
@@ -998,7 +1008,56 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     updateLiveWatermark();
   }
 
+  // ── Unmute helpers ──────────────────────────────────────────────────────
+  function _isMuted() {
+    try { return liveYtPlayer && liveYtPlayer.isMuted(); } catch(e) { return false; }
+  }
+
+  function _showUnmutePrompt() {
+    let btn = document.getElementById("liveUnmutePromptBtn");
+    if (!btn) {
+      btn = document.createElement("div");
+      btn.id = "liveUnmutePromptBtn";
+      btn.style.cssText = [
+        "position:absolute","bottom:56px","left:50%","transform:translateX(-50%)",
+        "z-index:999","background:rgba(220,38,38,0.92)","color:#fff",
+        "padding:10px 22px","border-radius:50px","font-size:15px","font-weight:700",
+        "cursor:pointer","display:flex","align-items:center","gap:8px",
+        "box-shadow:0 4px 20px rgba(0,0,0,0.4)","animation:pulse 1.5s infinite",
+        "white-space:nowrap"
+      ].join(";");
+      btn.innerHTML = "🔴 LIVE &nbsp;&#8226;&nbsp; 🔊 Tap to Unmute";
+      btn.onclick = () => _unmute();
+      const container = document.getElementById("edupeakLiveYTPlayerMount")?.parentElement
+                     || document.getElementById("liveCustomPlayerContainer")
+                     || document.body;
+      container.style.position = container.style.position || "relative";
+      container.appendChild(btn);
+    }
+    btn.style.display = "flex";
+  }
+
+  function _hideUnmutePrompt() {
+    const btn = document.getElementById("liveUnmutePromptBtn");
+    if (btn) btn.style.display = "none";
+  }
+
+  function _unmute() {
+    try {
+      if (liveYtPlayer) {
+        liveYtPlayer.unMute();
+        liveYtPlayer.setVolume(liveVolume || 100);
+        liveYtPlayer.playVideo();
+      }
+      _hideUnmutePrompt();
+      const bigPlayBtn = document.getElementById("livePlayerBigPlayBtn");
+      if (bigPlayBtn) bigPlayBtn.classList.add("hidden");
+    } catch(e) {}
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   function joinStream() {
+    _unmute();
     if (liveYtPlayer && typeof liveYtPlayer.playVideo === "function") {
       try {
         const currentElapsed = getElapsedSeconds();
