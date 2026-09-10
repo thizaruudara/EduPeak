@@ -162,17 +162,8 @@ function loadSavedLMSData() {
         } catch (e) {}
       }
     }
-    if (loadedCourses !== null && loadedCourses.length > 0) {
+    if (loadedCourses !== null) {
       if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = loadedCourses;
-    } else {
-      const customCourses = JSON.parse(localStorage.getItem("edupeak_custom_courses") || "[]");
-      if (customCourses.length && window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) {
-        customCourses.forEach(c => {
-          if (!window.EDUPEAK_DATA.courses.find(item => item.id === c.id)) {
-            window.EDUPEAK_DATA.courses.unshift(c);
-          }
-        });
-      }
     }
 
     // Load any custom lessons created in Teacher Studio
@@ -191,15 +182,6 @@ function loadSavedLMSData() {
     }
     if (loadedLessons !== null && window.EDUPEAK_DATA) {
       window.EDUPEAK_DATA.lmsLessons = loadedLessons;
-    } else {
-      const customLessons = JSON.parse(localStorage.getItem("edupeak_custom_lessons") || "[]");
-      if (customLessons.length && window.EDUPEAK_DATA) {
-        customLessons.forEach(l => {
-          if (!window.EDUPEAK_DATA.lmsLessons.find(item => item.id === l.id)) {
-            window.EDUPEAK_DATA.lmsLessons.push(l);
-          }
-        });
-      }
     }
 
     // Load any custom quiz questions created in Teacher Studio
@@ -218,15 +200,6 @@ function loadSavedLMSData() {
     }
     if (loadedQuizzes !== null && window.EDUPEAK_DATA) {
       window.EDUPEAK_DATA.quizQuestions = loadedQuizzes;
-    } else {
-      const customQuizzes = JSON.parse(localStorage.getItem("edupeak_custom_quizzes") || "[]");
-      if (customQuizzes.length && window.EDUPEAK_DATA) {
-        customQuizzes.forEach(q => {
-          if (!window.EDUPEAK_DATA.quizQuestions.find(item => item.id === q.id)) {
-            window.EDUPEAK_DATA.quizQuestions.push(q);
-          }
-        });
-      }
     }
 
     // Filter out orphaned lessons & quizzes whose courses no longer exist
@@ -259,7 +232,7 @@ function getLMSCourses() {
   try {
     if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
       const shared = window.SUPABASE_HELPER.getSharedData("edupeak_courses_db");
-      if (shared !== null && Array.isArray(shared) && shared.length > 0) {
+      if (shared !== null && Array.isArray(shared)) {
         if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = shared;
         return shared;
       }
@@ -267,7 +240,7 @@ function getLMSCourses() {
     const stored = localStorage.getItem("edupeak_courses_db");
     if (stored !== null) {
       const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = parsed;
         return parsed;
       }

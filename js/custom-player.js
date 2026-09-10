@@ -134,6 +134,7 @@ const EDUPEAK_PLAYER = (function() {
 
     try {
       ytPlayer = new window.YT.Player('edupeakYTPlayerMount', {
+        host: 'https://www.youtube.com',
         videoId: videoId,
         playerVars: {
           autoplay: 0,
@@ -812,6 +813,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
 
     try {
       liveYtPlayer = new window.YT.Player('edupeakLiveYTPlayerMount', {
+        host: 'https://www.youtube.com',
         videoId: videoId,
         playerVars: {
           autoplay: 0,

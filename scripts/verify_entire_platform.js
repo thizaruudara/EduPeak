@@ -86,13 +86,19 @@ async function runAudit() {
 
     // Authenticate student session and seed test data
     await page.evaluate(() => {
+      const defaultCourses = [
+        { id: "crs-phy-2027-theory", title: "2027 A/L Physics - Complete Theory & Mechanics Masterclass", teacherName: "Amalsha Wanniarachchi", category: "theory", examYear: "2027 A/L", level: "2027 A/L", price: "LKR 3,500 / Month", fee: "LKR 3,500 / Month" },
+        { id: "crs-phy-2027-revision", title: "2027 A/L Physics - Unit Revision & Practical Analysis", teacherName: "Amalsha Wanniarachchi", category: "revision", examYear: "2027 A/L", level: "2027 A/L", price: "LKR 3,000 / Month", fee: "LKR 3,000 / Month" },
+        { id: "crs-phy-2028-theory", title: "2028 A/L Physics - Advanced Level Foundation & Theory Batch", teacherName: "Amalsha Wanniarachchi", category: "theory", examYear: "2028 A/L", level: "2028 A/L", price: "LKR 3,500 / Month", fee: "LKR 3,500 / Month" },
+        { id: "crs-phy-2028-paper", title: "2028 A/L Physics - 50 Speed MCQ Arena & Model Papers", teacherName: "Amalsha Wanniarachchi", category: "papers", examYear: "2028 A/L", level: "2028 A/L", price: "LKR 2,800 / Month", fee: "LKR 2,800 / Month" },
+        { id: "crs-phy-2029-theory", title: "2029 A/L Physics - Beginner Early Bird Fundamentals", teacherName: "Amalsha Wanniarachchi", category: "theory", examYear: "2029 A/L", level: "2029 A/L", price: "LKR 3,000 / Month", fee: "LKR 3,000 / Month" }
+      ];
+      localStorage.setItem("edupeak_courses_db", JSON.stringify(defaultCourses));
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+        window.SUPABASE_HELPER.setSharedData("edupeak_courses_db", defaultCourses);
+      }
       if (window.EDUPEAK_DATA) {
-        if (Array.isArray(window.EDUPEAK_DATA.courses) && window.EDUPEAK_DATA.courses.length > 0) {
-          localStorage.setItem("edupeak_courses_db", JSON.stringify(window.EDUPEAK_DATA.courses));
-          if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
-            window.SUPABASE_HELPER.setSharedData("edupeak_courses_db", window.EDUPEAK_DATA.courses);
-          }
-        }
+        window.EDUPEAK_DATA.courses = defaultCourses;
         if (Array.isArray(window.EDUPEAK_DATA.teachers) && window.EDUPEAK_DATA.teachers.length > 0) {
           localStorage.setItem("edupeak_teachers_db", JSON.stringify(window.EDUPEAK_DATA.teachers));
           if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {

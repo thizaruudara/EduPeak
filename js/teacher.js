@@ -180,7 +180,7 @@ const TEACHER_CONTROLLER = {
     try {
       if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
         const shared = window.SUPABASE_HELPER.getSharedData("edupeak_courses_db");
-        if (shared !== null && Array.isArray(shared) && shared.length > 0) {
+        if (shared !== null && Array.isArray(shared)) {
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = shared;
           return shared;
         }
@@ -188,7 +188,7 @@ const TEACHER_CONTROLLER = {
       const stored = localStorage.getItem("edupeak_courses_db");
       if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = parsed;
           return parsed;
         }
@@ -1897,17 +1897,25 @@ const TEACHER_CONTROLLER = {
   // 4. LIVE STUDIO BROADCAST & SCHEDULE CONTROLS (SCHEDULE, EDIT, DELETE)
   // --------------------------------------------------------------------------
   formatEmbedUrl(url, provider) {
-    if (!url) return "https://www.youtube.com/embed/dQw4w9WgXcQ";
+    const origin = (typeof window !== "undefined" && window.location && window.location.origin) ? encodeURIComponent(window.location.origin) : "";
+    const originSuffix = origin ? `?enablejsapi=1&origin=${origin}` : "";
+
+    if (!url) return `https://www.youtube.com/embed/dQw4w9WgXcQ${originSuffix}`;
     
     // YouTube Watch link conversion: youtube.com/watch?v=XYZ -> youtube.com/embed/XYZ
     if (url.includes("youtube.com/watch?v=")) {
       const videoId = url.split("v=")[1]?.split("&")[0];
-      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+      if (videoId) return `https://www.youtube.com/embed/${videoId}${originSuffix}`;
     }
     // YouTube Short link conversion: youtu.be/XYZ -> youtube.com/embed/XYZ
     if (url.includes("youtu.be/")) {
       const videoId = url.split("youtu.be/")[1]?.split("?")[0];
-      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+      if (videoId) return `https://www.youtube.com/embed/${videoId}${originSuffix}`;
+    }
+    // YouTube Embed link conversion without origin
+    if (url.includes("youtube.com/embed/") && !url.includes("origin=")) {
+      const sep = url.includes("?") ? "&" : "?";
+      return origin ? `${url}${sep}enablejsapi=1&origin=${origin}` : url;
     }
     // Vimeo conversion: vimeo.com/XYZ -> player.vimeo.com/video/XYZ
     if (url.includes("vimeo.com/") && !url.includes("player.vimeo.com")) {
