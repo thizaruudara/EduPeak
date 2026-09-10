@@ -2439,6 +2439,25 @@ const TEACHER_CONTROLLER = {
         if (timeEl && cfg.scheduleTime) timeEl.value = cfg.scheduleTime;
         if (courseEl && cfg.courseId) courseEl.value = cfg.courseId;
         if (previewIframe && cfg.embedUrl) previewIframe.src = cfg.embedUrl;
+
+        // Restore the schedule ID so subsequent saves update the same record
+        const scheduleIdEl = document.getElementById("liveStudioScheduleId");
+        if (scheduleIdEl && (cfg.scheduleId || cfg.id)) {
+          scheduleIdEl.value = cfg.scheduleId || cfg.id;
+        }
+
+        // Parse the stored scheduleTime string back into day / start / end inputs
+        // so the time fields never revert to their HTML default values on re-render
+        if (cfg.scheduleTime) {
+          const parsed = this.parseScheduleString(cfg.scheduleTime);
+          const dayEl   = document.getElementById("liveStudioScheduleDay");
+          const startEl = document.getElementById("liveStudioScheduleStartTime");
+          const endEl   = document.getElementById("liveStudioScheduleEndTime");
+          if (dayEl   && parsed.day)       dayEl.value   = parsed.day;
+          if (startEl && parsed.startTime) startEl.value = parsed.startTime;
+          if (endEl   && parsed.endTime)   endEl.value   = parsed.endTime;
+        }
+
         if (badgeEl) {
           const isLive = cfg.status === "live";
           const isEnded = cfg.status === "ended";
