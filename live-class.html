@@ -2358,11 +2358,29 @@
       async handleDeleteStream(sessionId) {
         if (!sessionId) return;
         if (confirm("Are you sure you want to delete this live broadcast schedule?")) {
-          if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.deleteLiveSession === "function") {
-            await window.SUPABASE_HELPER.deleteLiveSession(sessionId);
+          if (window.SUPABASE_HELPER) {
+            if (typeof window.SUPABASE_HELPER.addDeletedSchedule === "function") {
+              window.SUPABASE_HELPER.addDeletedSchedule(sessionId);
+            }
+            if (typeof window.SUPABASE_HELPER.deleteLiveSession === "function") {
+              await window.SUPABASE_HELPER.deleteLiveSession(sessionId);
+            }
+          } else {
+            try {
+              const dels = JSON.parse(localStorage.getItem("edupeak_deleted_schedules_db") || "[]");
+              if (!dels.includes(sessionId)) {
+                dels.push(sessionId);
+                localStorage.setItem("edupeak_deleted_schedules_db", JSON.stringify(dels));
+              }
+            } catch(e) {}
           }
+          try {
+            let scheds = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
+            scheds = scheds.filter(item => item.id !== sessionId);
+            localStorage.setItem("edupeak_schedules_db", JSON.stringify(scheds));
+          } catch(e) {}
           if (window.showToast) {
-            window.showToast("🗑️ Live broadcast schedule removed.", "info");
+            window.showToast("🗑️ Live broadcast schedule permanently removed.", "info");
           }
           await this.loadInitialStreams();
         }

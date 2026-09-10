@@ -1976,6 +1976,10 @@ const TEACHER_CONTROLLER = {
   },
 
   getAllScheduledBroadcasts() {
+    const deletedIds = (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getDeletedSchedules === "function")
+      ? window.SUPABASE_HELPER.getDeletedSchedules()
+      : JSON.parse(localStorage.getItem("edupeak_deleted_schedules_db") || "[]");
+
     let schedules = null;
     if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
       const shared = window.SUPABASE_HELPER.getSharedData(this.storageKeys.schedulesDb || "edupeak_schedules_db");
@@ -1994,7 +1998,9 @@ const TEACHER_CONTROLLER = {
         }
       }
     }
-    if (schedules !== null) return schedules;
+    if (schedules !== null && Array.isArray(schedules)) {
+      return schedules.filter(s => s && s.id && !deletedIds.includes(s.id) && !s.id.startsWith("sched-continuous-") && !s.id.startsWith("sched-early-test-"));
+    }
     return [];
   },
 
@@ -2280,15 +2286,35 @@ const TEACHER_CONTROLLER = {
     document.getElementById("liveStudioTopic").focus();
   },
 
-  handleDeleteSchedule(scheduleId) {
+  async handleDeleteSchedule(scheduleId) {
     const schedules = this.getAllScheduledBroadcasts();
     const s = schedules.find(item => item.id === scheduleId);
     if (!s) return;
 
     if (confirm(`Are you sure you want to delete broadcast schedule "${s.topic}"?`)) {
+      // 1. Permanently register deletion tombstone & delete on Supabase Cloud
+      if (window.SUPABASE_HELPER) {
+        if (typeof window.SUPABASE_HELPER.addDeletedSchedule === "function") {
+          window.SUPABASE_HELPER.addDeletedSchedule(scheduleId);
+        }
+        if (typeof window.SUPABASE_HELPER.deleteLiveSession === "function") {
+          await window.SUPABASE_HELPER.deleteLiveSession(scheduleId);
+        }
+      } else {
+        try {
+          const dels = JSON.parse(localStorage.getItem("edupeak_deleted_schedules_db") || "[]");
+          if (!dels.includes(scheduleId)) {
+            dels.push(scheduleId);
+            localStorage.setItem("edupeak_deleted_schedules_db", JSON.stringify(dels));
+          }
+        } catch(e) {}
+      }
+
+      // 2. Filter local schedules and persist
       const updated = schedules.filter(item => item.id !== scheduleId);
       this.saveScheduledBroadcasts(updated);
 
+      // 3. Clear active preview if this stream was active
       const activeLive = localStorage.getItem(this.storageKeys.liveStream);
       if (activeLive) {
         try {
@@ -2324,7 +2350,7 @@ const TEACHER_CONTROLLER = {
       }
 
       if (window.showToast) {
-        window.showToast(`🗑️ Schedule "${s.topic}" deleted and removed from LMS.`, "info");
+        window.showToast(`🗑️ Schedule "${s.topic}" deleted and permanently removed from LMS.`, "info");
       }
 
       this.renderSchedulesTable();
@@ -2332,10 +2358,10 @@ const TEACHER_CONTROLLER = {
     }
   },
 
-  handleDeleteCurrentSchedule() {
+  async handleDeleteCurrentSchedule() {
     const currentId = document.getElementById("liveStudioScheduleId")?.value;
     if (currentId) {
-      this.handleDeleteSchedule(currentId);
+      await this.handleDeleteSchedule(currentId);
       return;
     }
 

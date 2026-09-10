@@ -52,6 +52,31 @@ const SUPABASE_HELPER = {
         });
         window.__EDUPEAK_SUPABASE_CLIENT__ = this.client;
         this.testConnection();
+
+        // Self-heal: purge any leftover test broadcast schedules from storage
+        try {
+          const testPrefixes = ["sched-continuous-", "sched-early-test-"];
+          const storedScheds = localStorage.getItem("edupeak_schedules_db");
+          if (storedScheds) {
+            let parsed = JSON.parse(storedScheds);
+            if (Array.isArray(parsed)) {
+              const cleaned = parsed.filter(s => s && s.id && !testPrefixes.some(p => s.id.startsWith(p)));
+              if (cleaned.length !== parsed.length) {
+                localStorage.setItem("edupeak_schedules_db", JSON.stringify(cleaned));
+                this.setSharedData("edupeak_schedules_db", cleaned);
+              }
+            }
+          }
+          const activeStream = localStorage.getItem("edupeak_live_stream_config");
+          if (activeStream) {
+            const parsed = JSON.parse(activeStream);
+            if (parsed && testPrefixes.some(p => (parsed.id || "").startsWith(p) || (parsed.scheduleId || "").startsWith(p))) {
+              localStorage.removeItem("edupeak_live_stream_config");
+              this.setSharedData("edupeak_live_stream_config", null);
+            }
+          }
+        } catch(e) {}
+
         return true;
       } catch (err) {
         console.warn("Supabase init notice:", err);
@@ -162,6 +187,37 @@ const SUPABASE_HELPER = {
         localStorage.setItem("edupeak_deleted_papers_db", JSON.stringify(deleted));
       } catch(e) {}
       this.setSharedData("edupeak_deleted_papers_db", deleted);
+    }
+  },
+
+  getDeletedSchedules() {
+    let deleted = [];
+    try {
+      const stored = localStorage.getItem("edupeak_deleted_schedules_db");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) deleted = parsed;
+      }
+    } catch(e) {}
+
+    const shared = this.getSharedData("edupeak_deleted_schedules_db");
+    if (Array.isArray(shared)) {
+      shared.forEach(id => {
+        if (!deleted.includes(id)) deleted.push(id);
+      });
+    }
+    return deleted;
+  },
+
+  addDeletedSchedule(schedId) {
+    if (!schedId) return;
+    const deleted = this.getDeletedSchedules();
+    if (!deleted.includes(schedId)) {
+      deleted.push(schedId);
+      try {
+        localStorage.setItem("edupeak_deleted_schedules_db", JSON.stringify(deleted));
+      } catch(e) {}
+      this.setSharedData("edupeak_deleted_schedules_db", deleted);
     }
   },
 
@@ -327,11 +383,15 @@ const SUPABASE_HELPER = {
 
   async syncSchedules() {
     if (!this.isConnected || !this.client) return null;
+    const deletedIds = this.getDeletedSchedules();
     try {
       const { data, error } = await this.client.from("broadcast_schedules").select("*");
-      if (!error && Array.isArray(data) && data.length > 0) {
-        this.setSharedData("edupeak_schedules_db", data);
-        try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(data)); } catch (e) {}
+      if (!error && Array.isArray(data)) {
+        const filtered = data
+          .map(s => this.normalizeLiveSession(s))
+          .filter(s => s && s.id && !deletedIds.includes(s.id) && !s.id.startsWith("sched-continuous-") && !s.id.startsWith("sched-early-test-"));
+        this.setSharedData("edupeak_schedules_db", filtered);
+        try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(filtered)); } catch (e) {}
 
         if (window.TEACHER_CONTROLLER && typeof window.TEACHER_CONTROLLER.renderSchedulesTable === "function") {
           window.TEACHER_CONTROLLER.renderSchedulesTable();
@@ -339,7 +399,7 @@ const SUPABASE_HELPER = {
         if (typeof syncLiveStreamWithTeacher === "function") {
           syncLiveStreamWithTeacher();
         }
-        return data;
+        return filtered;
       }
     } catch (e) {
       console.warn("syncSchedules error:", e);
@@ -1553,13 +1613,16 @@ const SUPABASE_HELPER = {
   },
 
   async getLiveSessions() {
+    const deletedIds = this.getDeletedSchedules();
     let localSchedules = [];
     try {
       const stored = localStorage.getItem("edupeak_schedules_db");
       if (stored !== null) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          localSchedules = parsed.map(s => this.normalizeLiveSession(s));
+          localSchedules = parsed
+            .map(s => this.normalizeLiveSession(s))
+            .filter(s => s && s.id && !deletedIds.includes(s.id) && !s.id.startsWith("sched-continuous-") && !s.id.startsWith("sched-early-test-"));
         }
       }
     } catch (e) {}
@@ -1568,6 +1631,7 @@ const SUPABASE_HELPER = {
     if (Array.isArray(shared) && shared.length > 0) {
       shared.forEach(s => {
         const norm = this.normalizeLiveSession(s);
+        if (!norm || !norm.id || deletedIds.includes(norm.id) || norm.id.startsWith("sched-continuous-") || norm.id.startsWith("sched-early-test-")) return;
         const idx = localSchedules.findIndex(l => l.id === norm.id);
         if (idx === -1) {
           localSchedules.push(norm);
@@ -1584,8 +1648,10 @@ const SUPABASE_HELPER = {
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("broadcast_schedules").select("*").order("updated_at", { ascending: false });
-        if (!error && Array.isArray(data) && data.length > 0) {
-          const remoteNormalized = data.map(s => this.normalizeLiveSession(s));
+        if (!error && Array.isArray(data)) {
+          const remoteNormalized = data
+            .map(s => this.normalizeLiveSession(s))
+            .filter(s => s && s.id && !deletedIds.includes(s.id) && !s.id.startsWith("sched-continuous-") && !s.id.startsWith("sched-early-test-"));
           // Merge remote with local schedules so newly created or locally modified schedules are NEVER lost
           const merged = [...remoteNormalized];
           localSchedules.forEach(local => {
@@ -1600,9 +1666,10 @@ const SUPABASE_HELPER = {
               }
             }
           });
-          this.setSharedData("edupeak_schedules_db", merged);
-          try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(merged)); } catch (e) {}
-          return merged;
+          const finalMerged = merged.filter(s => s && s.id && !deletedIds.includes(s.id));
+          this.setSharedData("edupeak_schedules_db", finalMerged);
+          try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(finalMerged)); } catch (e) {}
+          return finalMerged;
         }
       } catch (e) {
         console.warn("Supabase fetch schedules error, using local:", e);
@@ -1610,9 +1677,10 @@ const SUPABASE_HELPER = {
     }
 
     if (localSchedules.length > 0) {
-      this.setSharedData("edupeak_schedules_db", localSchedules);
-      try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(localSchedules)); } catch (e) {}
-      return localSchedules;
+      const finalLocal = localSchedules.filter(s => s && s.id && !deletedIds.includes(s.id));
+      this.setSharedData("edupeak_schedules_db", finalLocal);
+      try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(finalLocal)); } catch (e) {}
+      return finalLocal;
     }
 
     return [];
@@ -1624,7 +1692,20 @@ const SUPABASE_HELPER = {
 
   async saveLiveSession(schedData) {
     if (!schedData || !schedData.id) return null;
+    if (schedData.id.startsWith("sched-continuous-") || schedData.id.startsWith("sched-early-test-")) {
+      return null;
+    }
     const normalized = this.normalizeLiveSession(schedData);
+
+    // Un-tombstone if re-created
+    try {
+      let deleted = this.getDeletedSchedules();
+      if (deleted.includes(normalized.id)) {
+        deleted = deleted.filter(id => id !== normalized.id);
+        localStorage.setItem("edupeak_deleted_schedules_db", JSON.stringify(deleted));
+        this.setSharedData("edupeak_deleted_schedules_db", deleted);
+      }
+    } catch(e) {}
 
     // 1. Immediately update local storage & memory
     let schedules = [];
@@ -1716,6 +1797,11 @@ const SUPABASE_HELPER = {
   },
 
   async updateLiveSessionStatus(sessionId, newStatus, extraData = {}) {
+    if (!sessionId) return null;
+    const deletedIds = this.getDeletedSchedules();
+    if (deletedIds.includes(sessionId) || sessionId.startsWith("sched-continuous-") || sessionId.startsWith("sched-early-test-")) {
+      return null;
+    }
     let schedules = await this.getLiveSessions();
     let target = schedules.find(s => s.id === sessionId);
     if (!target) {
@@ -1757,15 +1843,39 @@ const SUPABASE_HELPER = {
   },
 
   async deleteLiveSession(schedId) {
+    if (!schedId) return false;
+    this.addDeletedSchedule(schedId);
+
     let schedules = this.getSharedData("edupeak_schedules_db");
     if (!Array.isArray(schedules) || schedules.length === 0) {
       try { schedules = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]"); } catch (e) { schedules = []; }
     }
     if (Array.isArray(schedules)) {
-      schedules = schedules.filter(s => s.id !== schedId);
+      schedules = schedules.filter(s => s && s.id !== schedId);
       this.setSharedData("edupeak_schedules_db", schedules);
       try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(schedules)); } catch (e) {}
     }
+
+    // Clear active live stream config if this deleted session was active
+    try {
+      const activeLive = localStorage.getItem("edupeak_live_stream_config");
+      if (activeLive) {
+        const parsedCfg = JSON.parse(activeLive);
+        if (parsedCfg && (parsedCfg.id === schedId || parsedCfg.scheduleId === schedId)) {
+          const clearedConfig = {
+            topic: "No Live Broadcast Scheduled",
+            provider: "youtube",
+            rawUrl: "",
+            embedUrl: "about:blank",
+            status: "ended",
+            scheduleTime: "",
+            updatedAt: new Date().toISOString()
+          };
+          localStorage.setItem("edupeak_live_stream_config", JSON.stringify(clearedConfig));
+          this.setSharedData("edupeak_live_stream_config", clearedConfig);
+        }
+      }
+    } catch (e) {}
 
     try {
       window.dispatchEvent(new CustomEvent("edupeak-live-sessions-updated", { detail: { deletedId: schedId, all: schedules } }));
@@ -1797,6 +1907,13 @@ const SUPABASE_HELPER = {
       } catch (e) {
         console.warn("Supabase delete broadcast_schedule error:", e);
       }
+    }
+
+    if (window.TEACHER_CONTROLLER && typeof window.TEACHER_CONTROLLER.renderSchedulesTable === "function") {
+      try { window.TEACHER_CONTROLLER.renderSchedulesTable(); } catch(e) {}
+    }
+    if (window.LIVE_APP && typeof window.LIVE_APP.loadInitialStreams === "function") {
+      try { window.LIVE_APP.loadInitialStreams(); } catch(e) {}
     }
 
     return true;
