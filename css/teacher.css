@@ -91,36 +91,50 @@
 /* Metric Stat Cards */
 .teacher-stats-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.25rem;
-  margin-bottom: 2rem;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+@media (max-width: 1280px) {
+  .teacher-stats-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .teacher-stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .teacher-stat-card {
   background: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: 1.25rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1rem 1.15rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  gap: 0.85rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  min-height: 80px;
 }
 
 .teacher-stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(34, 122, 255, 0.08);
+  box-shadow: 0 8px 20px rgba(34, 122, 255, 0.08);
+  border-color: #cbd5e1;
 }
 
 .teacher-stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-md);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   flex-shrink: 0;
 }
 
@@ -146,12 +160,12 @@
 
 .teacher-nav-tabs {
   display: flex;
-  gap: 0.65rem;
-  background: #ffffff;
-  padding: 0.5rem;
-  border: 1px solid var(--border-color);
-  border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  gap: 0.4rem;
+  background: #f8fafc;
+  padding: 0.4rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.02);
   margin-bottom: 0;
   overflow-x: auto;
   scrollbar-width: none;
@@ -166,9 +180,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.65rem 1.25rem;
-  border-radius: 9999px;
-  font-size: 0.875rem;
+  padding: 0.65rem 1.15rem;
+  border-radius: 10px;
+  font-size: 0.88rem;
   font-weight: 600;
   color: #64748b;
   background: transparent;
@@ -179,14 +193,20 @@
 }
 
 .teacher-tab-btn:hover {
-  color: #227aff;
-  background: #f8faff;
+  color: #0f172a;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
 .teacher-tab-btn.active {
   background: #227aff;
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(34, 122, 255, 0.25);
+  color: #ffffff !important;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(34, 122, 255, 0.3);
+}
+
+.teacher-tab-btn.active i {
+  color: #ffffff !important;
 }
 
 /* Tab Panes */

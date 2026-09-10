@@ -1357,6 +1357,14 @@
 
         await this.loadInitialStreams(requestedId);
         this.initWatermarkDrift();
+
+        if (params.get("action") === "schedule") {
+          setTimeout(() => {
+            if (typeof this.openScheduleModal === "function") {
+              this.openScheduleModal();
+            }
+          }, 350);
+        }
       },
 
       startClock() {

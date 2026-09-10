@@ -2058,20 +2058,20 @@ const TEACHER_CONTROLLER = {
             </span>
           </td>
           <td>
-            <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
+            <div style="display: flex; gap: 0.4rem; align-items: center; justify-content: flex-end; flex-wrap: wrap;">
+              <a href="live-class.html?stream=${s.id}" target="_blank" class="btn btn-sm" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; font-weight: 700; font-size: 0.75rem; padding: 0.35rem 0.75rem; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 2px 6px rgba(239,68,68,0.25);" title="Open Interactive Live Studio">
+                <i class="fa-solid fa-tower-broadcast"></i> Enter Studio ↗
+              </a>
               ${isLive ? `
-                <button class="btn btn-sm" style="background: #475569; color: #ffffff; font-weight: 700; font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 6px;" onclick="TEACHER_CONTROLLER.endLiveBroadcast('${s.id}')" title="End Live Broadcast">
+                <button class="btn btn-sm" style="background: #475569; color: #ffffff; font-weight: 700; font-size: 0.75rem; padding: 0.35rem 0.65rem; border-radius: 6px;" onclick="TEACHER_CONTROLLER.endLiveBroadcast('${s.id}')" title="End Live Broadcast">
                   <i class="fa-solid fa-stop"></i> End Live
                 </button>
               ` : `
-                <button class="btn btn-sm" style="background: #dc2626; color: #ffffff; font-weight: 800; font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 6px; box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);" onclick="TEACHER_CONTROLLER.startLiveBroadcast('${s.id}')" title="Start Live Broadcast Now">
+                <button class="btn btn-sm" style="background: #dc2626; color: #ffffff; font-weight: 800; font-size: 0.75rem; padding: 0.35rem 0.65rem; border-radius: 6px; box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);" onclick="TEACHER_CONTROLLER.startLiveBroadcast('${s.id}')" title="Start Live Broadcast Now">
                   <i class="fa-solid fa-tower-broadcast"></i> Start Live
                 </button>
               `}
-              <button class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 0.3rem 0.55rem; border-radius: 6px;" onclick="TEACHER_CONTROLLER.openEditSchedule('${s.id}')" title="Edit Schedule">
-                <i class="fa-solid fa-pen-to-square"></i>
-              </button>
-              <button class="btn btn-ghost btn-sm" style="color: #ef4444; border: 1px solid #fecaca; font-size: 0.75rem; padding: 0.3rem 0.55rem; border-radius: 6px;" onclick="TEACHER_CONTROLLER.handleDeleteSchedule('${s.id}')" title="Delete / Cancel Schedule">
+              <button class="btn btn-ghost btn-sm" style="color: #ef4444; border: 1px solid #fecaca; font-size: 0.75rem; padding: 0.35rem 0.55rem; border-radius: 6px;" onclick="TEACHER_CONTROLLER.handleDeleteSchedule('${s.id}')" title="Delete / Cancel Schedule">
                 <i class="fa-solid fa-trash"></i>
               </button>
             </div>
@@ -2082,66 +2082,13 @@ const TEACHER_CONTROLLER = {
   },
 
   openEditSchedule(scheduleId) {
-    const schedules = this.getAllScheduledBroadcasts();
-    const s = schedules.find(item => item.id === scheduleId);
-    if (!s) return;
-
-    document.getElementById("liveStudioScheduleId").value = s.id;
-    document.getElementById("liveStudioTopic").value = s.topic;
-    if (document.getElementById("liveStudioCourseSelect") && s.courseId) {
-      document.getElementById("liveStudioCourseSelect").value = s.courseId;
-    }
-    
-    // Parse schedule into day & times
-    const parsed = this.parseScheduleString(s.scheduleTime || "Every Saturday 7:30 AM - 1:30 PM");
-    if (document.getElementById("liveStudioScheduleDay")) {
-      document.getElementById("liveStudioScheduleDay").value = parsed.day;
-    }
-    if (document.getElementById("liveStudioScheduleStartTime")) {
-      document.getElementById("liveStudioScheduleStartTime").value = parsed.startTime;
-    }
-    if (document.getElementById("liveStudioScheduleEndTime")) {
-      document.getElementById("liveStudioScheduleEndTime").value = parsed.endTime;
-    }
-    if (document.getElementById("liveStudioScheduleTime")) {
-      document.getElementById("liveStudioScheduleTime").value = s.scheduleTime || "";
-    }
-
-    document.getElementById("liveStudioProvider").value = s.provider || "youtube";
-    document.getElementById("liveStudioStatus").value = s.status || "scheduled";
-    document.getElementById("liveStudioUrl").value = s.rawUrl || s.embedUrl || "";
-
-    const btnText = document.getElementById("btnSaveScheduleText");
-    if (btnText) btnText.textContent = "Save Changes & Update Schedule";
-
-    const previewIframe = document.getElementById("teacherLivePreviewIframe");
-    const badgeEl = document.getElementById("livePreviewStatusBadge");
-    if (previewIframe) previewIframe.src = s.embedUrl;
-    if (badgeEl) {
-      const isLive = s.status === "live";
-      badgeEl.textContent = isLive ? "🔴 LIVE NOW" : (s.status === "ended" ? "⏹️ Concluded" : "⏳ Scheduled");
-      badgeEl.style.background = isLive ? "#fee2e2" : "#fefce8";
-      badgeEl.style.color = isLive ? "#dc2626" : "#854d0e";
-    }
-
-    // Smooth scroll up to form
-    const formEl = document.getElementById("liveStudioForm");
-    if (formEl) {
-      formEl.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-
-    if (window.showToast) {
-      window.showToast(`Editing Schedule: "${s.topic}"`, "info");
-    }
+    window.open(`live-class.html?stream=${scheduleId}`, "_blank");
   },
 
   startLiveBroadcast(scheduleId) {
     const schedules = this.getAllScheduledBroadcasts();
     const s = schedules.find(item => item.id === scheduleId);
-    if (!s) {
-      this.handleQuickStatusChange('live');
-      return;
-    }
+    if (!s) return;
 
     s.status = "live";
     s.updatedAt = new Date().toISOString();
@@ -2153,38 +2100,47 @@ const TEACHER_CONTROLLER = {
     });
 
     this.saveScheduledBroadcasts(schedules);
-    localStorage.setItem(this.storageKeys.liveStream, JSON.stringify(s));
-
-    this.openEditSchedule(scheduleId);
+    try {
+      localStorage.setItem(this.storageKeys.liveStream, JSON.stringify(s));
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+        window.SUPABASE_HELPER.setSharedData(this.storageKeys.liveStream || "edupeak_live_stream_config", s);
+      }
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
+        window.SUPABASE_HELPER.updateLiveSessionStatus(scheduleId, "live");
+      }
+    } catch (e) {}
 
     if (window.showToast) {
       window.showToast(`🔴 Live broadcast for "${s.topic}" is NOW ACTIVE on student LMS!`, "success");
     }
 
-    this.renderLiveStudio();
+    this.renderSchedulesTable();
   },
 
   endLiveBroadcast(scheduleId) {
     const schedules = this.getAllScheduledBroadcasts();
     const s = schedules.find(item => item.id === scheduleId);
-    if (!s) {
-      this.handleQuickStatusChange('ended');
-      return;
-    }
+    if (!s) return;
 
     s.status = "ended";
     s.updatedAt = new Date().toISOString();
 
     this.saveScheduledBroadcasts(schedules);
-    localStorage.setItem(this.storageKeys.liveStream, JSON.stringify(s));
-
-    this.openEditSchedule(scheduleId);
+    try {
+      localStorage.setItem(this.storageKeys.liveStream, JSON.stringify(s));
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+        window.SUPABASE_HELPER.setSharedData(this.storageKeys.liveStream || "edupeak_live_stream_config", s);
+      }
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
+        window.SUPABASE_HELPER.updateLiveSessionStatus(scheduleId, "ended");
+      }
+    } catch (e) {}
 
     if (window.showToast) {
       window.showToast(`⏹️ Live broadcast for "${s.topic}" has been ended.`, "info");
     }
 
-    this.renderLiveStudio();
+    this.renderSchedulesTable();
   },
 
   handleLiveStudioStart(e) {

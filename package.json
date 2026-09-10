@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "EduPeak - Advanced Physics Masterclass & Educational Management System",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "deploy": "git add -A && git commit -m \"deploy: platform updates\" && git push origin main"
   },
   "devDependencies": {
     "pg": "^8.23.0",

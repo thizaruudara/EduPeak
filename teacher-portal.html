@@ -220,6 +220,9 @@
         <button class="btn btn-ghost" onclick="TEACHER_CONTROLLER.openNewQuizModal()" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); color: #ffffff;">
           <i class="fa-solid fa-file-circle-plus"></i> Create MCQ Quiz
         </button>
+        <a href="live-class.html" target="_blank" class="btn" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; font-weight: 700; border: none; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); text-decoration: none; display: inline-flex; align-items: center; gap: 0.45rem;">
+          <i class="fa-solid fa-tower-broadcast fa-fade"></i> Live Studio Hub
+        </a>
       </div>
     </div>
   </section>
@@ -297,9 +300,9 @@
           <span class="tab-label-short">Paper Vault</span>
         </button>
         <button class="teacher-tab-btn" data-tab="live" onclick="TEACHER_CONTROLLER.switchTab('live')">
-          <i class="fa-solid fa-tower-broadcast"></i>
-          <span class="tab-label-full">Live Studio Controls</span>
-          <span class="tab-label-short">Live Studio</span>
+          <i class="fa-solid fa-tower-broadcast" style="color: #ef4444;"></i>
+          <span class="tab-label-full">Live Studio Hub <span style="font-size: 0.65rem; background: #ef4444; color: #fff; padding: 2px 6px; border-radius: 9999px; margin-left: 2px;">LIVE</span></span>
+          <span class="tab-label-short">Live Hub</span>
         </button>
         <button class="teacher-tab-btn" data-tab="students" onclick="TEACHER_CONTROLLER.switchTab('students')">
           <i class="fa-solid fa-users"></i>
@@ -459,136 +462,78 @@
 
     <!-- 5. LIVE STUDIO BROADCAST TAB -->
     <section class="teacher-tab-pane" id="teacherTab_live">
-      <div class="teacher-card" style="max-width: 920px; margin: 0 auto 2rem;">
-        <div class="teacher-card-header">
-          <div>
-            <h2 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">Live Stream Broadcast & Schedule Console</h2>
-            <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Schedule upcoming live classes, start/go live instantly, or conclude broadcasts pushed to student LMS.</p>
-          </div>
-          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-            <a href="live-class.html" target="_blank" class="btn btn-sm" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; font-weight: 800; border-radius: 8px; box-shadow: 0 4px 12px rgba(239,68,68,0.35); display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none;">
-              <i class="fa-solid fa-tower-broadcast fa-fade"></i> Open Interactive Classroom Hub & Chat
-            </a>
-          </div>
-        </div>
-
-        <!-- 1-Click Quick State Master Bar -->
-        <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-          <div>
-            <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.2rem;">Quick Broadcast Action</div>
-            <div style="font-size: 0.88rem; font-weight: 700; color: #0f172a;">Change Live Status with One Click:</div>
-          </div>
-          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <button type="button" class="btn btn-sm" style="background: #dc2626; color: #ffffff; font-weight: 800; border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.825rem; box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);" onclick="TEACHER_CONTROLLER.handleQuickStatusChange('live')">
-              <i class="fa-solid fa-tower-broadcast"></i> 🔴 Start Live Now
-            </button>
-            <button type="button" class="btn btn-sm" style="background: #475569; color: #ffffff; font-weight: 700; border-radius: 8px; padding: 0.5rem 0.9rem; font-size: 0.825rem;" onclick="TEACHER_CONTROLLER.handleQuickStatusChange('ended')">
-              <i class="fa-solid fa-stop"></i> ⏹️ End Live Stream
-            </button>
-            <button type="button" class="btn btn-outline btn-sm" style="font-weight: 700; border-radius: 8px; padding: 0.5rem 0.9rem; font-size: 0.825rem;" onclick="TEACHER_CONTROLLER.handleQuickStatusChange('scheduled')">
-              <i class="fa-solid fa-clock"></i> ⏳ Set as Scheduled
-            </button>
-          </div>
-        </div>
-
-        <form id="liveStudioForm" onsubmit="TEACHER_CONTROLLER.handleLiveStudioSave(event)">
-          <input type="hidden" id="liveStudioScheduleId" value="">
-
-          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label">Live Stream Topic / Lecture Title</label>
-              <input type="text" class="form-control" id="liveStudioTopic" placeholder="e.g. 2027 A/L Physics - Mechanics Speed Paper Discussion & Revision" required value="2027 A/L Physics - Mechanics Special Live Broadcast">
-            </div>
-            <div class="form-group">
-              <label class="form-label"><i class="fa-solid fa-book-bookmark" style="color: #227aff;"></i> Broadcast Course</label>
-              <select class="form-control" id="liveStudioCourseSelect">
-                <!-- Populated dynamically by JS -->
-              </select>
-            </div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label"><i class="fa-solid fa-clock" style="color: #227aff;"></i> Scheduled Day & Time</label>
-              <div style="display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 0.35rem; align-items: center;">
-                <select class="form-control" id="liveStudioScheduleDay" style="font-weight: 600; font-size: 0.8rem; padding: 0.45rem 0.35rem;">
-                  <option value="Every Saturday" selected>Every Saturday</option>
-                  <option value="Every Sunday">Every Sunday</option>
-                  <option value="Every Monday">Every Monday</option>
-                  <option value="Every Tuesday">Every Tuesday</option>
-                  <option value="Every Wednesday">Every Wednesday</option>
-                  <option value="Every Thursday">Every Thursday</option>
-                  <option value="Every Friday">Every Friday</option>
-                  <option value="Special Live Broadcast">Special Live Broadcast</option>
-                </select>
-                <input type="time" class="form-control" id="liveStudioScheduleStartTime" value="07:30" title="Start Time" style="font-size: 0.8rem; padding: 0.45rem 0.25rem; font-weight: 600;">
-                <input type="time" class="form-control" id="liveStudioScheduleEndTime" value="13:30" title="End Time" style="font-size: 0.8rem; padding: 0.45rem 0.25rem; font-weight: 600;">
+      <!-- Modern Live Command Center Hero Card -->
+      <div class="teacher-card" style="max-width: 980px; margin: 0 auto 2rem; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; overflow: hidden; position: relative;">
+        <!-- Glowing background accent -->
+        <div style="position: absolute; top: -60px; right: -60px; width: 220px; height: 220px; background: radial-gradient(circle, rgba(239,68,68,0.25) 0%, transparent 70%); pointer-events: none;"></div>
+        
+        <div style="padding: 2.25rem 2.5rem; position: relative; z-index: 1;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.25rem; margin-bottom: 1.5rem;">
+            <div>
+              <div style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.4); padding: 0.35rem 0.85rem; border-radius: 9999px; margin-bottom: 0.85rem;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 10px #ef4444;"></span>
+                <span style="font-size: 0.75rem; font-weight: 800; color: #fca5a5; letter-spacing: 0.05em; text-transform: uppercase;">EduPeak Live Classroom Engine</span>
               </div>
-              <input type="hidden" id="liveStudioScheduleTime" value="Every Saturday 7:30 AM - 1:30 PM">
+              <h2 style="font-size: 1.6rem; font-weight: 800; color: #ffffff; margin: 0 0 0.5rem 0; line-height: 1.25;">
+                Faculty Live Stream & Interactive Classroom Hub
+              </h2>
+              <p style="font-size: 0.95rem; color: #94a3b8; margin: 0; max-width: 680px; line-height: 1.5;">
+                Start live interactive broadcasts, manage real-time moderated student chat, run multiple concurrent streams for distinct batches, and control broadcaster permissions.
+              </p>
             </div>
-            <div class="form-group">
-              <label class="form-label">Stream Provider</label>
-              <select class="form-control" id="liveStudioProvider" onchange="TEACHER_CONTROLLER.handleProviderChange()">
-                <option value="youtube">YouTube Live (Ultra Low Latency)</option>
-                <option value="zoom">Zoom Webinar / Meeting</option>
-                <option value="vimeo">Vimeo Enterprise Video</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Broadcast Status</label>
-              <select class="form-control" id="liveStudioStatus">
-                <option value="live">🔴 LIVE NOW (Broadcasting)</option>
-                <option value="scheduled" selected>⏳ Scheduled for Next Class</option>
-                <option value="ended">⏹️ Stream Concluded</option>
-              </select>
+            
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+              <a href="live-class.html" target="_blank" class="btn" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; font-weight: 800; font-size: 0.95rem; padding: 0.85rem 1.6rem; border-radius: 10px; box-shadow: 0 4px 20px rgba(239,68,68,0.45); display: inline-flex; align-items: center; gap: 0.55rem; text-decoration: none;">
+                <i class="fa-solid fa-tower-broadcast fa-fade"></i> Open Live Interactive Studio ↗
+              </a>
+              <a href="live-class.html?action=schedule" target="_blank" class="btn btn-outline" style="background: rgba(255,255,255,0.08); color: #ffffff; border-color: rgba(255,255,255,0.25); font-weight: 700; font-size: 0.9rem; padding: 0.85rem 1.25rem; border-radius: 10px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.45rem;">
+                <i class="fa-solid fa-calendar-plus"></i> Schedule Broadcast
+              </a>
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Live Video Embed URL / Meeting Link</label>
-            <input type="text" class="form-control" id="liveStudioUrl" placeholder="https://www.youtube.com/embed/..." required value="https://www.youtube.com/embed/dQw4w9WgXcQ">
-          </div>
-
-          <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap;">
-            <button type="submit" class="btn btn-primary" style="flex: 1.5; padding: 0.85rem; font-weight: 700; font-size: 0.92rem;">
-              <i class="fa-solid fa-calendar-plus"></i> <span id="btnSaveScheduleText">Save / Schedule Broadcast</span>
-            </button>
-            <button type="button" class="btn" style="flex: 1.2; background: #dc2626; color: #ffffff; padding: 0.85rem; font-weight: 800; font-size: 0.92rem; border-radius: 8px;" onclick="TEACHER_CONTROLLER.handleLiveStudioStart(event)">
-              <i class="fa-solid fa-tower-broadcast"></i> 🔴 Go Live Now
-            </button>
-            <button type="button" class="btn" style="flex: 1.2; background: #475569; color: #ffffff; padding: 0.85rem; font-weight: 700; font-size: 0.92rem; border-radius: 8px;" onclick="TEACHER_CONTROLLER.handleLiveStudioEnd(event)">
-              <i class="fa-solid fa-stop"></i> ⏹️ End Live
-            </button>
-            <button type="button" class="btn btn-ghost" id="btnDeleteCurrentSchedule" style="flex: 0.8; color: #ef4444; border: 1px solid #fecaca; font-weight: 700; padding: 0.85rem;" onclick="TEACHER_CONTROLLER.handleDeleteCurrentSchedule()">
-              <i class="fa-solid fa-trash-can"></i> Clear
-            </button>
-          </div>
-        </form>
-
-        <!-- Live Monitor & Preview Player -->
-        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-            <h4 style="margin: 0; font-size: 1rem; font-weight: 700; color: #0f172a;">Live Broadcast Monitor & Student LMS Feed Preview</h4>
-            <span id="livePreviewStatusBadge" class="status-tag active" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;">Status: ⏳ Scheduled</span>
-          </div>
-          <div style="position: relative; width: 100%; padding-top: 56.25%; border-radius: var(--radius-lg); overflow: hidden; background: #0f172a; box-shadow: var(--shadow-md);">
-            <iframe id="teacherLivePreviewIframe" src="https://www.youtube.com/embed/dQw4w9WgXcQ?enablejsapi=1" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"></iframe>
+          <!-- Feature Capability Highlights Grid -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 0.9rem 1rem;">
+              <div style="color: #60a5fa; font-size: 1rem; margin-bottom: 0.35rem;"><i class="fa-solid fa-bolt"></i></div>
+              <div style="font-size: 0.85rem; font-weight: 700; color: #f1f5f9;">Ultra Low-Latency</div>
+              <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.2rem;">YouTube Live, Vimeo & Zoom CDN direct streams</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 0.9rem 1rem;">
+              <div style="color: #34d399; font-size: 1rem; margin-bottom: 0.35rem;"><i class="fa-solid fa-comments"></i></div>
+              <div style="font-size: 0.85rem; font-weight: 700; color: #f1f5f9;">Live Moderated Chat</div>
+              <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.2rem;">Real-time student Q&A with lecturer moderation</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 0.9rem 1rem;">
+              <div style="color: #f87171; font-size: 1rem; margin-bottom: 0.35rem;"><i class="fa-solid fa-shield-halved"></i></div>
+              <div style="font-size: 0.85rem; font-weight: 700; color: #f1f5f9;">Broadcaster Security</div>
+              <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.2rem;">Only the stream creator teacher & admin can broadcast</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 0.9rem 1rem;">
+              <div style="color: #fbbf24; font-size: 1rem; margin-bottom: 0.35rem;"><i class="fa-solid fa-layer-group"></i></div>
+              <div style="font-size: 0.85rem; font-weight: 700; color: #f1f5f9;">Multi-Live Sessions</div>
+              <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.2rem;">Run concurrent separate lives for distinct student batches</div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Scheduled Classes & Broadcasts Directory -->
-      <div class="teacher-card" style="max-width: 920px; margin: 0 auto;">
-        <div class="teacher-card-header">
+      <!-- Scheduled Classes & Broadcasts Directory Card -->
+      <div class="teacher-card" style="max-width: 980px; margin: 0 auto;">
+        <div class="teacher-card-header" style="flex-wrap: wrap; gap: 1rem;">
           <div>
-            <h2 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">
-              <i class="fa-solid fa-calendar-check" style="color: #227aff;"></i> Scheduled Live Classes & Broadcasts
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fa-solid fa-calendar-check" style="color: #227aff;"></i> Scheduled & Active Live Broadcasts
             </h2>
-            <p style="font-size: 0.85rem; color: #64748b; margin: 0;">View, edit, or delete scheduled live sessions pushed to students' dashboards and LMS classroom.</p>
+            <p style="font-size: 0.85rem; color: #64748b; margin: 0.2rem 0 0 0;">
+              Manage your upcoming live classes or launch directly into the interactive classroom.
+            </p>
           </div>
-          <button class="btn btn-outline btn-sm" onclick="TEACHER_CONTROLLER.resetScheduleForm()">
-            <i class="fa-solid fa-plus"></i> New Broadcast Schedule
-          </button>
+          <div style="display: flex; gap: 0.5rem;">
+            <a href="live-class.html?action=schedule" target="_blank" class="btn btn-primary btn-sm" style="font-weight: 700; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none;">
+              <i class="fa-solid fa-plus"></i> New Broadcast Schedule
+            </a>
+          </div>
         </div>
 
         <div style="overflow-x: auto;">
@@ -597,10 +542,10 @@
               <tr>
                 <th>Status</th>
                 <th>Lecture / Topic Title</th>
-                <th>Course</th>
+                <th>Target Course</th>
                 <th>Schedule Date & Time</th>
                 <th>Provider</th>
-                <th>Actions</th>
+                <th style="text-align: right;">Studio Actions</th>
               </tr>
             </thead>
             <tbody id="teacherSchedulesTbody">
