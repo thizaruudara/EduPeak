@@ -11,13 +11,13 @@ const EDUPEAK_INSTITUTES = {
   getAll() {
     if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
       const shared = window.SUPABASE_HELPER.getSharedData(this.storageKey);
-      if (shared !== null && Array.isArray(shared) && shared.length > 0) return shared;
+      if (shared !== null && Array.isArray(shared)) return shared;
     }
     try {
       const stored = localStorage.getItem(this.storageKey);
       if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
       console.warn("Error parsing institutes db:", e);

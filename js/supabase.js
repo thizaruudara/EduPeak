@@ -65,13 +65,11 @@ const SUPABASE_HELPER = {
       // Simple health query to 'profiles' or public schema
       const { data, error } = await this.client.from("profiles").select("count", { count: "exact", head: true });
       if (error) {
-        if (error.code === "PGRST116" || (error.message && error.message.includes("does not exist"))) {
-          // Connected to Supabase instance, table not created yet
-          this.isConnected = true;
-          this.updateStatusBadge(true, "Connected to Supabase Cloud");
-          this.syncAllCloudData();
-          this.setupRealtimeSubscriptions();
-          return { success: true, message: "Connected to Supabase project!" };
+        if (error.code === "PGRST116" || error.code === "PGRST205" || (error.message && (error.message.includes("does not exist") || error.message.includes("Could not find the table") || error.message.includes("schema cache")))) {
+          // Connected to Supabase instance, but database tables have not been created yet
+          this.isConnected = false;
+          this.updateStatusBadge(false, "Setup Required: Run SQL Schema in Supabase SQL Editor");
+          return { success: false, message: "Connected to Supabase, but database tables are missing. Please run the SQL Schema Script in your Supabase SQL Editor." };
         } else {
           // Real error (invalid URL, network failure, bad API key)
           this.isConnected = false;
@@ -98,7 +96,10 @@ const SUPABASE_HELPER = {
         this.syncCourses(),
         this.syncTeachers(),
         this.syncPapers(),
-        this.syncInstitutes()
+        this.syncInstitutes(),
+        this.syncLessons(),
+        this.syncQuizzes(),
+        this.syncSchedules()
       ]);
     } catch (e) {
       console.warn("syncAllCloudData warning:", e);
@@ -109,7 +110,7 @@ const SUPABASE_HELPER = {
     if (!this.isConnected || !this.client) return null;
     try {
       const { data, error } = await this.client.from("courses").select("*");
-      if (!error && Array.isArray(data)) {
+      if (!error && Array.isArray(data) && data.length > 0) {
         this.setSharedData("edupeak_courses_db", data);
         try { localStorage.setItem("edupeak_courses_db", JSON.stringify(data)); } catch (e) {}
         if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = data;
@@ -146,7 +147,7 @@ const SUPABASE_HELPER = {
     if (!this.isConnected || !this.client) return null;
     try {
       const { data, error } = await this.client.from("teachers").select("*");
-      if (!error && Array.isArray(data)) {
+      if (!error && Array.isArray(data) && data.length > 0) {
         this.setSharedData("edupeak_teachers_db", data);
         try { localStorage.setItem("edupeak_teachers_db", JSON.stringify(data)); } catch (e) {}
         if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.teachers = data;
@@ -171,7 +172,7 @@ const SUPABASE_HELPER = {
     if (!this.isConnected || !this.client) return null;
     try {
       const { data, error } = await this.client.from("past_papers").select("*").order("year", { ascending: false });
-      if (!error && Array.isArray(data)) {
+      if (!error && Array.isArray(data) && data.length > 0) {
         this.setSharedData("edupeak_papers_db", data);
         try { localStorage.setItem("edupeak_papers_db", JSON.stringify(data)); } catch (e) {}
 
@@ -220,6 +221,68 @@ const SUPABASE_HELPER = {
     return null;
   },
 
+  async syncLessons() {
+    if (!this.isConnected || !this.client) return null;
+    try {
+      const { data, error } = await this.client.from("lessons").select("*");
+      if (!error && Array.isArray(data) && data.length > 0) {
+        this.setSharedData("edupeak_lessons_db", data);
+        try { localStorage.setItem("edupeak_lessons_db", JSON.stringify(data)); } catch (e) {}
+        if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.lmsLessons = data;
+
+        if (window.TEACHER_CONTROLLER && window.TEACHER_CONTROLLER.currentTab === "lessons" && typeof window.TEACHER_CONTROLLER.renderLessons === "function") {
+          window.TEACHER_CONTROLLER.renderLessons();
+        }
+        return data;
+      }
+    } catch (e) {
+      console.warn("syncLessons error:", e);
+    }
+    return null;
+  },
+
+  async syncQuizzes() {
+    if (!this.isConnected || !this.client) return null;
+    try {
+      const { data, error } = await this.client.from("quizzes").select("*");
+      if (!error && Array.isArray(data) && data.length > 0) {
+        this.setSharedData("edupeak_quizzes_db", data);
+        try { localStorage.setItem("edupeak_quizzes_db", JSON.stringify(data)); } catch (e) {}
+        if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.quizQuestions = data;
+
+        if (window.TEACHER_CONTROLLER && window.TEACHER_CONTROLLER.currentTab === "quizzes" && typeof window.TEACHER_CONTROLLER.renderQuizzes === "function") {
+          window.TEACHER_CONTROLLER.renderQuizzes();
+        }
+        return data;
+      }
+    } catch (e) {
+      console.warn("syncQuizzes error:", e);
+    }
+    return null;
+  },
+
+  async syncSchedules() {
+    if (!this.isConnected || !this.client) return null;
+    try {
+      const { data, error } = await this.client.from("broadcast_schedules").select("*");
+      if (!error && Array.isArray(data) && data.length > 0) {
+        this.setSharedData("edupeak_schedules_db", data);
+        try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(data)); } catch (e) {}
+
+        if (window.TEACHER_CONTROLLER && typeof window.TEACHER_CONTROLLER.renderSchedulesTable === "function") {
+          window.TEACHER_CONTROLLER.renderSchedulesTable();
+        }
+        if (typeof syncLiveStreamWithTeacher === "function") {
+          syncLiveStreamWithTeacher();
+        }
+        return data;
+      }
+    } catch (e) {
+      console.warn("syncSchedules error:", e);
+    }
+    return null;
+  },
+
   setupRealtimeSubscriptions() {
     if (!this.client || this._realtimeSubscribed) return;
     try {
@@ -237,6 +300,15 @@ const SUPABASE_HELPER = {
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'institutes' }, () => {
           this.syncInstitutes();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'lessons' }, () => {
+          this.syncLessons();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'quizzes' }, () => {
+          this.syncQuizzes();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'broadcast_schedules' }, () => {
+          this.syncSchedules();
         })
         .subscribe();
     } catch (e) {
@@ -402,8 +474,10 @@ const SUPABASE_HELPER = {
       if (match && match[1]) {
         const decoded = decodeURIComponent(match[1]);
         const parsed = JSON.parse(decoded);
-        localStorage.setItem(key, decoded);
-        return parsed;
+        if (parsed !== null && (!Array.isArray(parsed) || parsed.length > 0)) {
+          localStorage.setItem(key, decoded);
+          return parsed;
+        }
       }
     } catch (e) {}
 
@@ -411,7 +485,10 @@ const SUPABASE_HELPER = {
     try {
       const local = localStorage.getItem(key);
       if (local !== null) {
-        return JSON.parse(local);
+        const parsed = JSON.parse(local);
+        if (parsed !== null && (!Array.isArray(parsed) || parsed.length > 0)) {
+          return parsed;
+        }
       }
     } catch (e) {}
     return null;
@@ -442,7 +519,7 @@ const SUPABASE_HELPER = {
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("teachers").select("*");
-        if (!error && Array.isArray(data)) {
+        if (!error && Array.isArray(data) && data.length > 0) {
           this.setSharedData("edupeak_teachers_db", data);
           try { localStorage.setItem("edupeak_teachers_db", JSON.stringify(data)); } catch (e) {}
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.teachers = data;
@@ -453,7 +530,7 @@ const SUPABASE_HELPER = {
       }
     }
     const shared = this.getSharedData("edupeak_teachers_db");
-    if (shared !== null && Array.isArray(shared)) {
+    if (shared !== null && Array.isArray(shared) && shared.length > 0) {
       if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.teachers = shared;
       try { localStorage.setItem("edupeak_teachers_db", JSON.stringify(shared)); } catch (e) {}
       return shared;
@@ -462,7 +539,7 @@ const SUPABASE_HELPER = {
       const stored = localStorage.getItem("edupeak_teachers_db");
       if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           this.setSharedData("edupeak_teachers_db", parsed);
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.teachers = parsed;
           return parsed;
@@ -529,7 +606,7 @@ const SUPABASE_HELPER = {
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("courses").select("*");
-        if (!error && Array.isArray(data)) {
+        if (!error && Array.isArray(data) && data.length > 0) {
           this.setSharedData("edupeak_courses_db", data);
           try {
             localStorage.setItem("edupeak_courses_db", JSON.stringify(data));
@@ -542,7 +619,7 @@ const SUPABASE_HELPER = {
       }
     }
     const shared = this.getSharedData("edupeak_courses_db");
-    if (shared !== null && Array.isArray(shared)) {
+    if (shared !== null && Array.isArray(shared) && shared.length > 0) {
       if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = shared;
       try {
         localStorage.setItem("edupeak_courses_db", JSON.stringify(shared));
@@ -553,7 +630,7 @@ const SUPABASE_HELPER = {
       const stored = localStorage.getItem("edupeak_courses_db");
       if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           this.setSharedData("edupeak_courses_db", parsed);
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = parsed;
           return parsed;
@@ -561,9 +638,13 @@ const SUPABASE_HELPER = {
       }
     } catch (e) {}
 
-    const defaultCourses = (window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.courses))
+    const defaultCourses = (window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.courses) && window.EDUPEAK_DATA.courses.length > 0)
       ? window.EDUPEAK_DATA.courses
       : [];
+    if (defaultCourses.length > 0) {
+      this.setSharedData("edupeak_courses_db", defaultCourses);
+      try { localStorage.setItem("edupeak_courses_db", JSON.stringify(defaultCourses)); } catch (e) {}
+    }
     return defaultCourses;
   },
 
@@ -739,7 +820,7 @@ const SUPABASE_HELPER = {
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("past_papers").select("*").order("year", { ascending: false });
-        if (!error && Array.isArray(data)) {
+        if (!error && Array.isArray(data) && data.length > 0) {
           this.setSharedData("edupeak_papers_db", data);
           try { localStorage.setItem("edupeak_papers_db", JSON.stringify(data)); } catch (e) {}
           return data;
@@ -749,7 +830,7 @@ const SUPABASE_HELPER = {
       }
     }
     const shared = this.getSharedData("edupeak_papers_db");
-    if (shared !== null && Array.isArray(shared)) {
+    if (shared !== null && Array.isArray(shared) && shared.length > 0) {
       try { localStorage.setItem("edupeak_papers_db", JSON.stringify(shared)); } catch (e) {}
       return shared;
     }
@@ -757,7 +838,7 @@ const SUPABASE_HELPER = {
       const stored = localStorage.getItem("edupeak_papers_db");
       if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           this.setSharedData("edupeak_papers_db", parsed);
           return parsed;
         }
@@ -858,7 +939,7 @@ const SUPABASE_HELPER = {
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("institutes").select("*");
-        if (!error && Array.isArray(data)) {
+        if (!error && Array.isArray(data) && data.length > 0) {
           this.setSharedData("edupeak_institutes_db", data);
           try { localStorage.setItem("edupeak_institutes_db", JSON.stringify(data)); } catch (e) {}
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = data;
@@ -869,7 +950,7 @@ const SUPABASE_HELPER = {
       }
     }
     const shared = this.getSharedData("edupeak_institutes_db");
-    if (shared !== null && Array.isArray(shared)) {
+    if (shared !== null && Array.isArray(shared) && shared.length > 0) {
       if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = shared;
       try { localStorage.setItem("edupeak_institutes_db", JSON.stringify(shared)); } catch (e) {}
       return shared;
@@ -878,7 +959,7 @@ const SUPABASE_HELPER = {
       const stored = localStorage.getItem("edupeak_institutes_db");
       if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           this.setSharedData("edupeak_institutes_db", parsed);
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = parsed;
           return parsed;
@@ -943,7 +1024,6 @@ const SUPABASE_HELPER = {
     if (window.ADMIN_CONTROLLER && typeof window.ADMIN_CONTROLLER.renderInstitutes === "function") {
       window.ADMIN_CONTROLLER.renderInstitutes();
     }
-
     if (this.isConnected && this.client) {
       try {
         await this.client.from("institutes").delete().eq("id", instId);
@@ -954,7 +1034,270 @@ const SUPABASE_HELPER = {
     return true;
   },
 
-  // 6. SYNC LOCAL DATA TO SUPABASE CLOUD
+  // 6. LESSONS MANAGEMENT (Sync with Supabase)
+  async getLessons() {
+    if (this.isConnected && this.client) {
+      try {
+        const { data, error } = await this.client.from("lessons").select("*");
+        if (!error && Array.isArray(data) && data.length > 0) {
+          this.setSharedData("edupeak_lessons_db", data);
+          try { localStorage.setItem("edupeak_lessons_db", JSON.stringify(data)); } catch (e) {}
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.lmsLessons = data;
+          return data;
+        }
+      } catch (e) {
+        console.warn("Supabase fetch lessons error, using local:", e);
+      }
+    }
+    const shared = this.getSharedData("edupeak_lessons_db");
+    if (shared !== null && Array.isArray(shared) && shared.length > 0) {
+      if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.lmsLessons = shared;
+      try { localStorage.setItem("edupeak_lessons_db", JSON.stringify(shared)); } catch (e) {}
+      return shared;
+    }
+    try {
+      const stored = localStorage.getItem("edupeak_lessons_db");
+      if (stored !== null) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.setSharedData("edupeak_lessons_db", parsed);
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.lmsLessons = parsed;
+          return parsed;
+        }
+      }
+    } catch (e) {}
+    return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.lmsLessons) ? window.EDUPEAK_DATA.lmsLessons : [];
+  },
+
+  async saveLesson(lessonData) {
+    if (!lessonData || !lessonData.id) return null;
+    if (this.isConnected && this.client) {
+      try {
+        const payload = {
+          id: lessonData.id,
+          course_id: lessonData.courseId || lessonData.course_id,
+          courseId: lessonData.courseId || lessonData.course_id,
+          title: lessonData.title,
+          title_si: lessonData.title_si || lessonData.title,
+          duration: lessonData.duration || "50 mins",
+          videoUrl: lessonData.videoUrl,
+          hasPdf: Boolean(lessonData.hasPdf),
+          pdfName: lessonData.pdfName || "",
+          pdfUrl: lessonData.pdfUrl || "",
+          watermarkEnabled: Boolean(lessonData.watermarkEnabled),
+          chapters: lessonData.chapters || []
+        };
+        const { data, error } = await this.client.from("lessons").upsert([payload]).select();
+        if (!error && data && data.length > 0) lessonData = data[0];
+      } catch (e) {
+        console.warn("Supabase upsert lesson error:", e);
+      }
+    }
+    const lessons = await this.getLessons();
+    const existingIndex = lessons.findIndex(l => l.id === lessonData.id);
+    if (existingIndex >= 0) {
+      lessons[existingIndex] = { ...lessons[existingIndex], ...lessonData };
+    } else {
+      lessons.push(lessonData);
+    }
+    this.setSharedData("edupeak_lessons_db", lessons);
+    try { localStorage.setItem("edupeak_lessons_db", JSON.stringify(lessons)); } catch (e) {}
+    if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.lmsLessons = lessons;
+    return lessonData;
+  },
+
+  async deleteLesson(lessonId) {
+    if (this.isConnected && this.client) {
+      try {
+        await this.client.from("lessons").delete().eq("id", lessonId);
+      } catch (e) {
+        console.warn("Supabase delete lesson error:", e);
+      }
+    }
+    let lessons = await this.getLessons();
+    lessons = lessons.filter(l => l.id !== lessonId);
+    this.setSharedData("edupeak_lessons_db", lessons);
+    try { localStorage.setItem("edupeak_lessons_db", JSON.stringify(lessons)); } catch (e) {}
+    if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.lmsLessons = lessons;
+    return true;
+  },
+
+  // 7. QUIZZES MANAGEMENT (Sync with Supabase)
+  async getQuizzes() {
+    if (this.isConnected && this.client) {
+      try {
+        const { data, error } = await this.client.from("quizzes").select("*");
+        if (!error && Array.isArray(data) && data.length > 0) {
+          this.setSharedData("edupeak_quizzes_db", data);
+          try { localStorage.setItem("edupeak_quizzes_db", JSON.stringify(data)); } catch (e) {}
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.quizQuestions = data;
+          return data;
+        }
+      } catch (e) {
+        console.warn("Supabase fetch quizzes error, using local:", e);
+      }
+    }
+    const shared = this.getSharedData("edupeak_quizzes_db");
+    if (shared !== null && Array.isArray(shared) && shared.length > 0) {
+      if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.quizQuestions = shared;
+      try { localStorage.setItem("edupeak_quizzes_db", JSON.stringify(shared)); } catch (e) {}
+      return shared;
+    }
+    try {
+      const stored = localStorage.getItem("edupeak_quizzes_db");
+      if (stored !== null) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.setSharedData("edupeak_quizzes_db", parsed);
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.quizQuestions = parsed;
+          return parsed;
+        }
+      }
+    } catch (e) {}
+    return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.quizQuestions) ? window.EDUPEAK_DATA.quizQuestions : [];
+  },
+
+  async saveQuiz(quizData) {
+    if (!quizData || !quizData.id) return null;
+    if (this.isConnected && this.client) {
+      try {
+        const payload = {
+          id: String(quizData.id),
+          course_id: quizData.courseId || quizData.course_id,
+          courseId: quizData.courseId || quizData.course_id,
+          question: quizData.question,
+          question_si: quizData.question_si || quizData.question,
+          options: quizData.options || [],
+          options_si: quizData.options_si || quizData.options || [],
+          correctAnswer: Number(quizData.correctAnswer !== undefined ? quizData.correctAnswer : 0),
+          explanation: quizData.explanation || "",
+          explanation_si: quizData.explanation_si || quizData.explanation || "",
+          timeLimit: Number(quizData.timeLimit || 60)
+        };
+        const { data, error } = await this.client.from("quizzes").upsert([payload]).select();
+        if (!error && data && data.length > 0) quizData = data[0];
+      } catch (e) {
+        console.warn("Supabase upsert quiz error:", e);
+      }
+    }
+    const quizzes = await this.getQuizzes();
+    const existingIndex = quizzes.findIndex(q => String(q.id) === String(quizData.id));
+    if (existingIndex >= 0) {
+      quizzes[existingIndex] = { ...quizzes[existingIndex], ...quizData };
+    } else {
+      quizzes.push(quizData);
+    }
+    this.setSharedData("edupeak_quizzes_db", quizzes);
+    try { 
+      localStorage.setItem("edupeak_quizzes_db", JSON.stringify(quizzes)); 
+      localStorage.setItem("edupeak_custom_quizzes", JSON.stringify(quizzes));
+    } catch (e) {}
+    if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.quizQuestions = quizzes;
+    return quizData;
+  },
+
+  async deleteQuiz(quizId) {
+    if (this.isConnected && this.client) {
+      try {
+        await this.client.from("quizzes").delete().eq("id", String(quizId));
+      } catch (e) {
+        console.warn("Supabase delete quiz error:", e);
+      }
+    }
+    let quizzes = await this.getQuizzes();
+    quizzes = quizzes.filter(q => String(q.id) !== String(quizId));
+    this.setSharedData("edupeak_quizzes_db", quizzes);
+    try { 
+      localStorage.setItem("edupeak_quizzes_db", JSON.stringify(quizzes)); 
+      localStorage.setItem("edupeak_custom_quizzes", JSON.stringify(quizzes));
+    } catch (e) {}
+    if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.quizQuestions = quizzes;
+    return true;
+  },
+
+  // 8. BROADCAST SCHEDULES & LIVE STREAM CONFIG
+  async getSchedules() {
+    if (this.isConnected && this.client) {
+      try {
+        const { data, error } = await this.client.from("broadcast_schedules").select("*");
+        if (!error && Array.isArray(data)) {
+          this.setSharedData("edupeak_schedules_db", data);
+          try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(data)); } catch (e) {}
+          return data;
+        }
+      } catch (e) {
+        console.warn("Supabase fetch schedules error, using local:", e);
+      }
+    }
+    const shared = this.getSharedData("edupeak_schedules_db");
+    if (shared !== null && Array.isArray(shared)) {
+      try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(shared)); } catch (e) {}
+      return shared;
+    }
+    try {
+      const stored = localStorage.getItem("edupeak_schedules_db");
+      if (stored !== null) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          this.setSharedData("edupeak_schedules_db", parsed);
+          return parsed;
+        }
+      }
+    } catch (e) {}
+    return [];
+  },
+
+  async saveSchedule(schedData) {
+    if (!schedData || !schedData.id) return null;
+    if (this.isConnected && this.client) {
+      try {
+        const payload = {
+          id: schedData.id,
+          topic: schedData.topic,
+          course_id: schedData.courseId || schedData.course_id,
+          courseId: schedData.courseId || schedData.course_id,
+          courseTitle: schedData.courseTitle || "",
+          scheduleTime: schedData.scheduleTime || "",
+          provider: schedData.provider || "youtube",
+          rawUrl: schedData.rawUrl || "",
+          embedUrl: schedData.embedUrl || "",
+          status: schedData.status || "scheduled",
+          watermarkEnabled: Boolean(schedData.watermarkEnabled)
+        };
+        const { data, error } = await this.client.from("broadcast_schedules").upsert([payload]).select();
+        if (!error && data && data.length > 0) schedData = data[0];
+      } catch (e) {
+        console.warn("Supabase upsert broadcast_schedule error:", e);
+      }
+    }
+    const schedules = await this.getSchedules();
+    const existingIndex = schedules.findIndex(s => s.id === schedData.id);
+    if (existingIndex >= 0) {
+      schedules[existingIndex] = { ...schedules[existingIndex], ...schedData };
+    } else {
+      schedules.push(schedData);
+    }
+    this.setSharedData("edupeak_schedules_db", schedules);
+    try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(schedules)); } catch (e) {}
+    return schedData;
+  },
+
+  async deleteSchedule(schedId) {
+    if (this.isConnected && this.client) {
+      try {
+        await this.client.from("broadcast_schedules").delete().eq("id", schedId);
+      } catch (e) {
+        console.warn("Supabase delete broadcast_schedule error:", e);
+      }
+    }
+    let schedules = await this.getSchedules();
+    schedules = schedules.filter(s => s.id !== schedId);
+    this.setSharedData("edupeak_schedules_db", schedules);
+    try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(schedules)); } catch (e) {}
+    return true;
+  },
+
+  // 7. SYNC LOCAL DATA TO SUPABASE CLOUD
   async syncLocalToCloud() {
     if (!this.client || !this.isConnected) {
       return { success: false, message: "Please connect to Supabase first before syncing." };
@@ -971,6 +1314,18 @@ const SUPABASE_HELPER = {
       let institutes = [];
       try {
         institutes = JSON.parse(localStorage.getItem("edupeak_institutes_db") || "[]");
+      } catch(e) {}
+      let lessons = [];
+      try {
+        lessons = JSON.parse(localStorage.getItem("edupeak_lessons_db") || "[]");
+      } catch(e) {}
+      let quizzes = [];
+      try {
+        quizzes = JSON.parse(localStorage.getItem("edupeak_quizzes_db") || "[]");
+      } catch(e) {}
+      let schedules = [];
+      try {
+        schedules = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
       } catch(e) {}
 
       // Sync teachers
@@ -993,8 +1348,20 @@ const SUPABASE_HELPER = {
       if (institutes.length > 0) {
         await this.client.from("institutes").upsert(institutes);
       }
+      // Sync lessons
+      if (lessons.length > 0) {
+        await this.client.from("lessons").upsert(lessons);
+      }
+      // Sync quizzes
+      if (quizzes.length > 0) {
+        await this.client.from("quizzes").upsert(quizzes);
+      }
+      // Sync schedules
+      if (schedules.length > 0) {
+        await this.client.from("broadcast_schedules").upsert(schedules);
+      }
 
-      return { success: true, message: `Synced ${teachers.length} teachers, ${courses.length} courses, ${users.length} profiles, ${papers.length} papers, and ${institutes.length} campuses to Supabase Cloud!` };
+      return { success: true, message: `Synced ${teachers.length} teachers, ${courses.length} courses, ${users.length} profiles, ${papers.length} papers, ${institutes.length} campuses, ${lessons.length} lessons, and ${quizzes.length} quizzes to Supabase Cloud!` };
     } catch (err) {
       return { success: false, message: "Sync error: " + err.message };
     }
@@ -1036,8 +1403,21 @@ CREATE TABLE IF NOT EXISTS public.teachers (
     subject TEXT NOT NULL,
     subject_si TEXT,
     degree TEXT NOT NULL,
+    degree_si TEXT,
+    designation TEXT,
+    designation_si TEXT,
     image TEXT NOT NULL,
     stream TEXT,
+    stream_si TEXT,
+    rating NUMERIC DEFAULT 4.99,
+    studentsCount TEXT DEFAULT '15,000+',
+    branches JSONB DEFAULT '[]'::jsonb,
+    branches_si JSONB DEFAULT '[]'::jsonb,
+    badge TEXT,
+    badge_si TEXT,
+    bio TEXT,
+    bio_si TEXT,
+    schedule TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -1048,19 +1428,25 @@ CREATE TABLE IF NOT EXISTS public.courses (
     title_si TEXT,
     teacher TEXT,
     teacherName TEXT,
+    teacherId TEXT,
     teacher_id TEXT,
     stream TEXT,
+    stream_si TEXT,
     price TEXT,
     fee TEXT,
+    fee_si TEXT,
     category TEXT,
     examYear TEXT,
     level TEXT,
+    level_si TEXT,
     liveTime TEXT,
     medium TEXT,
+    medium_si TEXT,
     rating NUMERIC DEFAULT 4.99,
     students NUMERIC DEFAULT 0,
     modulesCount NUMERIC DEFAULT 24,
     thumbnailIcon TEXT DEFAULT 'fa-atom',
+    color TEXT,
     badge TEXT,
     badge_si TEXT,
     active BOOLEAN DEFAULT true,
@@ -1077,7 +1463,11 @@ CREATE TABLE IF NOT EXISTS public.past_papers (
     unitName TEXT DEFAULT 'Complete Past Paper Examination',
     year NUMERIC DEFAULT 2024,
     size TEXT DEFAULT 'Cloud PDF',
+    fileSize TEXT DEFAULT 'Cloud PDF',
+    downloadCount NUMERIC DEFAULT 0,
     url TEXT NOT NULL,
+    pdfUrl TEXT,
+    storageType TEXT DEFAULT 'cloud',
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -1086,16 +1476,75 @@ CREATE TABLE IF NOT EXISTS public.institutes (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     name_si TEXT,
-    city TEXT,
-    district TEXT,
-    address TEXT,
-    phone TEXT,
     status TEXT DEFAULT 'active',
     hasPhysicalLocation BOOLEAN DEFAULT true,
+    type TEXT,
+    type_si TEXT,
+    badge TEXT,
+    badge_si TEXT,
+    icon TEXT DEFAULT '🏫',
+    location TEXT,
+    location_si TEXT,
+    phone TEXT,
+    email TEXT,
+    mapUrl TEXT,
+    website TEXT,
+    facebook TEXT,
+    facilities JSONB DEFAULT '[]'::jsonb,
+    facilities_si JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 6. Create ENROLLMENTS Table
+-- 6. Create LESSONS Table
+CREATE TABLE IF NOT EXISTS public.lessons (
+    id TEXT PRIMARY KEY,
+    course_id TEXT,
+    courseId TEXT,
+    title TEXT NOT NULL,
+    title_si TEXT,
+    duration TEXT DEFAULT '50 mins',
+    videoUrl TEXT NOT NULL,
+    hasPdf BOOLEAN DEFAULT false,
+    pdfName TEXT,
+    pdfUrl TEXT,
+    watermarkEnabled BOOLEAN DEFAULT false,
+    chapters JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 7. Create QUIZZES Table
+CREATE TABLE IF NOT EXISTS public.quizzes (
+    id TEXT PRIMARY KEY,
+    course_id TEXT,
+    courseId TEXT,
+    question TEXT NOT NULL,
+    question_si TEXT,
+    options JSONB NOT NULL,
+    options_si JSONB,
+    correctAnswer NUMERIC NOT NULL,
+    explanation TEXT,
+    explanation_si TEXT,
+    timeLimit NUMERIC DEFAULT 60,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 8. Create BROADCAST_SCHEDULES Table
+CREATE TABLE IF NOT EXISTS public.broadcast_schedules (
+    id TEXT PRIMARY KEY,
+    topic TEXT NOT NULL,
+    course_id TEXT,
+    courseId TEXT,
+    courseTitle TEXT,
+    scheduleTime TEXT,
+    provider TEXT DEFAULT 'youtube',
+    rawUrl TEXT,
+    embedUrl TEXT,
+    status TEXT DEFAULT 'scheduled',
+    watermarkEnabled BOOLEAN DEFAULT false,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 9. Create ENROLLMENTS Table
 CREATE TABLE IF NOT EXISTS public.enrollments (
     id BIGSERIAL PRIMARY KEY,
     student_id TEXT REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -1105,29 +1554,37 @@ CREATE TABLE IF NOT EXISTS public.enrollments (
     UNIQUE(student_id, course_id)
 );
 
--- 7. Enable Row Level Security (RLS) & Public Policies
+-- 10. Enable Row Level Security (RLS) & Public Policies
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.teachers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.past_papers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.institutes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lessons ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.quizzes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.broadcast_schedules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.enrollments ENABLE ROW LEVEL SECURITY;
 
 -- Allow public access
 CREATE POLICY "Public can view teachers" ON public.teachers FOR SELECT USING (true);
+CREATE POLICY "Public can modify teachers" ON public.teachers FOR ALL USING (true);
 CREATE POLICY "Public can view courses" ON public.courses FOR SELECT USING (true);
+CREATE POLICY "Public can modify courses" ON public.courses FOR ALL USING (true);
 CREATE POLICY "Public can view past_papers" ON public.past_papers FOR ALL USING (true);
 CREATE POLICY "Public can view institutes" ON public.institutes FOR ALL USING (true);
+CREATE POLICY "Public can modify institutes" ON public.institutes FOR ALL USING (true);
+CREATE POLICY "Public can view lessons" ON public.lessons FOR ALL USING (true);
+CREATE POLICY "Public can view quizzes" ON public.quizzes FOR ALL USING (true);
+CREATE POLICY "Public can view broadcast_schedules" ON public.broadcast_schedules FOR ALL USING (true);
 CREATE POLICY "Public can view and insert profiles" ON public.profiles FOR ALL USING (true);
 CREATE POLICY "Public can view and insert enrollments" ON public.enrollments FOR ALL USING (true);
 
--- Insert Default Faculty Members
-INSERT INTO public.teachers (id, name, name_si, subject, subject_si, degree, image, stream) VALUES
-('tch-1', 'Eng. Dhanushka Senanayake', 'ඉංජි. ධනුෂ්ක සේනානායක', 'Combined Mathematics', 'සංයුක්ත ගණිතය', 'B.Sc. (Eng) Hons (University of Moratuwa)', 'assets/img/teacher_maths.jpg', 'maths'),
-('tch-2', 'Prof. Sanath Wickramasinghe', 'මහාචාර්ය සනත් වික්‍රමසිංහ', 'Physics', 'භෞතික විද්‍යාව', 'B.Sc. (Hons) Sp, M.Sc., Ph.D. (Peradeniya)', 'assets/img/teacher_physics.jpg', 'maths'),
-('tch-3', 'Dr. Charith Jayasuriya', 'ආචාර්ය චරිත් ජයසූරිය', 'Chemistry', 'රසායන විද්‍යාව', 'B.Sc. (Hons) Special (USJ), Ph.D. (UK)', 'assets/img/teacher_chemistry.jpg', 'science'),
-('tch-4', 'Dr. Ruwanthi Fernando', 'වෛද්‍ය රුවන්ති ප්‍රනාන්දු', 'Biology', 'ජීව විද්‍යාව', 'MBBS (Colombo), MD (Senior Lecturer)', 'assets/img/teacher_biology.jpg', 'science'),
-('tch-5', 'Lec. Kavinda Alwis', 'කථිකාචාර්ය කාවින්ද අල්විස්', 'Information & Communication Tech (ICT)', 'තොරතුරු තාක්ෂණය (ICT)', 'B.Sc. (Hons) Computing, MBCS, M.Sc.', 'assets/img/teacher_ict.jpg', 'tech')
+-- Insert Default Institutes
+INSERT INTO public.institutes (id, name, name_si, status, hasPhysicalLocation, type, type_si, badge, badge_si, icon, location, location_si, phone, email, mapUrl, facilities, facilities_si) VALUES
+('inst-embilipitiya', 'Victory Higher Educational Institute - Embilipitiya', 'වික්ටරි උසස් අධ්‍යාපන ආයතනය - ඇඹිලිපිටිය', 'active', true, 'Physical Campus & Smart Auditorium', 'ප්‍රධාන භෞතික ශ්‍රවණාගාරය හා පරිශ්‍රය', 'Physical Campus Hub', 'ප්‍රධාන භෞතික මධ්‍යස්ථානය', '🏫', 'Victory College Embilipitiya, Embilipitiya Pallegama, Sri Lanka, 70200', 'වික්ටරි කොලේජ්, ඇඹිලිපිටිය පල්ලෙගම, ශ්‍රී ලංකාව, 70200', '+94 47 226 2808 / +94 76 068 7578 (WhatsApp)', 'victorycollege.emb@gmail.com', 'https://www.google.com/maps/search/?api=1&query=Victory+College+Embilipitiya+Pallegama', '["Air Conditioned 1,500-seat Ultra-Modern Auditorium", "High-Speed Smart LMS Campus Wi-Fi", "Digital Physics Demonstration Lab & Visual Projection", "Dedicated Tute Counter & Student Helpdesk (047 226 2808)", "Official WhatsApp Support: +94 76 068 7578"]'::jsonb, '["වායුසමනය කළ ආසන 1,500ක අතිනවීන ශ්‍රවණාගාරය", "අධිවේගී Smart LMS Wi-Fi පද්ධතිය", "භෞතික විද්‍යා ආදර්ශන සහ ඩිජිටල් ප්‍රක්ෂේපණ පද්ධතිය", "නිබන්ධන කවුළුව සහ ශිෂ්‍ය තාක්ෂණික සහාය (047 226 2808)", "නිල WhatsApp සහාය: +94 76 068 7578"]'::jsonb),
+('inst-online', 'EduPeak 24/7 Global Online LMS', 'එඩියුපීක් 24/7 ගෝලීය මාර්ගගත LMS', 'coming_soon', false, 'Online Educational Platform & LMS', '100% ක්ලවුඩ් LMS පද්ධතිය', 'Coming Soon (Online)', 'ඉදිරියේදී විවෘත වේ', '🌐', 'Online Hybrid Cloud Platform (Island-Wide)', 'සමස්ත ලංකා මාර්ගගත ක්ලවුඩ් පද්ධතිය (Online)', '+94 76 068 7578 (WhatsApp / Hotline)', 'support@edupeak.lk', '', '["Ultra HD 1080p Low-Latency Live Streaming", "Instant MCQ Speed Testing & Ranking", "Island-wide Tute Home Delivery (Speed Post)", "24/7 AI-Powered Doubt Clearing Chat"]'::jsonb, '["අඩු ඩේටා වැයවන Ultra HD සජීවී විකාශය", "ක්ෂණික MCQ ලකුණු හා සමස්ත ලංකා ශ්‍රේණිගත කිරීම්", "දිවයින පුරා නිවසටම නිබන්ධන කුරියර් සේවාව", "24/7 ක්‍රියාත්මක AI සහායක සහ ගැටළු නිරාකරණය"]'::jsonb),
+('inst-kandy', 'EduPeak Kandy Royal Center', 'එඩියුපීක් මහනුවර රෝයල් මධ්‍යස්ථානය', 'coming_soon', true, 'Upcoming Central Province Campus Hub', 'මධ්‍යම පළාත් නව ශාඛාව', 'Coming Soon', 'ඉදිරියේදී විවෘත වේ', '🏛️', 'Royal Center, Peradeniya Road, Kandy, Sri Lanka', 'රෝයල් මධ්‍යස්ථානය, පේරාදෙණිය පාර, මහනුවර', '+94 81 223 4567 / +94 71 805 9089', 'kandy@edupeak.lk', 'https://maps.google.com/?q=Kandy', '["800-seat Multimedia Lecture Hall", "Physics Experiment Demonstration Unit", "Kandy District Tute Counter & Express Courier", "Student Study Lounge & Free Wi-Fi"]'::jsonb, '["ආසන 800ක බහුමාධ්‍ය ශ්‍රවණාගාරය", "භෞතික විද්‍යා ප්‍රායෝගික ආදර්ශන ඒකකය", "මහනුවර දිස්ත්‍රික් නිබන්ධන කවුළුව", "නොමිලේ Wi-Fi සහ අධ්‍යයන ශාලාව"]'::jsonb),
+('inst-kurunegala', 'EduPeak Kurunegala Premier Hub', 'එඩියුපීක් කුරුණෑගල ප්‍රිමියර් මධ්‍යස්ථානය', 'coming_soon', true, 'Upcoming North Western Province Hub', 'වයඹ පළාත් නව ශාඛාව', 'Coming Soon', 'ඉදිරියේදී විවෘත වේ', '🏢', 'Premier Hub, Colombo Road, Kurunegala, Sri Lanka', 'ප්‍රිමියර් මධ්‍යස්ථානය, කොළඹ පාර, කුරුණෑගල', '+94 37 222 3344 / +94 71 805 9089', 'kurunegala@edupeak.lk', 'https://maps.google.com/?q=Kurunegala', '["Modern Digital Classroom with Visual Monitors", "Speed Exam Testing Center", "Wayamba Student Support Desk", "Direct Bus Route Accessibility"]'::jsonb, '["නවීන ඩිජිටල් පන්ති කාමර", "වේගවත් විභාග පරීක්ෂණ මධ්‍යස්ථානය", "වයඹ ශිෂ්‍ය සේවා කවුළුව", "ප්‍රධාන බස් නැවතුම්පොළට ආසන්නව"]'::jsonb)
 ON CONFLICT (id) DO NOTHING;
 `;
   }

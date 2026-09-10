@@ -74,11 +74,11 @@ const TEACHER_CONTROLLER = {
           } catch (e) {}
         }
       }
-      if (loadedCourses !== null) {
+      if (loadedCourses !== null && loadedCourses.length > 0) {
         if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = loadedCourses;
       } else {
         const customCourses = JSON.parse(localStorage.getItem(this.storageKeys.customCourses || "edupeak_custom_courses") || "[]");
-        if (customCourses.length && window.EDUPEAK_DATA) {
+        if (customCourses.length && window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) {
           customCourses.forEach(c => {
             if (!window.EDUPEAK_DATA.courses.find(item => item.id === c.id)) {
               window.EDUPEAK_DATA.courses.unshift(c);
@@ -180,7 +180,7 @@ const TEACHER_CONTROLLER = {
     try {
       if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
         const shared = window.SUPABASE_HELPER.getSharedData("edupeak_courses_db");
-        if (shared !== null && Array.isArray(shared)) {
+        if (shared !== null && Array.isArray(shared) && shared.length > 0) {
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = shared;
           return shared;
         }
@@ -188,7 +188,7 @@ const TEACHER_CONTROLLER = {
       const stored = localStorage.getItem("edupeak_courses_db");
       if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = parsed;
           return parsed;
         }
@@ -542,19 +542,31 @@ const TEACHER_CONTROLLER = {
       try {
         localStorage.setItem("edupeak_lessons_db", JSON.stringify([]));
         localStorage.setItem(this.storageKeys.customLessons || "edupeak_custom_lessons", JSON.stringify([]));
+        if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+          window.SUPABASE_HELPER.setSharedData("edupeak_lessons_db", []);
+        }
       } catch (e) {}
       if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.lmsLessons = [];
       return [];
     }
 
-    let lessons = [];
-    const stored = localStorage.getItem("edupeak_lessons_db");
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) lessons = parsed;
-      } catch (e) {}
-    } else {
+    let lessons = null;
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+      const shared = window.SUPABASE_HELPER.getSharedData("edupeak_lessons_db");
+      if (shared !== null && Array.isArray(shared)) {
+        lessons = shared;
+      }
+    }
+    if (lessons === null) {
+      const stored = localStorage.getItem("edupeak_lessons_db");
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) lessons = parsed;
+        } catch (e) {}
+      }
+    }
+    if (lessons === null) {
       lessons = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.lmsLessons) ? window.EDUPEAK_DATA.lmsLessons : [];
     }
 
@@ -570,9 +582,14 @@ const TEACHER_CONTROLLER = {
   },
 
   saveLessonsDatabase(lessonsList) {
-    localStorage.setItem("edupeak_lessons_db", JSON.stringify(lessonsList));
+    try {
+      localStorage.setItem("edupeak_lessons_db", JSON.stringify(lessonsList));
+    } catch (e) {}
     if (window.EDUPEAK_DATA) {
       window.EDUPEAK_DATA.lmsLessons = lessonsList;
+    }
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+      window.SUPABASE_HELPER.setSharedData("edupeak_lessons_db", lessonsList);
     }
   },
 
@@ -1147,23 +1164,35 @@ const TEACHER_CONTROLLER = {
       try {
         localStorage.setItem(this.storageKeys.quizzesDb, JSON.stringify([]));
         localStorage.setItem(this.storageKeys.customQuizzes, JSON.stringify([]));
+        if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+          window.SUPABASE_HELPER.setSharedData(this.storageKeys.quizzesDb || "edupeak_quizzes_db", []);
+        }
       } catch (e) {}
       if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.quizQuestions = [];
       return [];
     }
 
-    let quizzes = [];
-    const stored = localStorage.getItem(this.storageKeys.quizzesDb);
-    if (stored !== null) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          quizzes = parsed;
-        }
-      } catch (e) {
-        console.warn("Failed parsing edupeak_quizzes_db", e);
+    let quizzes = null;
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+      const shared = window.SUPABASE_HELPER.getSharedData(this.storageKeys.quizzesDb || "edupeak_quizzes_db");
+      if (shared !== null && Array.isArray(shared)) {
+        quizzes = shared;
       }
-    } else {
+    }
+    if (quizzes === null) {
+      const stored = localStorage.getItem(this.storageKeys.quizzesDb);
+      if (stored !== null) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            quizzes = parsed;
+          }
+        } catch (e) {
+          console.warn("Failed parsing edupeak_quizzes_db", e);
+        }
+      }
+    }
+    if (quizzes === null) {
       quizzes = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.quizQuestions) 
         ? JSON.parse(JSON.stringify(window.EDUPEAK_DATA.quizQuestions)) 
         : [];
@@ -1197,10 +1226,15 @@ const TEACHER_CONTROLLER = {
   },
 
   saveQuizzesDatabase(quizzesList) {
-    localStorage.setItem(this.storageKeys.quizzesDb, JSON.stringify(quizzesList));
-    localStorage.setItem(this.storageKeys.customQuizzes, JSON.stringify(quizzesList));
+    try {
+      localStorage.setItem(this.storageKeys.quizzesDb, JSON.stringify(quizzesList));
+      localStorage.setItem(this.storageKeys.customQuizzes, JSON.stringify(quizzesList));
+    } catch (e) {}
     if (window.EDUPEAK_DATA) {
       window.EDUPEAK_DATA.quizQuestions = quizzesList;
+    }
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+      window.SUPABASE_HELPER.setSharedData(this.storageKeys.quizzesDb || "edupeak_quizzes_db", quizzesList);
     }
   },
 
@@ -1898,15 +1932,25 @@ const TEACHER_CONTROLLER = {
   },
 
   getAllScheduledBroadcasts() {
-    const stored = localStorage.getItem(this.storageKeys.schedulesDb);
-    if (stored !== null) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return parsed;
-      } catch (e) {
-        console.warn("Failed parsing edupeak_schedules_db", e);
+    let schedules = null;
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+      const shared = window.SUPABASE_HELPER.getSharedData(this.storageKeys.schedulesDb || "edupeak_schedules_db");
+      if (shared !== null && Array.isArray(shared)) {
+        schedules = shared;
       }
     }
+    if (schedules === null) {
+      const stored = localStorage.getItem(this.storageKeys.schedulesDb);
+      if (stored !== null) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) schedules = parsed;
+        } catch (e) {
+          console.warn("Failed parsing edupeak_schedules_db", e);
+        }
+      }
+    }
+    if (schedules !== null) return schedules;
 
     const defaultSchedules = [
       {
@@ -1935,12 +1979,22 @@ const TEACHER_CONTROLLER = {
       }
     ];
 
-    localStorage.setItem(this.storageKeys.schedulesDb, JSON.stringify(defaultSchedules));
+    try {
+      localStorage.setItem(this.storageKeys.schedulesDb, JSON.stringify(defaultSchedules));
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+        window.SUPABASE_HELPER.setSharedData(this.storageKeys.schedulesDb || "edupeak_schedules_db", defaultSchedules);
+      }
+    } catch (e) {}
     return defaultSchedules;
   },
 
   saveScheduledBroadcasts(list) {
-    localStorage.setItem(this.storageKeys.schedulesDb, JSON.stringify(list));
+    try {
+      localStorage.setItem(this.storageKeys.schedulesDb, JSON.stringify(list));
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+        window.SUPABASE_HELPER.setSharedData(this.storageKeys.schedulesDb || "edupeak_schedules_db", list);
+      }
+    } catch (e) {}
   },
 
   renderSchedulesTable() {
@@ -2168,7 +2222,12 @@ const TEACHER_CONTROLLER = {
       updatedAt: new Date().toISOString()
     };
 
-    localStorage.setItem(this.storageKeys.liveStream, JSON.stringify(streamConfig));
+    try {
+      localStorage.setItem(this.storageKeys.liveStream, JSON.stringify(streamConfig));
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+        window.SUPABASE_HELPER.setSharedData(this.storageKeys.liveStream || "edupeak_live_stream_config", streamConfig);
+      }
+    } catch (e) {}
 
     const schedules = this.getAllScheduledBroadcasts();
     const existingIdx = schedules.findIndex(item => item.id === scheduleId);
@@ -2245,6 +2304,9 @@ const TEACHER_CONTROLLER = {
               updatedAt: new Date().toISOString()
             };
             localStorage.setItem(this.storageKeys.liveStream, JSON.stringify(clearedConfig));
+            if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+              window.SUPABASE_HELPER.setSharedData(this.storageKeys.liveStream || "edupeak_live_stream_config", clearedConfig);
+            }
             const previewIframe = document.getElementById("teacherLivePreviewIframe");
             const badgeEl = document.getElementById("livePreviewStatusBadge");
             if (previewIframe) previewIframe.src = "about:blank";
@@ -2288,6 +2350,9 @@ const TEACHER_CONTROLLER = {
         updatedAt: new Date().toISOString()
       };
       localStorage.setItem(this.storageKeys.liveStream, JSON.stringify(clearedConfig));
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+        window.SUPABASE_HELPER.setSharedData(this.storageKeys.liveStream || "edupeak_live_stream_config", clearedConfig);
+      }
 
       this.resetScheduleForm();
 
@@ -2316,7 +2381,19 @@ const TEACHER_CONTROLLER = {
   },
 
   renderLiveStudio() {
-    const saved = localStorage.getItem(this.storageKeys.liveStream);
+    let saved = null;
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+      const shared = window.SUPABASE_HELPER.getSharedData(this.storageKeys.liveStream || "edupeak_live_stream_config");
+      if (shared && typeof shared === "object") saved = shared;
+    }
+    if (!saved) {
+      const raw = localStorage.getItem(this.storageKeys.liveStream);
+      if (raw) {
+        try {
+          saved = JSON.parse(raw);
+        } catch (e) {}
+      }
+    }
     const titleEl = document.getElementById("liveStudioTopic");
     const urlEl = document.getElementById("liveStudioUrl");
     const statusEl = document.getElementById("liveStudioStatus");
@@ -2328,7 +2405,7 @@ const TEACHER_CONTROLLER = {
 
     if (saved) {
       try {
-        const cfg = JSON.parse(saved);
+        const cfg = saved;
         if (titleEl && cfg.topic) titleEl.value = cfg.topic;
         if (urlEl && (cfg.rawUrl || cfg.embedUrl)) urlEl.value = cfg.rawUrl || cfg.embedUrl;
         if (statusEl && cfg.status) statusEl.value = cfg.status;

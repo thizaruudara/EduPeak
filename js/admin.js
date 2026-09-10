@@ -102,7 +102,7 @@ const ADMIN_CONTROLLER = {
     }
   },
 
-  switchTab(tabId) {
+  async switchTab(tabId) {
     this.currentTab = tabId;
     try {
       localStorage.setItem("edupeak_admin_active_tab", tabId);
@@ -137,13 +137,13 @@ const ADMIN_CONTROLLER = {
     }
 
     // Refresh specific tab
-    if (tabId === "overview") this.renderOverview();
-    if (tabId === "students") this.renderStudents();
-    if (tabId === "courses") this.renderCourses();
-    if (tabId === "teachers") this.renderTeachers();
-    if (tabId === "institutes") this.renderInstitutes();
-    if (tabId === "papers") this.renderPapers();
-    if (tabId === "supabase") this.renderSupabaseTab();
+    if (tabId === "overview") return await this.renderOverview();
+    if (tabId === "students") return this.renderStudents();
+    if (tabId === "courses") return await this.renderCourses();
+    if (tabId === "teachers") return await this.renderTeachers();
+    if (tabId === "institutes") return this.renderInstitutes();
+    if (tabId === "papers") return this.renderPapers();
+    if (tabId === "supabase") return this.renderSupabaseTab();
   },
 
   async refreshAll() {
@@ -1603,6 +1603,148 @@ const ADMIN_CONTROLLER = {
         window.showToast(`Branch "${cleanName}" has been deleted.`, "info");
       }
       this.renderInstitutes();
+    }
+  },
+
+  async restoreDefaultInstitutes() {
+    const defaultList = [
+      {
+        id: "inst-embilipitiya",
+        name: "Victory Higher Educational Institute - Embilipitiya",
+        name_si: "වික්ටරි උසස් අධ්‍යාපන ආයතනය - ඇඹිලිපිටිය",
+        status: "active",
+        hasPhysicalLocation: true,
+        location: "Victory College Embilipitiya, Embilipitiya Pallegama, Sri Lanka, 70200",
+        location_si: "වික්ටරි කොලේජ්, ඇඹිලිපිටිය පල්ලෙගම, ශ්‍රී ලංකාව, 70200",
+        mapUrl: "https://www.google.com/maps/search/?api=1&query=Victory+College+Embilipitiya+Pallegama",
+        phone: "+94 47 226 2808 / +94 76 068 7578 (WhatsApp)",
+        email: "victorycollege.emb@gmail.com",
+        website: "https://victorycollegeemb.edu.lk",
+        facebook: "https://www.facebook.com/Embilipitiya.edu",
+        type: "Physical Campus & Smart Auditorium",
+        type_si: "ප්‍රධාන භෞතික ශ්‍රවණාගාරය හා පරිශ්‍රය",
+        facilities: [
+          "Air Conditioned 1,500-seat Ultra-Modern Auditorium",
+          "High-Speed Smart LMS Campus Wi-Fi",
+          "Digital Physics Demonstration Lab & Visual Projection",
+          "Dedicated Tute Counter & Student Helpdesk (047 226 2808)",
+          "Official WhatsApp Support: +94 76 068 7578"
+        ],
+        facilities_si: [
+          "වායුසමනය කළ ආසන 1,500ක අතිනවීන ශ්‍රවණාගාරය",
+          "අධිවේගී Smart LMS Wi-Fi පද්ධතිය",
+          "භෞතික විද්‍යා ආදර්ශන සහ ඩිජිටල් ප්‍රක්ෂේපණ පද්ධතිය",
+          "නිබන්ධන කවුළුව සහ ශිෂ්‍ය තාක්ෂණික සහාය (047 226 2808)",
+          "නිල WhatsApp සහාය: +94 76 068 7578"
+        ],
+        badge: "Physical Campus Hub",
+        badge_si: "ප්‍රධාන භෞතික මධ්‍යස්ථානය",
+        icon: "🏫"
+      },
+      {
+        id: "inst-online",
+        name: "EduPeak 24/7 Global Online LMS",
+        name_si: "එඩියුපීක් 24/7 ගෝලීය මාර්ගගත LMS",
+        status: "coming_soon",
+        hasPhysicalLocation: false,
+        location: "Online Hybrid Cloud Platform (Island-Wide)",
+        location_si: "සමස්ත ලංකා මාර්ගගත ක්ලවුඩ් පද්ධතිය (Online)",
+        phone: "+94 76 068 7578 (WhatsApp / Hotline)",
+        email: "support@edupeak.lk",
+        type: "Online Educational Platform & LMS",
+        type_si: "100% ක්ලවුඩ් LMS පද්ධතිය",
+        facilities: [
+          "Ultra HD 1080p Low-Latency Live Streaming",
+          "Instant MCQ Speed Testing & Ranking",
+          "Island-wide Tute Home Delivery (Speed Post)",
+          "24/7 AI-Powered Doubt Clearing Chat"
+        ],
+        facilities_si: [
+          "අඩු ඩේටා වැයවන Ultra HD සජීවී විකාශය",
+          "ක්ෂණික MCQ ලකුණු හා සමස්ත ලංකා ශ්‍රේණිගත කිරීම්",
+          "දිවයින පුරා නිවසටම නිබන්ධන කුරියර් සේවාව",
+          "24/7 ක්‍රියාත්මක AI සහායක සහ ගැටළු නිරාකරණය"
+        ],
+        badge: "Coming Soon (Online)",
+        badge_si: "ඉදිරියේදී විවෘත වේ",
+        icon: "🌐"
+      },
+      {
+        id: "inst-kandy",
+        name: "EduPeak Kandy Royal Center",
+        name_si: "එඩියුපීක් මහනුවර රෝයල් මධ්‍යස්ථානය",
+        status: "coming_soon",
+        hasPhysicalLocation: true,
+        location: "Royal Center, Peradeniya Road, Kandy, Sri Lanka",
+        location_si: "රෝයල් මධ්‍යස්ථානය, පේරාදෙණිය පාර, මහනුවර",
+        mapUrl: "https://maps.google.com/?q=Kandy",
+        phone: "+94 81 223 4567 / +94 71 805 9089",
+        email: "kandy@edupeak.lk",
+        type: "Upcoming Central Province Campus Hub",
+        type_si: "මධ්‍යම පළාත් නව ශාඛාව",
+        facilities: [
+          "800-seat Multimedia Lecture Hall",
+          "Physics Experiment Demonstration Unit",
+          "Kandy District Tute Counter & Express Courier",
+          "Student Study Lounge & Free Wi-Fi"
+        ],
+        facilities_si: [
+          "ආසන 800ක බහුමාධ්‍ය ශ්‍රවණාගාරය",
+          "භෞතික විද්‍යා ප්‍රායෝගික ආදර්ශන ඒකකය",
+          "මහනුවර දිස්ත්‍රික් නිබන්ධන කවුළුව",
+          "නොමිලේ Wi-Fi සහ අධ්‍යයන ශාලාව"
+        ],
+        badge: "Coming Soon",
+        badge_si: "ඉදිරියේදී විවෘත වේ",
+        icon: "🏛️"
+      },
+      {
+        id: "inst-kurunegala",
+        name: "EduPeak Kurunegala Premier Hub",
+        name_si: "එඩියුපීක් කුරුණෑගල ප්‍රිමියර් මධ්‍යස්ථානය",
+        status: "coming_soon",
+        hasPhysicalLocation: true,
+        location: "Premier Hub, Colombo Road, Kurunegala, Sri Lanka",
+        location_si: "ප්‍රිමියර් මධ්‍යස්ථානය, කොළඹ පාර, කුරුණෑගල",
+        mapUrl: "https://maps.google.com/?q=Kurunegala",
+        phone: "+94 37 222 3344 / +94 71 805 9089",
+        email: "kurunegala@edupeak.lk",
+        type: "Upcoming North Western Province Hub",
+        type_si: "වයඹ පළාත් නව ශාඛාව",
+        facilities: [
+          "Modern Digital Classroom with Visual Monitors",
+          "Speed Exam Testing Center",
+          "Wayamba Student Support Desk",
+          "Direct Bus Route Accessibility"
+        ],
+        facilities_si: [
+          "නවීන ඩිජිටල් පන්ති කාමර",
+          "වේගවත් විභාග පරීක්ෂණ මධ්‍යස්ථානය",
+          "වයඹ ශිෂ්‍ය සේවා කවුළුව",
+          "ප්‍රධාන බස් නැවතුම්පොළට ආසන්නව"
+        ],
+        badge: "Coming Soon",
+        badge_si: "ඉදිරියේදී විවෘත වේ",
+        icon: "🏢"
+      }
+    ];
+
+    for (const inst of defaultList) {
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.saveInstitute === "function") {
+        await window.SUPABASE_HELPER.saveInstitute(inst);
+      }
+    }
+    if (window.EDUPEAK_INSTITUTES) {
+      const current = window.EDUPEAK_INSTITUTES.getAll();
+      defaultList.forEach(d => {
+        if (!current.some(c => c.id === d.id)) current.push(d);
+      });
+      window.EDUPEAK_INSTITUTES.saveAll(current);
+    }
+
+    this.renderInstitutes();
+    if (window.showToast) {
+      window.showToast("🏛️ Default campus branches (including Online LMS) restored!", "success");
     }
   },
 

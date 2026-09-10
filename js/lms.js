@@ -68,7 +68,17 @@ function initLMS() {
 // Synchronize Live Stream player with Teacher Studio Broadcast
 function syncLiveStreamWithTeacher() {
   try {
-    const saved = localStorage.getItem("edupeak_live_stream_config");
+    let cfg = null;
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+      const shared = window.SUPABASE_HELPER.getSharedData("edupeak_live_stream_config");
+      if (shared && typeof shared === "object") cfg = shared;
+    }
+    if (!cfg) {
+      const saved = localStorage.getItem("edupeak_live_stream_config");
+      if (saved) {
+        try { cfg = JSON.parse(saved); } catch (e) {}
+      }
+    }
     const topicEl = document.getElementById("lmsLiveTopicTitle");
     const statusTextEl = document.getElementById("lmsLiveStatusText");
     const badgeEl = document.getElementById("lmsLiveBadgePill");
@@ -76,10 +86,9 @@ function syncLiveStreamWithTeacher() {
     let liveStreamUrl = "https://www.youtube.com/embed/dQw4w9WgXcQ";
     let isWatermarkEnabled = false;
 
-    if (saved) {
-      const cfg = JSON.parse(saved);
-      if (cfg.embedUrl || cfg.streamUrl) {
-        liveStreamUrl = cfg.embedUrl || cfg.streamUrl;
+    if (cfg) {
+      if (cfg.embedUrl || cfg.streamUrl || cfg.rawUrl) {
+        liveStreamUrl = cfg.embedUrl || cfg.streamUrl || cfg.rawUrl;
       }
       isWatermarkEnabled = Boolean(cfg.watermarkEnabled);
       if (topicEl && cfg.topic) {
@@ -153,11 +162,11 @@ function loadSavedLMSData() {
         } catch (e) {}
       }
     }
-    if (loadedCourses !== null) {
+    if (loadedCourses !== null && loadedCourses.length > 0) {
       if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = loadedCourses;
     } else {
       const customCourses = JSON.parse(localStorage.getItem("edupeak_custom_courses") || "[]");
-      if (customCourses.length && window.EDUPEAK_DATA) {
+      if (customCourses.length && window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) {
         customCourses.forEach(c => {
           if (!window.EDUPEAK_DATA.courses.find(item => item.id === c.id)) {
             window.EDUPEAK_DATA.courses.unshift(c);
@@ -167,9 +176,21 @@ function loadSavedLMSData() {
     }
 
     // Load any custom lessons created in Teacher Studio
-    const storedLessonsDb = JSON.parse(localStorage.getItem("edupeak_lessons_db") || "null");
-    if (storedLessonsDb && Array.isArray(storedLessonsDb) && window.EDUPEAK_DATA) {
-      window.EDUPEAK_DATA.lmsLessons = storedLessonsDb;
+    let loadedLessons = null;
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+      const shared = window.SUPABASE_HELPER.getSharedData("edupeak_lessons_db");
+      if (shared !== null && Array.isArray(shared)) {
+        loadedLessons = shared;
+      }
+    }
+    if (loadedLessons === null) {
+      const storedLessonsDb = JSON.parse(localStorage.getItem("edupeak_lessons_db") || "null");
+      if (storedLessonsDb && Array.isArray(storedLessonsDb)) {
+        loadedLessons = storedLessonsDb;
+      }
+    }
+    if (loadedLessons !== null && window.EDUPEAK_DATA) {
+      window.EDUPEAK_DATA.lmsLessons = loadedLessons;
     } else {
       const customLessons = JSON.parse(localStorage.getItem("edupeak_custom_lessons") || "[]");
       if (customLessons.length && window.EDUPEAK_DATA) {
@@ -182,9 +203,21 @@ function loadSavedLMSData() {
     }
 
     // Load any custom quiz questions created in Teacher Studio
-    const storedQuizzesDb = JSON.parse(localStorage.getItem("edupeak_quizzes_db") || "null");
-    if (storedQuizzesDb && Array.isArray(storedQuizzesDb) && window.EDUPEAK_DATA) {
-      window.EDUPEAK_DATA.quizQuestions = storedQuizzesDb;
+    let loadedQuizzes = null;
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+      const shared = window.SUPABASE_HELPER.getSharedData("edupeak_quizzes_db");
+      if (shared !== null && Array.isArray(shared)) {
+        loadedQuizzes = shared;
+      }
+    }
+    if (loadedQuizzes === null) {
+      const storedQuizzesDb = JSON.parse(localStorage.getItem("edupeak_quizzes_db") || "null");
+      if (storedQuizzesDb && Array.isArray(storedQuizzesDb)) {
+        loadedQuizzes = storedQuizzesDb;
+      }
+    }
+    if (loadedQuizzes !== null && window.EDUPEAK_DATA) {
+      window.EDUPEAK_DATA.quizQuestions = loadedQuizzes;
     } else {
       const customQuizzes = JSON.parse(localStorage.getItem("edupeak_custom_quizzes") || "[]");
       if (customQuizzes.length && window.EDUPEAK_DATA) {
@@ -226,7 +259,7 @@ function getLMSCourses() {
   try {
     if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
       const shared = window.SUPABASE_HELPER.getSharedData("edupeak_courses_db");
-      if (shared !== null && Array.isArray(shared)) {
+      if (shared !== null && Array.isArray(shared) && shared.length > 0) {
         if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = shared;
         return shared;
       }
@@ -234,7 +267,7 @@ function getLMSCourses() {
     const stored = localStorage.getItem("edupeak_courses_db");
     if (stored !== null) {
       const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) {
+      if (Array.isArray(parsed) && parsed.length > 0) {
         if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = parsed;
         return parsed;
       }

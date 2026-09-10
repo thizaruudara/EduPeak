@@ -68,7 +68,8 @@ async function runAudit() {
   }
 
   try {
-    const page = await browser.newPage();
+    const context = await browser.newContext();
+    const page = await context.newPage();
 
     // =========================================================================
     // 1. HOME PAGE (index.html)
@@ -83,8 +84,74 @@ async function runAudit() {
     const instCards = await page.locator('#institutesGrid .institute-card, #institutesGrid .inst-card, #institutesGrid > div').count();
     record('Home Page', 'Campus Institutes Section', instCards >= 1 ? 'PASS' : 'FAIL', `${instCards} campuses displayed`);
 
-    // Authenticate student session for LMS test
+    // Authenticate student session and seed test data
     await page.evaluate(() => {
+      if (window.EDUPEAK_DATA) {
+        if (Array.isArray(window.EDUPEAK_DATA.courses) && window.EDUPEAK_DATA.courses.length > 0) {
+          localStorage.setItem("edupeak_courses_db", JSON.stringify(window.EDUPEAK_DATA.courses));
+          if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+            window.SUPABASE_HELPER.setSharedData("edupeak_courses_db", window.EDUPEAK_DATA.courses);
+          }
+        }
+        if (Array.isArray(window.EDUPEAK_DATA.teachers) && window.EDUPEAK_DATA.teachers.length > 0) {
+          localStorage.setItem("edupeak_teachers_db", JSON.stringify(window.EDUPEAK_DATA.teachers));
+          if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+            window.SUPABASE_HELPER.setSharedData("edupeak_teachers_db", window.EDUPEAK_DATA.teachers);
+          }
+        }
+      }
+      const defaultPapers = [
+        {
+          id: "pap-al-2024",
+          title: "2024 G.C.E. A/L Physics Past Paper & Structured Marking Scheme",
+          title_si: "2024 උසස් පෙළ භෞතික විද්‍යාව පසුගිය විභාග ප්‍රශ්න පත්‍රය සහ ලකුණු දීමේ පටිපාටිය",
+          year: 2024,
+          type: "national",
+          unit: "all",
+          unitName: "Complete Paper (Part I & II)",
+          size: "4.8 MB",
+          fileSize: "4.8 MB",
+          downloadCount: 3840,
+          url: "assets/papers/2024_AL_Physics_Paper.pdf",
+          pdfUrl: "assets/papers/2024_AL_Physics_Paper.pdf",
+          storageType: "local"
+        },
+        {
+          id: "pap-al-2023",
+          title: "2023 G.C.E. A/L Physics Past Paper & Detailed Marking Scheme",
+          title_si: "2023 උසස් පෙළ භෞතික විද්‍යාව පසුගිය විභාග ප්‍රශ්න පත්‍රය සහ පිළිතුරු විවරණය",
+          year: 2023,
+          type: "national",
+          unit: "all",
+          unitName: "Complete Paper (Part I & II)",
+          size: "5.2 MB",
+          fileSize: "5.2 MB",
+          downloadCount: 4210,
+          url: "assets/papers/2023_AL_Physics_Paper.pdf",
+          pdfUrl: "assets/papers/2023_AL_Physics_Paper.pdf",
+          storageType: "local"
+        },
+        {
+          id: "pap-al-2022",
+          title: "2022 G.C.E. A/L Physics Past Paper & Detailed Marking Scheme",
+          title_si: "2022 උසස් පෙළ භෞතික විද්‍යාව පසුගිය විභාග ප්‍රශ්න පත්‍රය සහ පිළිතුරු විවරණය",
+          year: 2022,
+          type: "national",
+          unit: "all",
+          unitName: "Complete Paper (Part I & II)",
+          size: "4.5 MB",
+          fileSize: "4.5 MB",
+          downloadCount: 5120,
+          url: "assets/papers/2022_AL_Physics_Paper.pdf",
+          pdfUrl: "assets/papers/2022_AL_Physics_Paper.pdf",
+          storageType: "local"
+        }
+      ];
+      localStorage.setItem("edupeak_papers_db", JSON.stringify(defaultPapers));
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+        window.SUPABASE_HELPER.setSharedData("edupeak_papers_db", defaultPapers);
+      }
+
       const studentUser = {
         id: "EP-2027-001",
         name: "Kasun Jayasundara",
@@ -96,6 +163,7 @@ async function runAudit() {
         enrolledCourses: ["crs-phy-2027-theory", "crs-phy-2027-revision"]
       };
       localStorage.setItem("edupeak_active_session", JSON.stringify(studentUser));
+      localStorage.setItem("edupeak_enrolled", JSON.stringify(["crs-phy-2027-theory", "crs-phy-2027-revision"]));
       if (window.AUTH_SYSTEM) window.AUTH_SYSTEM.updateUIForAuthState();
     });
 
