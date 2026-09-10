@@ -2304,6 +2304,187 @@ const SUPABASE_HELPER = {
     return true;
   },
 
+  // ── Real-Time Student Viewer Presence Tracking ────────────────────────────
+  _activePresenceCleanup: null,
+  _activePresenceSessionId: null,
+
+  joinLivePresence(sessionId, user, onCountChange) {
+    if (!sessionId) return () => {};
+    this.leaveLivePresence();
+
+    this._activePresenceSessionId = sessionId;
+    const role = (user && user.role) ? user.role : "student";
+    const name = (user && user.name) ? user.name : "Student";
+    
+    // Deterministic unique ID per browser tab/device
+    let tabId = window.__EDUPEAK_TAB_ID__;
+    if (!tabId) {
+      tabId = "tab_" + Math.random().toString(36).substring(2, 10);
+      window.__EDUPEAK_TAB_ID__ = tabId;
+    }
+    const viewerKey = (user && (user.id || user.nic))
+      ? `${role}_${user.id || user.nic}`
+      : `${role}_${tabId}`;
+
+    let lastKnownCount = -1;
+    const reportCount = (cnt) => {
+      const valid = Math.max(0, Number(cnt) || 0);
+      if (valid !== lastKnownCount) {
+        lastKnownCount = valid;
+        if (typeof onCountChange === "function") {
+          onCountChange(valid);
+        }
+        try {
+          window.dispatchEvent(new CustomEvent("edupeak-live-viewers-changed", {
+            detail: { sessionId, viewersCount: valid }
+          }));
+        } catch(e) {}
+      }
+    };
+
+    // A. LocalStorage & BroadcastChannel heartbeat (instant multi-tab / local network)
+    const storageKey = `edupeak_live_pres_${sessionId}`;
+    let bc = null;
+    try {
+      if (typeof BroadcastChannel !== "undefined") {
+        bc = new BroadcastChannel(`edupeak_live_pres_chan_${sessionId}`);
+        bc.onmessage = (evt) => {
+          if (!evt.data) return;
+          if (evt.data.type === "PRESENCE_COUNT") {
+            reportCount(evt.data.count);
+          } else if (evt.data.type === "HEARTBEAT") {
+            _handleLocalHeartbeat(evt.data.key, evt.data.info);
+          } else if (evt.data.type === "LEAVE") {
+            _handleLocalLeave(evt.data.key);
+          }
+        };
+      }
+    } catch(e) {}
+
+    const _calcLocalCount = () => {
+      try {
+        const raw = localStorage.getItem(storageKey);
+        const map = raw ? JSON.parse(raw) : {};
+        const now = Date.now();
+        let changed = false;
+        let activeCount = 0;
+        for (const k in map) {
+          if (now - map[k].time > 12000) {
+            delete map[k];
+            changed = true;
+          } else {
+            activeCount++;
+          }
+        }
+        if (changed) {
+          localStorage.setItem(storageKey, JSON.stringify(map));
+        }
+        return activeCount;
+      } catch(e) {
+        return 0;
+      }
+    };
+
+    const _handleLocalHeartbeat = (k, info) => {
+      try {
+        const raw = localStorage.getItem(storageKey);
+        const map = raw ? JSON.parse(raw) : {};
+        map[k] = { ...info, time: Date.now() };
+        localStorage.setItem(storageKey, JSON.stringify(map));
+        const cnt = _calcLocalCount();
+        reportCount(cnt);
+        if (bc) bc.postMessage({ type: "PRESENCE_COUNT", count: cnt });
+      } catch(e) {}
+    };
+
+    const _handleLocalLeave = (k) => {
+      try {
+        const raw = localStorage.getItem(storageKey);
+        const map = raw ? JSON.parse(raw) : {};
+        if (map[k]) {
+          delete map[k];
+          localStorage.setItem(storageKey, JSON.stringify(map));
+        }
+        const cnt = _calcLocalCount();
+        reportCount(cnt);
+        if (bc) bc.postMessage({ type: "PRESENCE_COUNT", count: cnt });
+      } catch(e) {}
+    };
+
+    // Register initial local heartbeat
+    _handleLocalHeartbeat(viewerKey, { role, name, tabId });
+    const localHeartbeatTimer = setInterval(() => {
+      _handleLocalHeartbeat(viewerKey, { role, name, tabId });
+      if (bc) {
+        bc.postMessage({ type: "HEARTBEAT", key: viewerKey, info: { role, name, tabId } });
+      }
+    }, 4000);
+
+    // B. Supabase Realtime Channel Presence (for remote devices / internet)
+    let supabaseChannel = null;
+    if (this.client && typeof this.client.channel === "function") {
+      try {
+        supabaseChannel = this.client.channel(`live_presence_${sessionId}`, {
+          config: { presence: { key: viewerKey } }
+        });
+
+        supabaseChannel.on('presence', { event: 'sync' }, () => {
+          try {
+            const state = supabaseChannel.presenceState();
+            const keys = Object.keys(state || {});
+            const remoteCount = keys.length;
+            const localCount = _calcLocalCount();
+            const finalCount = Math.max(remoteCount, localCount);
+            reportCount(finalCount);
+          } catch(e) {}
+        });
+
+        supabaseChannel.subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            try {
+              await supabaseChannel.track({
+                viewerKey,
+                role,
+                name,
+                joinedAt: Date.now()
+              });
+            } catch(e) {}
+          }
+        });
+      } catch(e) {
+        console.warn("Supabase realtime presence error:", e);
+      }
+    }
+
+    const cleanup = () => {
+      clearInterval(localHeartbeatTimer);
+      _handleLocalLeave(viewerKey);
+      if (bc) {
+        try {
+          bc.postMessage({ type: "LEAVE", key: viewerKey });
+          bc.close();
+        } catch(e) {}
+      }
+      if (supabaseChannel && this.client) {
+        try {
+          supabaseChannel.untrack();
+          this.client.removeChannel(supabaseChannel);
+        } catch(e) {}
+      }
+    };
+
+    this._activePresenceCleanup = cleanup;
+    return cleanup;
+  },
+
+  leaveLivePresence() {
+    if (typeof this._activePresenceCleanup === "function") {
+      try { this._activePresenceCleanup(); } catch(e) {}
+      this._activePresenceCleanup = null;
+      this._activePresenceSessionId = null;
+    }
+  },
+
   // 10. SYNC LOCAL DATA TO SUPABASE CLOUD
   async syncLocalToCloud() {
     if (!this.client || !this.isConnected) {

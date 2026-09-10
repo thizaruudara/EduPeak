@@ -880,7 +880,7 @@
   font-size: 14px !important;
   font-weight: 700 !important;
   cursor: pointer !important;
-  display: inline-flex !important;
+  display: none; /* Hidden by default until activated */
   align-items: center !important;
   gap: 10px !important;
   box-shadow: 0 6px 25px rgba(239, 68, 68, 0.55), 0 2px 10px rgba(0, 0, 0, 0.6) !important;
@@ -889,7 +889,23 @@
   pointer-events: auto !important;
   user-select: none !important;
   outline: none !important;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, background 0.2s ease !important;
+  transition: opacity 0.25s ease, transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, background 0.2s ease !important;
+}
+
+#liveUnmutePromptBtn.visible,
+.edupeak-live-unmute-btn.visible {
+  display: inline-flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+#liveUnmutePromptBtn.hidden,
+.edupeak-live-unmute-btn.hidden {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 #liveUnmutePromptBtn:hover,

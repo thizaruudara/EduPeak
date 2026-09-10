@@ -758,10 +758,6 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   let streamEndCallbacks = [];
   let durationCheckInterval = null;
 
-  function loadLiveStream(videoUrl, sessionData = null) {
-    initLivePlayer(videoUrl, sessionData);
-  }
-
   function initLivePlayer(videoUrl = "https://www.youtube.com/embed/dQw4w9WgXcQ", sessionData = null) {
     if (sessionData) activeSessionData = sessionData;
     const videoId = extractYouTubeId(videoUrl);
@@ -837,9 +833,8 @@ const EDUPEAK_LIVE_PLAYER = (function() {
         const vidDuration = typeof liveYtPlayer.getDuration === "function" ? liveYtPlayer.getDuration() : 0;
         const isLiveType = typeof liveYtPlayer.getVideoData === "function" && liveYtPlayer.getVideoData()?.isLive;
         if (!isLiveType && vidDuration > 0) {
-          const currentElapsed = getElapsedSeconds();
           const curTime = typeof liveYtPlayer.getCurrentTime === "function" ? liveYtPlayer.getCurrentTime() : 0;
-          if (currentElapsed >= vidDuration || (curTime >= vidDuration - 0.5 && curTime > 0)) {
+          if (curTime >= vidDuration - 0.5 && curTime > 0) {
             triggerLiveEnded();
           }
         }
@@ -925,7 +920,8 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       }, 500);
     }
 
-    const initialStart = (typeof startOffset === "number" && startOffset >= 0) ? Math.floor(startOffset) : getElapsedSeconds();
+    // Always restart from 0 on load/reload unless explicitly provided
+    const initialStart = (typeof startOffset === "number" && startOffset >= 0) ? Math.floor(startOffset) : 0;
 
     try {
       liveYtPlayer = new window.YT.Player('edupeakLiveYTPlayerMount', {
@@ -953,23 +949,12 @@ const EDUPEAK_LIVE_PLAYER = (function() {
             try {
               enforceLiveNoCaptions(liveYtPlayer);
 
-              const currentElapsed = getElapsedSeconds();
-              const vidDuration = typeof liveYtPlayer.getDuration === "function" ? liveYtPlayer.getDuration() : 0;
-              const isLiveType = typeof liveYtPlayer.getVideoData === "function" && liveYtPlayer.getVideoData()?.isLive;
-
-              // If pre-recorded video duration has already completed prior to reload / joining
-              if (!isLiveType && vidDuration > 0 && currentElapsed >= vidDuration) {
-                triggerLiveEnded();
-                return;
-              }
-
               // Force muted play immediately — browsers always allow muted autoplay
               liveYtPlayer.mute();
               liveYtPlayer.setVolume(0);
-              const curTime = typeof liveYtPlayer.getCurrentTime === "function" ? liveYtPlayer.getCurrentTime() : 0;
-              if (currentElapsed > 0 && Math.abs(curTime - currentElapsed) > 10) {
-                liveYtPlayer.seekTo(currentElapsed, true);
-              }
+              try {
+                liveYtPlayer.seekTo(initialStart > 0 ? initialStart : 0, true);
+              } catch (e) {}
               liveYtPlayer.playVideo();
 
               // Show unmute prompt so student knows stream is playing
@@ -991,14 +976,19 @@ const EDUPEAK_LIVE_PLAYER = (function() {
               enforceLiveNoCaptions(liveYtPlayer);
               updateLiveWatermark();
               startDurationWatchdog();
-              // Keep showing unmute prompt if still muted
-              if (_isMuted()) _showUnmutePrompt();
+              // Show prompt only if muted and user has not unmuted yet
+              if (_isMuted() && !_hasUserUnmuted) {
+                _showUnmutePrompt();
+              } else {
+                _hideUnmutePrompt();
+              }
             } else if (event.data === PAUSED) {
               if (isSessionEnded) return; // don't try to resume an ended session
               isLivePlaying = false;
-              // Don't show big play btn — try to resume muted playback automatically
-              try { liveYtPlayer.mute(); liveYtPlayer.playVideo(); } catch(e) {}
-              _showUnmutePrompt();
+              if (!_hasUserUnmuted) {
+                try { liveYtPlayer.mute(); liveYtPlayer.playVideo(); } catch(e) {}
+                _showUnmutePrompt();
+              }
             } else if (event.data === ENDED) {
               if (!isSessionEnded) triggerLiveEnded();
             }
@@ -1022,7 +1012,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       const u = activeSessionData.rawUrl || activeSessionData.rawurl || activeSessionData.raw_url || activeSessionData.embedUrl || activeSessionData.embedurl || activeSessionData.embed_url || "";
       videoId = extractYouTubeId(u);
     }
-    const startSec = getElapsedSeconds();
+    const startSec = 0;
 
     // If player already exists and is already playing this video ID, DO NOT interrupt or reload playback!
     if (liveYtPlayer && typeof liveYtPlayer.getVideoData === "function") {
@@ -1036,30 +1026,29 @@ const EDUPEAK_LIVE_PLAYER = (function() {
 
     if (liveYtPlayer && liveYtPlayer.loadVideoById) {
       try {
-        if (startSec > 0) {
-          liveYtPlayer.loadVideoById({
-            videoId: videoId,
-            startSeconds: startSec
-          });
-        } else {
-          liveYtPlayer.loadVideoById(videoId);
-        }
+        liveYtPlayer.loadVideoById({
+          videoId: videoId,
+          startSeconds: 0
+        });
         startDurationWatchdog();
       } catch (e) {
-        createLiveYTPlayer(videoId, startSec);
+        createLiveYTPlayer(videoId, 0);
       }
     } else {
-      createLiveYTPlayer(videoId, startSec);
+      createLiveYTPlayer(videoId, 0);
     }
     updateLiveWatermark();
   }
 
   // ── Unmute helpers ──────────────────────────────────────────────────────
+  let _hasUserUnmuted = false;
+
   function _isMuted() {
     try { return liveYtPlayer && liveYtPlayer.isMuted(); } catch(e) { return false; }
   }
 
   function _showUnmutePrompt() {
+    if (_hasUserUnmuted) return; // Once unmuted, NEVER show again!
     let btn = document.getElementById("liveUnmutePromptBtn");
     const container = document.getElementById("edupeakLivePlayerViewport")
                    || document.getElementById("edupeakLivePlayerWrapper")
@@ -1072,39 +1061,40 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       btn.id = "liveUnmutePromptBtn";
       btn.className = "edupeak-live-unmute-btn";
       btn.innerHTML = '<span class="live-pulse-dot" style="width:8px;height:8px;background:#fff;box-shadow:none;display:inline-block;"></span> LIVE &nbsp;&#8226;&nbsp; <i class="fa-solid fa-volume-high"></i> Tap to Unmute';
-      
-      const handleUnmuteClick = (e) => {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        _unmute();
-      };
-      btn.onclick = handleUnmuteClick;
-      btn.ontouchend = handleUnmuteClick;
-      
       container.appendChild(btn);
-    } else {
-      if (btn.parentElement !== container) {
-        container.appendChild(btn);
-      }
-      btn.onclick = (e) => {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        _unmute();
-      };
+    } else if (btn.parentElement !== container) {
+      container.appendChild(btn);
     }
-    btn.style.display = "inline-flex";
+
+    const handleUnmuteClick = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      _hasUserUnmuted = true;
+      _hideUnmutePrompt();
+      _unmute();
+    };
+    btn.onclick = handleUnmuteClick;
+    btn.ontouchend = handleUnmuteClick;
+
+    btn.classList.remove("hidden");
+    btn.classList.add("visible");
+    btn.style.setProperty("display", "inline-flex", "important");
   }
 
   function _hideUnmutePrompt() {
     const btn = document.getElementById("liveUnmutePromptBtn");
-    if (btn) btn.style.display = "none";
+    if (btn) {
+      btn.classList.remove("visible");
+      btn.classList.add("hidden");
+      btn.style.setProperty("display", "none", "important");
+    }
   }
 
   function _unmute() {
+    _hasUserUnmuted = true;
+    _hideUnmutePrompt();
     if (isSessionEnded) return;   // session over — no replay
     try {
       if (liveYtPlayer) {
@@ -1118,7 +1108,6 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       if (icon) icon.className = (liveVolume < 50 ? "fa-solid fa-volume-low" : "fa-solid fa-volume-high");
       const slider = document.getElementById("livePlayerVolumeSlider");
       if (slider) slider.value = liveVolume || 100;
-      _hideUnmutePrompt();
       const bigPlayBtn = document.getElementById("livePlayerBigPlayBtn");
       if (bigPlayBtn) bigPlayBtn.classList.add("hidden");
     } catch(e) {}
@@ -1130,11 +1119,6 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     _unmute();
     if (liveYtPlayer && typeof liveYtPlayer.playVideo === "function") {
       try {
-        const currentElapsed = getElapsedSeconds();
-        const curTime = typeof liveYtPlayer.getCurrentTime === "function" ? liveYtPlayer.getCurrentTime() : 0;
-        if (currentElapsed > 0 && Math.abs(currentElapsed - curTime) > 3) {
-          liveYtPlayer.seekTo(currentElapsed, true);
-        }
         liveYtPlayer.playVideo();
         if (liveYtPlayer.isMuted && liveYtPlayer.isMuted()) {
           liveYtPlayer.unMute();
