@@ -1572,6 +1572,21 @@ const SUPABASE_HELPER = {
     resolvedStart = resolvedStart || "08:30";
     resolvedEnd   = resolvedEnd   || "12:30";
 
+    // Helper: format 24h "HH:MM" to "H:MM AM/PM"
+    const _to12 = (t24) => {
+      if (!t24) return "";
+      const parts = t24.split(":");
+      let h = parseInt(parts[0], 10);
+      const m = parts[1] || "00";
+      const ap = h >= 12 ? "PM" : "AM";
+      h = h % 12 || 12;
+      return `${h}:${m} ${ap}`;
+    };
+
+    // If scheduleTime was empty or missing, rebuild it from what we know
+    const finalScheduleTime = resolvedScheduleTime ||
+      `${sched.scheduleDate || sched.schedule_date || "Today"} \u2022 ${_to12(resolvedStart)} \u2013 ${_to12(resolvedEnd)}`;
+
     return {
       ...sched,
       id: String(sched.id || ("sched-" + Date.now().toString(36))).trim(),
@@ -1596,7 +1611,7 @@ const SUPABASE_HELPER = {
       scheduleDate: sched.scheduleDate || sched.schedule_date || new Date().toISOString().split("T")[0],
       scheduleStartTime: resolvedStart,
       scheduleEndTime: resolvedEnd,
-      scheduleTime: resolvedScheduleTime,
+      scheduleTime: finalScheduleTime,
       provider: provider,
       rawUrl: rawUrl,
       raw_url: rawUrl,
