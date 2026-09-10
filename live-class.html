@@ -1034,10 +1034,8 @@
         <!-- Responsive Video Container -->
         <div class="video-player-container" id="theaterPlayerContainer">
           
-          <!-- Floating Anti-Piracy Watermark -->
-          <div class="drm-watermark-overlay" id="liveDrmWatermark">
-            🔒 EduPeak DRM • Kasun Jayasundara (NIC: 200512345678)
-          </div>
+          <!-- Floating Anti-Piracy Watermark (Strictly active only for students during an active live broadcast) -->
+          <div class="drm-watermark-overlay" id="liveDrmWatermark" style="display: none;"></div>
 
           <!-- Custom EduPeak Live DRM Video Player (Completely Masked YouTube / Zero YouTube Logos / No Seek Bar) -->
           <div class="edupeak-player-wrapper live-player-wrapper" id="edupeakLivePlayerWrapper" style="display: none; position: absolute; inset: 0; width: 100%; height: 100%; aspect-ratio: unset; z-index: 2;">
@@ -2214,37 +2212,46 @@
         const watermark = document.getElementById("liveDrmWatermark");
         if (!watermark) return;
 
+        const hideWatermark = () => {
+          watermark.style.display = "none";
+          watermark.textContent = "";
+          if (this.watermarkTimer) {
+            clearInterval(this.watermarkTimer);
+            this.watermarkTimer = null;
+          }
+        };
+
         // 1. Teachers and Admins must NEVER see a student DRM watermark
         const role = this.currentUser?.role;
         if (role === "teacher" || role === "admin") {
-          watermark.style.display = "none";
-          if (this.watermarkTimer) {
-            clearInterval(this.watermarkTimer);
-            this.watermarkTimer = null;
-          }
+          hideWatermark();
           return;
         }
 
-        // 2. Broadcast session watermark toggle check
-        if (this.activeSession && this.activeSession.watermarkEnabled === false) {
-          watermark.style.display = "none";
-          if (this.watermarkTimer) {
-            clearInterval(this.watermarkTimer);
-            this.watermarkTimer = null;
-          }
+        // 2. Must NEVER display if the classroom is offline, scheduled, standby, or concluded
+        if (!this.activeSession || this.activeSession.status !== "live") {
+          hideWatermark();
           return;
         }
 
-        // 3. For students, display their verified student name and NIC
+        // 3. Broadcast session watermark toggle check
+        if (this.activeSession.watermarkEnabled === false) {
+          hideWatermark();
+          return;
+        }
+
+        // 4. Must ONLY display for authenticated students
+        if (!this.currentUser || role !== "student") {
+          hideWatermark();
+          return;
+        }
+
+        // 5. For verified students, display their own verified student name and NIC
         watermark.style.display = "block";
-        const student = (role === "student")
-          ? this.currentUser
-          : (this.currentUser || { name: "Kasun Jayasundara", nic: "200512345678" });
+        const studentName = this.currentUser.name || "Student";
+        const studentNic = this.currentUser.nic || this.currentUser.id || "";
 
-        const studentName = student.name || "Student";
-        const studentNic = student.nic || student.id || "200512345678";
-
-        watermark.textContent = `🔒 EduPeak Live DRM • ${studentName} (NIC: ${studentNic}) • ${new Date().toLocaleTimeString()}`;
+        watermark.textContent = `🔒 EduPeak Live DRM • ${studentName}${studentNic ? ` (NIC: ${studentNic})` : ''} • ${new Date().toLocaleTimeString()}`;
 
         const drift = () => {
           const top = Math.floor(Math.random() * 75) + 10;
@@ -2472,7 +2479,7 @@
         const text = input.value.trim();
         input.value = "";
 
-        const sender = this.currentUser || { name: "Kasun Jayasundara", role: "student", nic: "200512345678" };
+        const sender = this.currentUser || { name: "Guest Student", role: "student", nic: "" };
         const now = new Date();
         const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
