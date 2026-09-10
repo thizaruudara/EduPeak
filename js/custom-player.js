@@ -772,11 +772,11 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   }
 
   function extractYouTubeId(url) {
-    if (!url) return "dQw4w9WgXcQ";
+    if (!url) return "";
     if (url.length === 11 && !url.includes("/") && !url.includes(".")) return url;
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|live\/|shorts\/)([^#&\?]{11}).*/;
     const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : "dQw4w9WgXcQ";
+    return (match && match[2] && match[2].length === 11) ? match[2] : "";
   }
 
   function getElapsedSeconds() {
@@ -855,6 +855,15 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   function createLiveYTPlayer(videoId, startOffset = null) {
     const container = document.getElementById("edupeakLiveYTPlayerMount");
     if (!container) return;
+
+    // No URL configured — show message instead of playing placeholder
+    if (!videoId) {
+      container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#f59e0b;font-size:1rem;font-weight:600;padding:2rem;text-align:center;">
+        ⚠️ No stream URL has been configured for this session.<br><br>
+        <small style="opacity:0.7">Teacher: add a YouTube URL in the edit form and save.</small>
+      </div>`;
+      return;
+    }
 
     if (!window.YT) {
       if (!window._edupeakYtScriptLoading) {

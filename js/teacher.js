@@ -2186,21 +2186,22 @@ const TEACHER_CONTROLLER = {
     const statusSelect = document.getElementById("liveStudioStatus");
     if (statusSelect) statusSelect.value = status;
 
-    const topic = document.getElementById("liveStudioTopic")?.value.trim() || "Live Interactive Masterclass";
-    const rawUrl = document.getElementById("liveStudioUrl")?.value.trim() || "https://www.youtube.com/embed/dQw4w9WgXcQ";
-    const provider = document.getElementById("liveStudioProvider")?.value || "youtube";
-    const embedUrl = this.formatEmbedUrl(rawUrl, provider);
+    const topic = document.getElementById("liveStudioTopic")?.value.trim() || existing?.topic || "Live Interactive Masterclass";
+    const urlFieldVal = document.getElementById("liveStudioUrl")?.value.trim();
+    // Preserve the saved URL — never overwrite with empty or Rick Astley placeholder
+    const rawUrl = urlFieldVal || existing?.rawUrl || existing?.rawurl || existing?.embedUrl || "";
+    const provider = document.getElementById("liveStudioProvider")?.value || existing?.provider || "youtube";
+    const embedUrl = rawUrl ? this.formatEmbedUrl(rawUrl, provider) : (existing?.embedUrl || "");
     const scheduleId = document.getElementById("liveStudioScheduleId")?.value || ("sched-" + Date.now().toString(36));
 
-    const day = document.getElementById("liveStudioScheduleDay")?.value || "Every Saturday";
-    const start = document.getElementById("liveStudioScheduleStartTime")?.value || "07:30";
-    const end = document.getElementById("liveStudioScheduleEndTime")?.value || "13:30";
+    const day = document.getElementById("liveStudioScheduleDay")?.value || existing?.scheduleDay || "Every Saturday";
+    const start = document.getElementById("liveStudioScheduleStartTime")?.value || existing?.scheduleStartTime || "07:30";
+    const end = document.getElementById("liveStudioScheduleEndTime")?.value || existing?.scheduleEndTime || "13:30";
     const scheduleTime = this.buildScheduleString(day, start, end);
 
     const nowIso = new Date().toISOString();
     const schedules = this.getAllScheduledBroadcasts();
     const existingIdx = schedules.findIndex(item => item.id === scheduleId);
-    const existing = existingIdx >= 0 ? schedules[existingIdx] : null;
 
     let startedAt = existing?.startedAt || null;
     if (status === "live" && !startedAt) {
@@ -2215,8 +2216,8 @@ const TEACHER_CONTROLLER = {
       scheduleId,
       id: scheduleId,
       topic,
-      courseId: document.getElementById("liveStudioCourseSelect")?.value || "",
-      courseTitle: document.getElementById("liveStudioCourseSelect")?.selectedOptions[0]?.text || "",
+      courseId: document.getElementById("liveStudioCourseSelect")?.value || existing?.courseId || "",
+      courseTitle: document.getElementById("liveStudioCourseSelect")?.selectedOptions[0]?.text || existing?.courseTitle || "",
       scheduleDay: day,
       scheduleStartTime: start,
       scheduleEndTime: end,
