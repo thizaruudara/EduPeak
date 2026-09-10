@@ -348,8 +348,11 @@ const SUPABASE_HELPER = {
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("courses").select("*");
-        if (!error && Array.isArray(data)) {
+        if (!error && Array.isArray(data) && data.length > 0) {
           this.setSharedData("edupeak_courses_db", data);
+          try {
+            localStorage.setItem("edupeak_courses_db", JSON.stringify(data));
+          } catch (e) {}
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = data;
           return data;
         }
@@ -358,18 +361,43 @@ const SUPABASE_HELPER = {
       }
     }
     const shared = this.getSharedData("edupeak_courses_db");
-    if (shared !== null && Array.isArray(shared)) {
+    if (shared !== null && Array.isArray(shared) && shared.length > 0) {
       if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = shared;
+      try {
+        localStorage.setItem("edupeak_courses_db", JSON.stringify(shared));
+      } catch (e) {}
       return shared;
     }
-    return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
+    try {
+      const stored = localStorage.getItem("edupeak_courses_db");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.setSharedData("edupeak_courses_db", parsed);
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = parsed;
+          return parsed;
+        }
+      }
+    } catch (e) {}
+
+    const defaultCourses = (window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.courses) && window.EDUPEAK_DATA.courses.length > 0)
+      ? window.EDUPEAK_DATA.courses
+      : [];
+    if (defaultCourses.length > 0) {
+      this.setSharedData("edupeak_courses_db", defaultCourses);
+      try {
+        localStorage.setItem("edupeak_courses_db", JSON.stringify(defaultCourses));
+      } catch (e) {}
+    }
+    return defaultCourses;
   },
 
   async saveCourse(courseData) {
+    if (!courseData || !courseData.id) return null;
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("courses").upsert([courseData]).select();
-        if (!error && data) return data[0];
+        if (!error && data && data.length > 0) courseData = data[0];
       } catch (e) {
         console.warn("Supabase upsert course error:", e);
       }
@@ -382,14 +410,18 @@ const SUPABASE_HELPER = {
       courses.push(courseData);
     }
     this.setSharedData("edupeak_courses_db", courses);
+    try {
+      localStorage.setItem("edupeak_courses_db", JSON.stringify(courses));
+    } catch (e) {}
     if (window.EDUPEAK_DATA) {
       window.EDUPEAK_DATA.courses = courses;
-      if (window.renderCourses) window.renderCourses();
+      if (typeof window.renderCourses === "function") window.renderCourses();
     }
     return courseData;
   },
 
   async deleteCourse(courseId) {
+    if (!courseId) return false;
     if (this.isConnected && this.client) {
       try {
         await this.client.from("courses").delete().eq("id", courseId);
@@ -400,9 +432,12 @@ const SUPABASE_HELPER = {
     let courses = await this.getCourses();
     courses = courses.filter(c => c.id !== courseId);
     this.setSharedData("edupeak_courses_db", courses);
+    try {
+      localStorage.setItem("edupeak_courses_db", JSON.stringify(courses));
+    } catch (e) {}
     if (window.EDUPEAK_DATA) {
       window.EDUPEAK_DATA.courses = courses;
-      if (window.renderCourses) window.renderCourses();
+      if (typeof window.renderCourses === "function") window.renderCourses();
     }
     return true;
   },

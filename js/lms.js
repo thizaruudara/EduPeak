@@ -190,7 +190,7 @@ function getLMSCourses() {
   try {
     if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
       const shared = window.SUPABASE_HELPER.getSharedData("edupeak_courses_db");
-      if (shared !== null && Array.isArray(shared)) {
+      if (shared !== null && Array.isArray(shared) && shared.length > 0) {
         if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = shared;
         return shared;
       }
@@ -198,12 +198,18 @@ function getLMSCourses() {
     const stored = localStorage.getItem("edupeak_courses_db");
     if (stored !== null) {
       const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) {
+      if (Array.isArray(parsed) && parsed.length > 0) {
         if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = parsed;
         return parsed;
       }
     }
-    return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
+    const defaultCourses = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses && window.EDUPEAK_DATA.courses.length > 0) ? window.EDUPEAK_DATA.courses : [];
+    if (defaultCourses.length > 0) {
+      try {
+        localStorage.setItem("edupeak_courses_db", JSON.stringify(defaultCourses));
+      } catch (e) {}
+    }
+    return defaultCourses;
   } catch (e) {
     return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
   }

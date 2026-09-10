@@ -137,15 +137,26 @@ const TEACHER_CONTROLLER = {
 
   getTeacherCourses() {
     try {
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+        const shared = window.SUPABASE_HELPER.getSharedData("edupeak_courses_db");
+        if (shared !== null && Array.isArray(shared) && shared.length > 0) {
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = shared;
+          return shared;
+        }
+      }
       const stored = localStorage.getItem("edupeak_courses_db");
       if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = parsed;
           return parsed;
         }
       }
-      return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
+      const defaultCourses = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses && window.EDUPEAK_DATA.courses.length > 0) ? window.EDUPEAK_DATA.courses : [];
+      if (defaultCourses.length > 0) {
+        this.saveCoursesDatabase(defaultCourses);
+      }
+      return defaultCourses;
     } catch (e) {
       return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
     }
@@ -156,12 +167,20 @@ const TEACHER_CONTROLLER = {
   },
 
   saveCoursesDatabase(coursesList) {
-    localStorage.setItem("edupeak_courses_db", JSON.stringify(coursesList));
+    if (!Array.isArray(coursesList)) return;
+    try {
+      localStorage.setItem("edupeak_courses_db", JSON.stringify(coursesList));
+    } catch (e) {}
     const defaultIds = ["crs-phy-2027-theory", "crs-phy-2027-revision", "crs-phy-2028-theory", "crs-phy-2028-paper", "crs-phy-2029-theory"];
     const customList = (coursesList || []).filter(c => !defaultIds.includes(c.id));
-    localStorage.setItem(this.storageKeys.customCourses || "edupeak_custom_courses", JSON.stringify(customList));
+    try {
+      localStorage.setItem(this.storageKeys.customCourses || "edupeak_custom_courses", JSON.stringify(customList));
+    } catch (e) {}
     if (window.EDUPEAK_DATA) {
       window.EDUPEAK_DATA.courses = coursesList;
+    }
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+      window.SUPABASE_HELPER.setSharedData("edupeak_courses_db", coursesList);
     }
   },
 
@@ -353,6 +372,10 @@ const TEACHER_CONTROLLER = {
 
     this.saveCoursesDatabase(courses);
 
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.saveCourse === "function") {
+      window.SUPABASE_HELPER.saveCourse(courses[index]);
+    }
+
     if (window.showToast) {
       window.showToast(`✅ Course "${courses[index].title}" updated successfully!`, "success");
     }
@@ -370,6 +393,10 @@ const TEACHER_CONTROLLER = {
     if (confirm(`Are you sure you want to permanently delete course "${c.title}"?`)) {
       const updated = courses.filter(item => item.id !== courseId);
       this.saveCoursesDatabase(updated);
+
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.deleteCourse === "function") {
+        window.SUPABASE_HELPER.deleteCourse(courseId);
+      }
 
       if (window.showToast) {
         window.showToast(`🗑️ Course "${c.title}" deleted.`, "info");
@@ -427,6 +454,10 @@ const TEACHER_CONTROLLER = {
     const courses = this.getTeacherCourses();
     courses.unshift(newCourse);
     this.saveCoursesDatabase(courses);
+
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.saveCourse === "function") {
+      window.SUPABASE_HELPER.saveCourse(newCourse);
+    }
 
     if (window.showToast) {
       window.showToast(`🎉 New Course "${title}" created and published to LMS!`, "success");

@@ -35,7 +35,7 @@ const AUTH_SYSTEM = {
       address: "Victory College, Embilipitiya Pallegama, Sri Lanka",
       email_verified: true,
       avatarLetter: "K",
-      enrolledCourses: [],
+      enrolledCourses: ["crs-phy-2027-theory", "crs-phy-2027-revision"],
       joinedDate: "2025-01-10"
     },
     {
@@ -91,31 +91,42 @@ const AUTH_SYSTEM = {
 
   init() {
     // Sync clean canonical users if db version updated
-    const DB_VERSION = "v6_student_nic_support";
+    const DB_VERSION = "v7_unified_course_access";
     if (localStorage.getItem("edupeak_db_ver") !== DB_VERSION) {
       const existing = this.getUsers();
-      // Retroactively ensure all existing students have valid NIC
+      // Retroactively ensure all existing students have valid NIC and enrolled courses
       existing.forEach(u => {
         if (u.role === "student" && !u.nic) {
           u.nic = u.id === "EP-2027-001" ? "200512345678" : ("2005" + Math.floor(10000000 + Math.random() * 90000000));
+        }
+        if (u.id === "EP-2027-001" && (!Array.isArray(u.enrolledCourses) || u.enrolledCourses.length === 0)) {
+          u.enrolledCourses = ["crs-phy-2027-theory", "crs-phy-2027-revision"];
         }
       });
       this.defaultUsers.forEach(def => {
         const found = existing.find(u => u.id === def.id || (u.email && def.email && u.email.toLowerCase() === def.email.toLowerCase()));
         if (!found) {
           existing.push(def);
-        } else if (def.nic && !found.nic) {
-          found.nic = def.nic;
+        } else {
+          if (def.nic && !found.nic) found.nic = def.nic;
+          if (def.id === "EP-2027-001" && (!Array.isArray(found.enrolledCourses) || found.enrolledCourses.length === 0)) {
+            found.enrolledCourses = def.enrolledCourses;
+          }
         }
       });
       localStorage.setItem(this.storageKeys.users, JSON.stringify(existing));
       localStorage.setItem("edupeak_db_ver", DB_VERSION);
 
-      // Ensure active session student has nic populated
+      // Ensure active session student has nic & enrolled courses populated
       const curUser = this.getCurrentUser();
-      if (curUser && curUser.role === "student" && !curUser.nic) {
-        const dbUser = existing.find(u => u.id === curUser.id);
-        curUser.nic = dbUser?.nic || "200512345678";
+      if (curUser && curUser.role === "student") {
+        if (!curUser.nic) {
+          const dbUser = existing.find(u => u.id === curUser.id);
+          curUser.nic = dbUser?.nic || "200512345678";
+        }
+        if (curUser.id === "EP-2027-001" && (!Array.isArray(curUser.enrolledCourses) || curUser.enrolledCourses.length === 0)) {
+          curUser.enrolledCourses = ["crs-phy-2027-theory", "crs-phy-2027-revision"];
+        }
         localStorage.setItem(this.storageKeys.session, JSON.stringify(curUser));
       }
     } else if (!localStorage.getItem(this.storageKeys.users)) {
@@ -732,6 +743,55 @@ const AUTH_SYSTEM = {
 
     this.updateUIForAuthState();
     return { success: true, user: fullUserRecord };
+  },
+
+  // Retrieve enrolled courses for a student with robust fallback
+  getStudentEnrolledCourses(studentId) {
+    if (!studentId) return [];
+    try {
+      const stored = localStorage.getItem(`edupeak_student_courses_${studentId}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+
+    const users = this.getUsers();
+    const student = users.find(u => u.id === studentId || (u.email && u.email.toLowerCase() === String(studentId).toLowerCase()));
+    if (student && Array.isArray(student.enrolledCourses) && student.enrolledCourses.length > 0) {
+      return student.enrolledCourses;
+    }
+
+    if (studentId === "EP-2027-001" || (student && student.id === "EP-2027-001")) {
+      return ["crs-phy-2027-theory", "crs-phy-2027-revision"];
+    }
+
+    return [];
+  },
+
+  // Set and persist student course access permissions across storage and cloud
+  setStudentEnrolledCourses(studentId, courseIds) {
+    if (!studentId || !Array.isArray(courseIds)) return;
+    try {
+      localStorage.setItem(`edupeak_student_courses_${studentId}`, JSON.stringify(courseIds));
+    } catch (e) {}
+
+    const users = this.getUsers();
+    const index = users.findIndex(u => u.id === studentId || (u.email && u.email.toLowerCase() === String(studentId).toLowerCase()));
+    if (index !== -1) {
+      users[index].enrolledCourses = courseIds;
+      localStorage.setItem(this.storageKeys.users, JSON.stringify(users));
+    }
+
+    const current = this.getCurrentUser();
+    if (current && (current.id === studentId || (current.email && current.email.toLowerCase() === String(studentId).toLowerCase()))) {
+      current.enrolledCourses = courseIds;
+      localStorage.setItem(this.storageKeys.session, JSON.stringify(current));
+    }
+
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+      window.SUPABASE_HELPER.setSharedData(`edupeak_student_courses_${studentId}`, courseIds);
+    }
   },
 
   logout() {

@@ -1070,16 +1070,21 @@
     // --------------------------------------------------------------------------
     function getAllStudentCourses() {
       if (typeof window.getLMSCourses === "function") {
-        return window.getLMSCourses();
+        const lmsCourses = window.getLMSCourses();
+        if (Array.isArray(lmsCourses) && lmsCourses.length > 0) return lmsCourses;
+      }
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+        const shared = window.SUPABASE_HELPER.getSharedData("edupeak_courses_db");
+        if (shared !== null && Array.isArray(shared) && shared.length > 0) return shared;
       }
       const stored = localStorage.getItem("edupeak_courses_db");
       if (stored !== null) {
         try {
           const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) return parsed;
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
         } catch(e) {}
       }
-      let courses = (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.courses : []);
+      let courses = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses && window.EDUPEAK_DATA.courses.length > 0) ? [...window.EDUPEAK_DATA.courses] : [];
 
       try {
         const customCourses = JSON.parse(localStorage.getItem("edupeak_custom_courses") || "[]");
@@ -1517,8 +1522,15 @@
       const allCourses = getAllStudentCourses();
       
       const checkEnrolled = (courseId) => {
-        if (typeof isCourseEnrolled === "function") return isCourseEnrolled(courseId);
-        if (window.isCourseEnrolled) return window.isCourseEnrolled(courseId);
+        if (typeof isCourseEnrolled === "function" && isCourseEnrolled(courseId)) return true;
+        if (window.isCourseEnrolled && window.isCourseEnrolled(courseId)) return true;
+        const studentId = currentUser ? currentUser.id : "EP-2027-001";
+        const userCourses = (window.AUTH_SYSTEM && typeof window.AUTH_SYSTEM.getStudentEnrolledCourses === "function")
+          ? window.AUTH_SYSTEM.getStudentEnrolledCourses(studentId)
+          : (currentUser ? (currentUser.enrolledCourses || []) : []);
+        if (Array.isArray(userCourses)) {
+          return userCourses.some(eid => eid === courseId || String(eid).replace(/-theory|-revision|-paper/g, '') === String(courseId).replace(/-theory|-revision|-paper/g, ''));
+        }
         return false;
       };
 
