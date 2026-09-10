@@ -96,7 +96,18 @@ const TEACHER_CONTROLLER = {
         });
       }
 
+      // Clean orphaned lessons & quizzes whose courses no longer exist
+      const validCourses = this.getTeacherCourses();
+      const validIds = new Set(validCourses.map(c => c.id));
+      if (window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.lmsLessons)) {
+        window.EDUPEAK_DATA.lmsLessons = window.EDUPEAK_DATA.lmsLessons.filter(l => l.courseId && validIds.has(l.courseId));
+      }
+      if (window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.quizQuestions)) {
+        window.EDUPEAK_DATA.quizQuestions = window.EDUPEAK_DATA.quizQuestions.filter(q => q.courseId && validIds.has(q.courseId));
+      }
+
       // Synchronize quizzes and schedules databases
+      this.getAllLessons();
       this.getAllQuizzes();
       this.getAllScheduledBroadcasts();
     } catch (e) {
@@ -132,8 +143,8 @@ const TEACHER_CONTROLLER = {
 
   renderMetrics() {
     const courses = this.getTeacherCourses();
-    const lessons = window.EDUPEAK_DATA ? window.EDUPEAK_DATA.lmsLessons || [] : [];
-    const quizzes = this.getAllQuizzes ? this.getAllQuizzes() : (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.quizQuestions || [] : []);
+    const lessons = this.getAllLessons();
+    const quizzes = this.getAllQuizzes();
     const students = this.getRegisteredStudents ? this.getRegisteredStudents() : [];
 
     let paperCount = 0;
@@ -420,15 +431,41 @@ const TEACHER_CONTROLLER = {
       const updated = courses.filter(item => item.id !== courseId);
       this.saveCoursesDatabase(updated);
 
+      // Cascade delete lessons belonging to this course
+      try {
+        const storedLessons = localStorage.getItem("edupeak_lessons_db");
+        let lessons = storedLessons ? JSON.parse(storedLessons) : ((window.EDUPEAK_DATA && window.EDUPEAK_DATA.lmsLessons) ? window.EDUPEAK_DATA.lmsLessons : []);
+        lessons = lessons.filter(l => l.courseId && l.courseId !== courseId && updated.some(uc => uc.id === l.courseId));
+        this.saveLessonsDatabase(lessons);
+
+        let customLessons = JSON.parse(localStorage.getItem(this.storageKeys.customLessons || "edupeak_custom_lessons") || "[]");
+        customLessons = customLessons.filter(l => l.courseId && l.courseId !== courseId && updated.some(uc => uc.id === l.courseId));
+        localStorage.setItem(this.storageKeys.customLessons || "edupeak_custom_lessons", JSON.stringify(customLessons));
+      } catch (e) {}
+
+      // Cascade delete quizzes belonging to this course
+      try {
+        const storedQuizzes = localStorage.getItem(this.storageKeys.quizzesDb || "edupeak_quizzes_db");
+        let quizzes = storedQuizzes ? JSON.parse(storedQuizzes) : ((window.EDUPEAK_DATA && window.EDUPEAK_DATA.quizQuestions) ? window.EDUPEAK_DATA.quizQuestions : []);
+        quizzes = quizzes.filter(q => q.courseId && q.courseId !== courseId && updated.some(uc => uc.id === q.courseId));
+        this.saveQuizzesDatabase(quizzes);
+
+        let customQuizzes = JSON.parse(localStorage.getItem(this.storageKeys.customQuizzes || "edupeak_custom_quizzes") || "[]");
+        customQuizzes = customQuizzes.filter(q => q.courseId && q.courseId !== courseId && updated.some(uc => uc.id === q.courseId));
+        localStorage.setItem(this.storageKeys.customQuizzes || "edupeak_custom_quizzes", JSON.stringify(customQuizzes));
+      } catch (e) {}
+
       if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.deleteCourse === "function") {
         window.SUPABASE_HELPER.deleteCourse(courseId);
       }
 
       if (window.showToast) {
-        window.showToast(`🗑️ Course "${c.title}" deleted.`, "info");
+        window.showToast(`🗑️ Course "${c.title}" deleted along with associated lessons & quizzes.`, "info");
       }
 
       this.renderCourses();
+      this.renderLessons();
+      this.renderQuizzes();
       this.renderMetrics();
       this.populateCourseDropdowns();
     }
@@ -499,13 +536,37 @@ const TEACHER_CONTROLLER = {
   // 2. LESSONS & VIDEO MANAGEMENT
   // --------------------------------------------------------------------------
   getAllLessons() {
+    const courses = this.getTeacherCourses();
+    const validCourseIds = new Set(courses.map(c => c.id));
+    if (courses.length === 0) {
+      try {
+        localStorage.setItem("edupeak_lessons_db", JSON.stringify([]));
+        localStorage.setItem(this.storageKeys.customLessons || "edupeak_custom_lessons", JSON.stringify([]));
+      } catch (e) {}
+      if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.lmsLessons = [];
+      return [];
+    }
+
+    let lessons = [];
     const stored = localStorage.getItem("edupeak_lessons_db");
     if (stored) {
-      return JSON.parse(stored);
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) lessons = parsed;
+      } catch (e) {}
+    } else {
+      lessons = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.lmsLessons) ? window.EDUPEAK_DATA.lmsLessons : [];
     }
-    const defaultLessons = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.lmsLessons) ? window.EDUPEAK_DATA.lmsLessons : [];
-    localStorage.setItem("edupeak_lessons_db", JSON.stringify(defaultLessons));
-    return defaultLessons;
+
+    // Filter out any orphaned lessons whose courseId is not in validCourseIds
+    lessons = lessons.filter(l => l.courseId && validCourseIds.has(l.courseId));
+    try {
+      localStorage.setItem("edupeak_lessons_db", JSON.stringify(lessons));
+    } catch (e) {}
+    if (window.EDUPEAK_DATA) {
+      window.EDUPEAK_DATA.lmsLessons = lessons;
+    }
+    return lessons;
   },
 
   saveLessonsDatabase(lessonsList) {
@@ -548,12 +609,29 @@ const TEACHER_CONTROLLER = {
     const tbody = document.getElementById("teacherLessonsTbody");
     if (!tbody) return;
 
+    const courses = this.getTeacherCourses();
+    if (!courses.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 3rem; color: #64748b;">
+            <i class="fa-solid fa-book-open" style="font-size: 2rem; color: #94a3b8; margin-bottom: 0.5rem; display: block;"></i>
+            <div style="font-weight: 700; color: #0f172a; margin-bottom: 0.25rem;">No Courses Published Yet</div>
+            <p style="font-size: 0.825rem; margin-bottom: 1rem;">Please create and publish a course first to add lesson recordings.</p>
+            <button class="btn btn-primary btn-sm" onclick="TEACHER_CONTROLLER.switchTab('courses'); TEACHER_CONTROLLER.openNewCourseModal();">
+              <i class="fa-solid fa-plus"></i> Create Course First
+            </button>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
     const selectedCourseId = document.getElementById("lessonCourseSelect")?.value;
     const allLessons = this.getAllLessons();
     
     // Filter lessons by selected course
     const filteredLessons = selectedCourseId
-      ? allLessons.filter(l => l.courseId === selectedCourseId || (!l.courseId && selectedCourseId === "crs-phy-2025-theory"))
+      ? allLessons.filter(l => l.courseId === selectedCourseId)
       : allLessons;
 
     if (!filteredLessons.length) {
@@ -1063,46 +1141,59 @@ const TEACHER_CONTROLLER = {
   // 3. QUIZ & MCQ PAPER BUILDER (CREATE, EDIT, DELETE)
   // --------------------------------------------------------------------------
   getAllQuizzes() {
+    const courses = this.getTeacherCourses();
+    const validCourseIds = new Set(courses.map(c => c.id));
+    if (courses.length === 0) {
+      try {
+        localStorage.setItem(this.storageKeys.quizzesDb, JSON.stringify([]));
+        localStorage.setItem(this.storageKeys.customQuizzes, JSON.stringify([]));
+      } catch (e) {}
+      if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.quizQuestions = [];
+      return [];
+    }
+
+    let quizzes = [];
     const stored = localStorage.getItem(this.storageKeys.quizzesDb);
     if (stored !== null) {
       try {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.quizQuestions = parsed;
-          return parsed;
+          quizzes = parsed;
         }
       } catch (e) {
         console.warn("Failed parsing edupeak_quizzes_db", e);
       }
+    } else {
+      quizzes = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.quizQuestions) 
+        ? JSON.parse(JSON.stringify(window.EDUPEAK_DATA.quizQuestions)) 
+        : [];
+
+      try {
+        const custom = JSON.parse(localStorage.getItem(this.storageKeys.customQuizzes) || "[]");
+        custom.forEach(cq => {
+          if (!quizzes.find(item => item.id == cq.id)) {
+            quizzes.push(cq);
+          }
+        });
+      } catch (e) {}
     }
 
-    // Default questions from EDUPEAK_DATA or fallback
-    let defaultQuizzes = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.quizQuestions) 
-      ? JSON.parse(JSON.stringify(window.EDUPEAK_DATA.quizQuestions)) 
-      : [];
-
-    // Also include custom quizzes if any were saved before
-    try {
-      const custom = JSON.parse(localStorage.getItem(this.storageKeys.customQuizzes) || "[]");
-      custom.forEach(cq => {
-        if (!defaultQuizzes.find(item => item.id == cq.id)) {
-          defaultQuizzes.push(cq);
-        }
-      });
-    } catch (e) {}
-
     // Ensure all items have an id and normalized courseId
-    defaultQuizzes.forEach((q, idx) => {
+    quizzes.forEach((q, idx) => {
       if (!q.id) q.id = idx + 1;
       if (q.courseId === "crs-phy-2025") q.courseId = "crs-phy-2027-theory";
       if (q.courseId === "crs-phy-2026") q.courseId = "crs-phy-2028-theory";
     });
 
-    localStorage.setItem(this.storageKeys.quizzesDb, JSON.stringify(defaultQuizzes));
+    quizzes = quizzes.filter(q => q.courseId && validCourseIds.has(q.courseId));
+
+    try {
+      localStorage.setItem(this.storageKeys.quizzesDb, JSON.stringify(quizzes));
+    } catch (e) {}
     if (window.EDUPEAK_DATA) {
-      window.EDUPEAK_DATA.quizQuestions = defaultQuizzes;
+      window.EDUPEAK_DATA.quizQuestions = quizzes;
     }
-    return defaultQuizzes;
+    return quizzes;
   },
 
   saveQuizzesDatabase(quizzesList) {
@@ -1117,13 +1208,28 @@ const TEACHER_CONTROLLER = {
     const list = document.getElementById("teacherQuizList");
     if (!list) return;
 
+    const courses = this.getTeacherCourses();
+    if (!courses.length) {
+      list.innerHTML = `
+        <div style="text-align: center; padding: 3rem; background: #f8fafc; border-radius: var(--radius-lg); border: 1px dashed var(--border-color);">
+          <i class="fa-solid fa-book-open" style="font-size: 2rem; color: #94a3b8; margin-bottom: 0.5rem; display: block;"></i>
+          <div style="font-weight: 700; color: #0f172a; margin-bottom: 0.25rem;">No Courses Published Yet</div>
+          <p style="font-size: 0.825rem; color: #64748b; margin-bottom: 1rem;">Please create and publish a course first to add MCQ quiz questions.</p>
+          <button class="btn btn-primary btn-sm" onclick="TEACHER_CONTROLLER.switchTab('courses'); TEACHER_CONTROLLER.openNewCourseModal();">
+            <i class="fa-solid fa-plus"></i> Create Course First
+          </button>
+        </div>
+      `;
+      return;
+    }
+
     const selectedCourseId = document.getElementById("quizCourseSelect")?.value;
     const questions = this.getAllQuizzes();
 
     // Filter questions by selected course
     const filteredQuestions = (selectedCourseId && selectedCourseId !== "all")
       ? questions.filter(q => {
-          if (!q.courseId) return true;
+          if (!q.courseId) return false;
           if (q.courseId === selectedCourseId) return true;
           if (q.courseId.startsWith(selectedCourseId) || selectedCourseId.startsWith(q.courseId)) return true;
           const cleanQ = (q.courseId || "").replace("-theory", "").replace("-revision", "").replace("-papers", "");
@@ -2907,8 +3013,13 @@ window.addEventListener("edupeak:courses-synced", () => {
   if (window.TEACHER_CONTROLLER) {
     window.TEACHER_CONTROLLER.loadCustomData();
     window.TEACHER_CONTROLLER.renderMetrics();
+    window.TEACHER_CONTROLLER.populateCourseDropdowns();
     if (window.TEACHER_CONTROLLER.currentTab === "courses") {
       window.TEACHER_CONTROLLER.renderCourses();
+    } else if (window.TEACHER_CONTROLLER.currentTab === "lessons") {
+      window.TEACHER_CONTROLLER.renderLessons();
+    } else if (window.TEACHER_CONTROLLER.currentTab === "quizzes") {
+      window.TEACHER_CONTROLLER.renderQuizzes();
     }
   }
 });

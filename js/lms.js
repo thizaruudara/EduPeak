@@ -182,13 +182,39 @@ function loadSavedLMSData() {
     }
 
     // Load any custom quiz questions created in Teacher Studio
-    const customQuizzes = JSON.parse(localStorage.getItem("edupeak_custom_quizzes") || "[]");
-    if (customQuizzes.length && window.EDUPEAK_DATA) {
-      customQuizzes.forEach(q => {
-        if (!window.EDUPEAK_DATA.quizQuestions.find(item => item.id === q.id)) {
-          window.EDUPEAK_DATA.quizQuestions.push(q);
-        }
-      });
+    const storedQuizzesDb = JSON.parse(localStorage.getItem("edupeak_quizzes_db") || "null");
+    if (storedQuizzesDb && Array.isArray(storedQuizzesDb) && window.EDUPEAK_DATA) {
+      window.EDUPEAK_DATA.quizQuestions = storedQuizzesDb;
+    } else {
+      const customQuizzes = JSON.parse(localStorage.getItem("edupeak_custom_quizzes") || "[]");
+      if (customQuizzes.length && window.EDUPEAK_DATA) {
+        customQuizzes.forEach(q => {
+          if (!window.EDUPEAK_DATA.quizQuestions.find(item => item.id === q.id)) {
+            window.EDUPEAK_DATA.quizQuestions.push(q);
+          }
+        });
+      }
+    }
+
+    // Filter out orphaned lessons & quizzes whose courses no longer exist
+    const validCourses = getLMSCourses();
+    const validCourseIds = new Set(validCourses.map(c => c.id));
+    if (validCourses.length === 0) {
+      if (window.EDUPEAK_DATA) {
+        window.EDUPEAK_DATA.lmsLessons = [];
+        window.EDUPEAK_DATA.quizQuestions = [];
+      }
+    } else {
+      if (window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.lmsLessons)) {
+        window.EDUPEAK_DATA.lmsLessons = window.EDUPEAK_DATA.lmsLessons.filter(l => 
+          l.courseId && Array.from(validCourseIds).some(cid => matchCourseId(l.courseId, cid))
+        );
+      }
+      if (window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.quizQuestions)) {
+        window.EDUPEAK_DATA.quizQuestions = window.EDUPEAK_DATA.quizQuestions.filter(q => 
+          q.courseId && Array.from(validCourseIds).some(cid => matchCourseId(q.courseId, cid))
+        );
+      }
     }
   } catch (e) {
     console.error("Storage load error:", e);
@@ -1978,10 +2004,11 @@ window.LMS_STATE = LMS_STATE;
 window.initLMS = initLMS;
 
 window.addEventListener("edupeak:courses-synced", () => {
-  loadCustomStorageData();
-  const activeTab = LMS_STATE.currentTab;
-  if (activeTab === "enrolled-courses") renderEnrolledCoursesGrid();
-  if (activeTab === "all-courses") renderAllLMSCourses();
+  loadSavedLMSData();
+  renderLMSCoursePicker();
+  renderEnrolledCourses();
+  renderQuizCoursePicker();
+  populateLessonSelector(LMS_STATE.activeCourseId);
 });
 
 document.addEventListener("DOMContentLoaded", () => {

@@ -588,6 +588,42 @@ const SUPABASE_HELPER = {
     if (window.EDUPEAK_DATA) {
       window.EDUPEAK_DATA.courses = courses;
     }
+
+    const matchId = (id1, id2) => {
+      if (!id1 || !id2) return false;
+      if (id1 === id2) return true;
+      if (typeof window.matchCourseId === "function") return window.matchCourseId(id1, id2);
+      const s1 = String(id1).toLowerCase().replace(/^crs-|^course-|^cls-|^ep-/gi, '').replace(/[^a-z0-9]/gi, '');
+      const s2 = String(id2).toLowerCase().replace(/^crs-|^course-|^cls-|^ep-/gi, '').replace(/[^a-z0-9]/gi, '');
+      return s1 && s2 && s1 === s2;
+    };
+
+    // Cascade delete lessons and custom lessons belonging to this course
+    try {
+      const storedLessons = localStorage.getItem("edupeak_lessons_db");
+      let lessons = storedLessons ? JSON.parse(storedLessons) : ((window.EDUPEAK_DATA && window.EDUPEAK_DATA.lmsLessons) ? window.EDUPEAK_DATA.lmsLessons : []);
+      lessons = lessons.filter(l => l.courseId && !matchId(l.courseId, courseId) && courses.some(c => matchId(c.id, l.courseId)));
+      localStorage.setItem("edupeak_lessons_db", JSON.stringify(lessons));
+      if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.lmsLessons = lessons;
+
+      let customLessons = JSON.parse(localStorage.getItem("edupeak_custom_lessons") || "[]");
+      customLessons = customLessons.filter(l => l.courseId && !matchId(l.courseId, courseId) && courses.some(c => matchId(c.id, l.courseId)));
+      localStorage.setItem("edupeak_custom_lessons", JSON.stringify(customLessons));
+    } catch (e) {}
+
+    // Cascade delete quizzes belonging to this course
+    try {
+      const storedQuizzes = localStorage.getItem("edupeak_quizzes_db");
+      let quizzes = storedQuizzes ? JSON.parse(storedQuizzes) : ((window.EDUPEAK_DATA && window.EDUPEAK_DATA.quizQuestions) ? window.EDUPEAK_DATA.quizQuestions : []);
+      quizzes = quizzes.filter(q => q.courseId && !matchId(q.courseId, courseId) && courses.some(c => matchId(c.id, q.courseId)));
+      localStorage.setItem("edupeak_quizzes_db", JSON.stringify(quizzes));
+      if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.quizQuestions = quizzes;
+
+      let customQuizzes = JSON.parse(localStorage.getItem("edupeak_custom_quizzes") || "[]");
+      customQuizzes = customQuizzes.filter(q => q.courseId && !matchId(q.courseId, courseId) && courses.some(c => matchId(c.id, q.courseId)));
+      localStorage.setItem("edupeak_custom_quizzes", JSON.stringify(customQuizzes));
+    } catch (e) {}
+
     if (typeof window.dispatchEvent === "function") {
       window.dispatchEvent(new CustomEvent("edupeak:courses-synced", { detail: courses }));
     }
@@ -601,6 +637,15 @@ const SUPABASE_HELPER = {
       if (typeof window.TEACHER_CONTROLLER.renderMetrics === "function") window.TEACHER_CONTROLLER.renderMetrics();
       if (window.TEACHER_CONTROLLER.currentTab === "courses" && typeof window.TEACHER_CONTROLLER.renderCourses === "function") {
         window.TEACHER_CONTROLLER.renderCourses();
+      }
+      if (window.TEACHER_CONTROLLER.currentTab === "lessons" && typeof window.TEACHER_CONTROLLER.renderLessons === "function") {
+        window.TEACHER_CONTROLLER.renderLessons();
+      }
+      if (window.TEACHER_CONTROLLER.currentTab === "quizzes" && typeof window.TEACHER_CONTROLLER.renderQuizzes === "function") {
+        window.TEACHER_CONTROLLER.renderQuizzes();
+      }
+      if (typeof window.TEACHER_CONTROLLER.populateCourseDropdowns === "function") {
+        window.TEACHER_CONTROLLER.populateCourseDropdowns();
       }
     }
     if (window.ADMIN_CONTROLLER) {
