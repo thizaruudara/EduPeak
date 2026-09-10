@@ -66,26 +66,53 @@
 /* ==========================================================================
    GOATS.COM.PL STYLE PRELOADER (Big Wordmark & Liquid SVG Curtain)
    ========================================================================== */
+html.is-preloading,
+body.is-preloading {
+  overflow: hidden !important;
+  touch-action: none !important;
+  overscroll-behavior: none !important;
+  height: 100% !important;
+  height: 100dvh !important;
+  width: 100% !important;
+  position: fixed !important;
+  inset: 0 !important;
+  background: #080808 !important;
+}
+
 .goats-preloader {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 999999;
-  background: #080808;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  inset: 0 !important;
+  width: 100% !important;
+  width: 100vw !important;
+  width: 100dvw !important;
+  height: 100% !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  z-index: 9999999 !important;
+  background: #080808 !important;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   pointer-events: all;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  overscroll-behavior: none;
   transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1);
   will-change: transform;
 }
 
 .goats-preloader.is-loaded {
-  transform: translateY(-100%);
-  pointer-events: none;
+  transform: translateY(-100%) !important;
+  pointer-events: none !important;
 }
 
 .preloader-inner {
@@ -3285,6 +3312,8 @@ svg.google-icon-svg {
               radial-gradient(circle at 10% 80%, rgba(6, 182, 212, 0.06) 0%, rgba(255, 255, 255, 0) 60%);
   position: relative;
   overflow: hidden;
+  width: 100%;
+  max-width: 100%;
 }
 
 .peakbot-card-wrapper {
@@ -3296,6 +3325,10 @@ svg.google-icon-svg {
   position: relative;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .peakbot-grid {
@@ -3303,6 +3336,15 @@ svg.google-icon-svg {
   grid-template-columns: 1.15fr 0.85fr;
   gap: 3.5rem;
   align-items: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.peakbot-info-col {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .peakbot-badge-tag {
@@ -3319,6 +3361,7 @@ svg.google-icon-svg {
   letter-spacing: 0.5px;
   text-transform: uppercase;
   margin-bottom: 0.75rem;
+  max-width: 100%;
 }
 
 .peakbot-title {
@@ -3333,6 +3376,7 @@ svg.google-icon-svg {
   align-items: center;
   gap: 0.65rem;
   flex-wrap: wrap;
+  word-break: break-word;
 }
 
 .peakbot-title-highlight {
@@ -3349,6 +3393,7 @@ svg.google-icon-svg {
   color: #1e293b;
   line-height: 1.6;
   margin-bottom: 1.75rem;
+  word-break: break-word;
 }
 
 .peakbot-features-list {
@@ -3356,6 +3401,8 @@ svg.google-icon-svg {
   grid-template-columns: repeat(2, 1fr);
   gap: 0.9rem;
   margin-bottom: 2rem;
+  width: 100%;
+  max-width: 100%;
 }
 
 .peakbot-feature-item {
@@ -3372,6 +3419,8 @@ svg.google-icon-svg {
   border-radius: var(--radius-md);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
   transition: all 0.25s ease;
+  min-width: 0;
+  word-break: break-word;
 }
 
 .peakbot-feature-item:hover {
@@ -3392,20 +3441,26 @@ svg.google-icon-svg {
   gap: 1rem;
   flex-wrap: wrap;
   margin-bottom: 2rem;
+  width: 100%;
+  max-width: 100%;
 }
 
 .btn-telegram {
   background: linear-gradient(135deg, #229ed9 0%, #0088cc 100%);
   color: #ffffff !important;
-  font-weight: 700;
-  padding: 0.75rem 1.45rem;
+  font-weight: 800;
+  font-size: 1rem;
+  padding: 0.85rem 1.85rem;
   border-radius: var(--radius-md);
-  box-shadow: 0 4px 14px rgba(0, 136, 204, 0.35);
+  box-shadow: 0 4px 15px rgba(34, 158, 217, 0.35);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.6rem;
   text-decoration: none;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .btn-telegram:hover {
@@ -3423,9 +3478,12 @@ svg.google-icon-svg {
   box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.6rem;
   text-decoration: none;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .btn-whatsapp-bot:hover {
@@ -3441,6 +3499,9 @@ svg.google-icon-svg {
   font-size: 0.825rem;
   color: #64748b;
   line-height: 1.6;
+  width: 100%;
+  max-width: 100%;
+  word-break: break-word;
 }
 
 /* PeakBot Interactive Terminal / UI Mockup */
@@ -3449,6 +3510,9 @@ svg.google-icon-svg {
   display: flex;
   justify-content: center;
   align-items: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .peakbot-window-frame {
@@ -3460,6 +3524,7 @@ svg.google-icon-svg {
   box-shadow: 0 20px 50px -10px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(255, 255, 255, 0.8);
   overflow: hidden;
   position: relative;
+  box-sizing: border-box;
 }
 
 .peakbot-window-topbar {
@@ -3469,6 +3534,8 @@ svg.google-icon-svg {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .window-dots {
@@ -3505,15 +3572,20 @@ svg.google-icon-svg {
   gap: 0.85rem;
   background: #fafcff;
   min-height: 280px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .chat-bubble {
-  max-width: 85%;
+  max-width: 88%;
   padding: 0.75rem 0.95rem;
   border-radius: 14px;
   font-size: 0.85rem;
   line-height: 1.5;
   position: relative;
+  word-break: break-word;
+  overflow-wrap: break-word;
   animation: bubblePop 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -3558,6 +3630,8 @@ svg.google-icon-svg {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .bot-chip {
@@ -3566,11 +3640,13 @@ svg.google-icon-svg {
   color: var(--primary);
   background: #eff6ff;
   border: 1px solid #bfdbfe;
-  padding: 0.25rem 0.6rem;
+  padding: 0.3rem 0.65rem;
   border-radius: var(--radius-full);
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: var(--font-sinhala), sans-serif;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .bot-chip:hover {
@@ -3589,6 +3665,103 @@ svg.google-icon-svg {
   }
   .peakbot-features-list {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .peakbot-section {
+    padding: 3.5rem 0;
+  }
+  .peakbot-card-wrapper {
+    padding: 1.75rem 1.15rem;
+    border-radius: var(--radius-lg);
+  }
+  .peakbot-title {
+    font-size: 1.85rem;
+  }
+  .peakbot-sinhala-headline {
+    font-size: 1.1rem;
+    line-height: 1.55;
+    margin-bottom: 1.25rem;
+  }
+  .peakbot-features-list {
+    gap: 0.65rem;
+    margin-bottom: 1.5rem;
+  }
+  .peakbot-feature-item {
+    padding: 0.55rem 0.75rem;
+    font-size: 0.85rem;
+  }
+  .peakbot-actions-row {
+    margin-bottom: 1.5rem;
+  }
+  .btn-telegram {
+    width: 100% !important;
+    padding: 0.85rem 1rem !important;
+    font-size: 0.925rem !important;
+    justify-content: center !important;
+    text-align: center !important;
+    white-space: normal !important;
+  }
+  .btn-whatsapp-bot {
+    width: 100% !important;
+    padding: 0.85rem 1rem !important;
+    font-size: 0.925rem !important;
+    justify-content: center !important;
+    text-align: center !important;
+    white-space: normal !important;
+  }
+  .peakbot-window-frame {
+    max-width: 100%;
+    border-radius: 14px;
+  }
+  .peakbot-chat-canvas {
+    padding: 1rem 0.75rem;
+    min-height: 240px;
+    gap: 0.65rem;
+  }
+  .chat-bubble {
+    max-width: 92%;
+    padding: 0.65rem 0.75rem;
+    font-size: 0.8rem;
+  }
+  .peakbot-quick-chips {
+    padding: 0.65rem 0.75rem;
+    gap: 0.35rem;
+  }
+  .bot-chip {
+    font-size: 0.675rem;
+    padding: 0.25rem 0.5rem;
+  }
+  .lms-center-cta .btn {
+    width: 100% !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    padding: 0.85rem 1rem !important;
+    font-size: 0.95rem !important;
+    text-align: center !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .peakbot-card-wrapper {
+    padding: 1.25rem 0.85rem;
+  }
+  .peakbot-title {
+    font-size: 1.6rem;
+  }
+  .btn-telegram {
+    font-size: 0.85rem !important;
+    padding: 0.75rem 0.75rem !important;
+    gap: 0.4rem !important;
+  }
+  .chat-bubble {
+    max-width: 96%;
+    font-size: 0.75rem;
+  }
+  .bot-chip {
+    font-size: 0.625rem;
+    padding: 0.2rem 0.45rem;
   }
 }
 

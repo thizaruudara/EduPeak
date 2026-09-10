@@ -893,6 +893,8 @@ function initGoatsPreloader() {
   if (!isHomePage || isDeepLink || isHashDeepLink) {
     preloader.style.display = "none";
     preloader.remove();
+    document.documentElement.classList.remove("is-preloading");
+    document.body.classList.remove("is-preloading");
     document.body.style.overflow = "";
     return;
   }
@@ -906,6 +908,8 @@ function initGoatsPreloader() {
 
   if (!counterNum) {
     preloader.remove();
+    document.documentElement.classList.remove("is-preloading");
+    document.body.classList.remove("is-preloading");
     return;
   }
 
@@ -987,6 +991,8 @@ function initGoatsPreloader() {
     // Slide up entire preloader overlay
     setTimeout(() => {
       preloader.classList.add("is-loaded");
+      document.documentElement.classList.remove("is-preloading");
+      document.body.classList.remove("is-preloading");
       document.body.style.overflow = "";
 
       // Cleanup preloader after transition
