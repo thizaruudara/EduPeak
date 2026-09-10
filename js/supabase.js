@@ -283,8 +283,9 @@ const SUPABASE_HELPER = {
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("teachers").select("*");
-        if (!error && Array.isArray(data)) {
+        if (!error && Array.isArray(data) && data.length > 0) {
           this.setSharedData("edupeak_teachers_db", data);
+          try { localStorage.setItem("edupeak_teachers_db", JSON.stringify(data)); } catch (e) {}
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.teachers = data;
           return data;
         }
@@ -293,11 +294,31 @@ const SUPABASE_HELPER = {
       }
     }
     const shared = this.getSharedData("edupeak_teachers_db");
-    if (shared !== null && Array.isArray(shared)) {
+    if (shared !== null && Array.isArray(shared) && shared.length > 0) {
       if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.teachers = shared;
+      try { localStorage.setItem("edupeak_teachers_db", JSON.stringify(shared)); } catch (e) {}
       return shared;
     }
-    return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.teachers) ? window.EDUPEAK_DATA.teachers : [];
+    try {
+      const stored = localStorage.getItem("edupeak_teachers_db");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.setSharedData("edupeak_teachers_db", parsed);
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.teachers = parsed;
+          return parsed;
+        }
+      }
+    } catch (e) {}
+
+    const defaultTeachers = (window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.teachers) && window.EDUPEAK_DATA.teachers.length > 0)
+      ? window.EDUPEAK_DATA.teachers
+      : [];
+    if (defaultTeachers.length > 0) {
+      this.setSharedData("edupeak_teachers_db", defaultTeachers);
+      try { localStorage.setItem("edupeak_teachers_db", JSON.stringify(defaultTeachers)); } catch (e) {}
+    }
+    return defaultTeachers;
   },
 
   async saveTeacher(teacherData) {
@@ -447,8 +468,9 @@ const SUPABASE_HELPER = {
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("past_papers").select("*").order("year", { ascending: false });
-        if (!error && Array.isArray(data)) {
+        if (!error && Array.isArray(data) && data.length > 0) {
           this.setSharedData("edupeak_papers_db", data);
+          try { localStorage.setItem("edupeak_papers_db", JSON.stringify(data)); } catch (e) {}
           return data;
         }
       } catch (e) {
@@ -456,10 +478,63 @@ const SUPABASE_HELPER = {
       }
     }
     const shared = this.getSharedData("edupeak_papers_db");
-    if (shared !== null && Array.isArray(shared)) {
+    if (shared !== null && Array.isArray(shared) && shared.length > 0) {
+      try { localStorage.setItem("edupeak_papers_db", JSON.stringify(shared)); } catch (e) {}
       return shared;
     }
-    return [];
+    try {
+      const stored = localStorage.getItem("edupeak_papers_db");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.setSharedData("edupeak_papers_db", parsed);
+          return parsed;
+        }
+      }
+    } catch (e) {}
+
+    const defaultPapers = [
+      {
+        id: "pp-2024-al-phy",
+        title: "2024 G.C.E. A/L Physics Past Paper & Structured Marking Scheme",
+        title_si: "2024 උසස් පෙළ භෞතික විද්‍යාව පසුගිය විභාග ප්‍රශ්න පත්‍රය සහ ලකුණු දීමේ පටිපාටිය",
+        year: 2024,
+        type: "past_paper",
+        unitName: "Complete Paper (Part I & II)",
+        fileSize: "4.8 MB",
+        downloadCount: 3840,
+        pdfUrl: "assets/papers/2024_AL_Physics_Paper.pdf",
+        storageType: "local"
+      },
+      {
+        id: "pp-2023-al-phy",
+        title: "2023 G.C.E. A/L Physics Past Paper & Detailed Marking Scheme",
+        title_si: "2023 උසස් පෙළ භෞතික විද්‍යාව පසුගිය විභාග ප්‍රශ්න පත්‍රය සහ පිළිතුරු විවරණය",
+        year: 2023,
+        type: "past_paper",
+        unitName: "Complete Paper (Part I & II)",
+        fileSize: "5.2 MB",
+        downloadCount: 5120,
+        pdfUrl: "assets/papers/2023_AL_Physics_Paper.pdf",
+        storageType: "local"
+      },
+      {
+        id: "pp-2022-al-phy",
+        title: "2022 G.C.E. A/L Physics Past Paper with MCQ Explanations",
+        title_si: "2022 උසස් පෙළ භෞතික විද්‍යාව පසුගිය විභාග ප්‍රශ්න පත්‍රය හා විවරණය",
+        year: 2022,
+        type: "past_paper",
+        unitName: "Complete Paper (Part I & II)",
+        fileSize: "4.5 MB",
+        downloadCount: 6200,
+        pdfUrl: "assets/papers/2022_AL_Physics_Paper.pdf",
+        storageType: "local"
+      }
+    ];
+
+    this.setSharedData("edupeak_papers_db", defaultPapers);
+    try { localStorage.setItem("edupeak_papers_db", JSON.stringify(defaultPapers)); } catch (e) {}
+    return defaultPapers;
   },
 
   async savePaper(paperData) {
@@ -479,6 +554,7 @@ const SUPABASE_HELPER = {
       papers.unshift(paperData);
     }
     this.setSharedData("edupeak_papers_db", papers);
+    try { localStorage.setItem("edupeak_papers_db", JSON.stringify(papers)); } catch (e) {}
     return paperData;
   },
 
@@ -493,6 +569,7 @@ const SUPABASE_HELPER = {
     let papers = await this.getPapers();
     papers = papers.filter(p => p.id !== paperId);
     this.setSharedData("edupeak_papers_db", papers);
+    try { localStorage.setItem("edupeak_papers_db", JSON.stringify(papers)); } catch (e) {}
     return true;
   },
 
@@ -501,8 +578,9 @@ const SUPABASE_HELPER = {
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("institutes").select("*");
-        if (!error && Array.isArray(data)) {
+        if (!error && Array.isArray(data) && data.length > 0) {
           this.setSharedData("edupeak_institutes_db", data);
+          try { localStorage.setItem("edupeak_institutes_db", JSON.stringify(data)); } catch (e) {}
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = data;
           return data;
         }
@@ -511,11 +589,31 @@ const SUPABASE_HELPER = {
       }
     }
     const shared = this.getSharedData("edupeak_institutes_db");
-    if (shared !== null && Array.isArray(shared)) {
+    if (shared !== null && Array.isArray(shared) && shared.length > 0) {
       if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = shared;
+      try { localStorage.setItem("edupeak_institutes_db", JSON.stringify(shared)); } catch (e) {}
       return shared;
     }
-    return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.institutes) ? window.EDUPEAK_DATA.institutes : [];
+    try {
+      const stored = localStorage.getItem("edupeak_institutes_db");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.setSharedData("edupeak_institutes_db", parsed);
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = parsed;
+          return parsed;
+        }
+      }
+    } catch (e) {}
+
+    const defaultInstitutes = (window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.institutes) && window.EDUPEAK_DATA.institutes.length > 0)
+      ? window.EDUPEAK_DATA.institutes
+      : [];
+    if (defaultInstitutes.length > 0) {
+      this.setSharedData("edupeak_institutes_db", defaultInstitutes);
+      try { localStorage.setItem("edupeak_institutes_db", JSON.stringify(defaultInstitutes)); } catch (e) {}
+    }
+    return defaultInstitutes;
   },
 
   async saveInstitute(instData) {
