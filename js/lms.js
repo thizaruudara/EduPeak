@@ -233,11 +233,16 @@ function loadSavedLMSData() {
     }
 
     // Load custom courses database created in Teacher Studio / Admin
+    const deletedIds = (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getDeletedCourses === "function")
+      ? window.SUPABASE_HELPER.getDeletedCourses()
+      : JSON.parse(localStorage.getItem("edupeak_deleted_courses") || "[]");
+    const filterDeleted = (list) => Array.isArray(list) ? list.filter(c => c && !deletedIds.includes(c.id)) : [];
+
     let loadedCourses = null;
     if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
       const shared = window.SUPABASE_HELPER.getSharedData("edupeak_courses_db");
       if (shared !== null && Array.isArray(shared)) {
-        loadedCourses = shared;
+        loadedCourses = filterDeleted(shared);
       }
     }
     if (loadedCourses === null) {
@@ -245,12 +250,16 @@ function loadSavedLMSData() {
       if (storedCoursesDb !== null) {
         try {
           const parsed = JSON.parse(storedCoursesDb);
-          if (Array.isArray(parsed)) loadedCourses = parsed;
+          if (Array.isArray(parsed)) loadedCourses = filterDeleted(parsed);
         } catch (e) {}
       }
     }
     if (loadedCourses !== null) {
       if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = loadedCourses;
+    } else {
+      if (window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.courses)) {
+        window.EDUPEAK_DATA.courses = filterDeleted(window.EDUPEAK_DATA.courses);
+      }
     }
 
     // Load any custom lessons created in Teacher Studio
@@ -317,22 +326,31 @@ function loadSavedLMSData() {
 // Helper: Get dynamic courses database synced with Teacher Studio & Admin
 function getLMSCourses() {
   try {
+    const deletedIds = (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getDeletedCourses === "function")
+      ? window.SUPABASE_HELPER.getDeletedCourses()
+      : JSON.parse(localStorage.getItem("edupeak_deleted_courses") || "[]");
+    const filterDeleted = (list) => Array.isArray(list) ? list.filter(c => c && !deletedIds.includes(c.id)) : [];
+
     if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
       const shared = window.SUPABASE_HELPER.getSharedData("edupeak_courses_db");
       if (shared !== null && Array.isArray(shared)) {
-        if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = shared;
-        return shared;
+        const filtered = filterDeleted(shared);
+        if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = filtered;
+        return filtered;
       }
     }
     const stored = localStorage.getItem("edupeak_courses_db");
     if (stored !== null) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed)) {
-        if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = parsed;
-        return parsed;
+        const filtered = filterDeleted(parsed);
+        if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = filtered;
+        return filtered;
       }
     }
-    return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
+    const fallback = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? filterDeleted(window.EDUPEAK_DATA.courses) : [];
+    if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = fallback;
+    return fallback;
   } catch (e) {
     return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
   }

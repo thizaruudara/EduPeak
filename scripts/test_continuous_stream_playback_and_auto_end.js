@@ -70,8 +70,8 @@ function startServer() {
     console.log('\n--- 1. Testing Continuous Playback Time Offset on Reload ---');
     const page = await context.newPage();
 
-    // Prepare mock session: Started 150 seconds ago
-    const testSessionId = 'sched-continuous-test-01';
+    // Prepare mock session: Started 150 seconds ago with unique ID per run
+    const testSessionId = 'sched-continuous-' + Date.now();
     const startedAtTime = new Date(Date.now() - 150 * 1000).toISOString();
 
     const mockSchedules = [
@@ -96,20 +96,28 @@ function startServer() {
       }
     ];
 
-    await page.goto(`http://localhost:${PORT}/live-class.html?stream=${testSessionId}`);
-    await page.evaluate((scheds) => {
+    await context.addInitScript((scheds) => {
       localStorage.setItem('edupeak_schedules_db', JSON.stringify(scheds));
       localStorage.setItem('edupeak_live_stream_config', JSON.stringify(scheds[0]));
+      localStorage.setItem('edupeak_last_active_stream', scheds[0].id);
       localStorage.setItem('edupeak_auth_user', JSON.stringify({
         id: 'std-test-user-1',
         name: 'Kasun Bandara',
         role: 'student',
         nic: '200512345678'
       }));
+
+      const checkHelper = setInterval(() => {
+        if (window.SUPABASE_HELPER) {
+          window.SUPABASE_HELPER.getLiveSessions = async () => {
+            try { return JSON.parse(localStorage.getItem('edupeak_schedules_db') || '[]'); } catch(e) { return scheds; }
+          };
+          clearInterval(checkHelper);
+        }
+      }, 20);
     }, mockSchedules);
 
-    // Reload page to simulate student opening the link
-    await page.reload();
+    await page.goto(`http://localhost:${PORT}/live-class.html?stream=${testSessionId}`);
     await page.waitForTimeout(1000);
 
     const elapsedOnFirstLoad = await page.evaluate(() => {
@@ -127,11 +135,21 @@ function startServer() {
     console.log('Waiting 3 seconds and reloading page to test continuous playback persistence...');
     await page.waitForTimeout(3000);
     await page.reload();
-    await page.waitForTimeout(1000);
+    // Wait for page scripts and session to finish loading after reload
+    await page.waitForFunction(() => {
+      return window.LIVE_APP && window.LIVE_APP.activeSession && window.EDUPEAK_LIVE_PLAYER && window.EDUPEAK_LIVE_PLAYER.getElapsedSeconds() > 0;
+    }, { timeout: 6000 }).catch(() => {});
 
-    const elapsedAfterReload = await page.evaluate(() => {
-      return window.EDUPEAK_LIVE_PLAYER ? window.EDUPEAK_LIVE_PLAYER.getElapsedSeconds() : -1;
+    const debugInfo = await page.evaluate(() => {
+      return {
+        activeId: window.LIVE_APP ? window.LIVE_APP.activeSessionId : null,
+        activeSession: window.LIVE_APP ? window.LIVE_APP.activeSession : null,
+        elapsed: window.EDUPEAK_LIVE_PLAYER ? window.EDUPEAK_LIVE_PLAYER.getElapsedSeconds() : -1
+      };
     });
+    console.log("Debug info after reload:", JSON.stringify(debugInfo));
+
+    const elapsedAfterReload = debugInfo.elapsed;
 
     console.log(`Elapsed seconds after reload: ${elapsedAfterReload}s (Expected ~154s)`);
     if (elapsedAfterReload >= 152 && elapsedAfterReload > elapsedOnFirstLoad) {
@@ -156,11 +174,18 @@ function startServer() {
 
     // Trigger video completion on page 1 (simulating YouTube onStateChange ENDED or duration finished)
     console.log('Simulating video completion (YT.PlayerState.ENDED)...');
-    await page.evaluate(() => {
+    const trigDebug = await page.evaluate(() => {
+      let playerHasTrigger = !!(window.EDUPEAK_LIVE_PLAYER && window.EDUPEAK_LIVE_PLAYER.triggerLiveEnded);
+      let appHasAutoEnd = !!(window.LIVE_APP && typeof window.LIVE_APP.handleAutoEndStream === "function");
+      let currentActiveId = window.LIVE_APP ? window.LIVE_APP.activeSessionId : null;
+      let curStatusBefore = window.LIVE_APP && window.LIVE_APP.activeSession ? window.LIVE_APP.activeSession.status : null;
+      
       if (window.EDUPEAK_LIVE_PLAYER && window.EDUPEAK_LIVE_PLAYER.triggerLiveEnded) {
         window.EDUPEAK_LIVE_PLAYER.triggerLiveEnded();
       }
+      return { playerHasTrigger, appHasAutoEnd, currentActiveId, curStatusBefore };
     });
+    console.log("Trigger debug:", JSON.stringify(trigDebug));
 
     await page.waitForTimeout(1200);
 

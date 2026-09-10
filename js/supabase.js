@@ -119,17 +119,65 @@ const SUPABASE_HELPER = {
     }
   },
 
+  getDeletedCourses() {
+    try {
+      const stored = localStorage.getItem("edupeak_deleted_courses_db");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch(e) {}
+    return [];
+  },
+
+  addDeletedCourse(courseId) {
+    if (!courseId) return;
+    const deleted = this.getDeletedCourses();
+    if (!deleted.includes(courseId)) {
+      deleted.push(courseId);
+      try {
+        localStorage.setItem("edupeak_deleted_courses_db", JSON.stringify(deleted));
+      } catch(e) {}
+      this.setSharedData("edupeak_deleted_courses_db", deleted);
+    }
+  },
+
+  getDeletedPapers() {
+    try {
+      const stored = localStorage.getItem("edupeak_deleted_papers_db");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch(e) {}
+    return [];
+  },
+
+  addDeletedPaper(paperId) {
+    if (!paperId) return;
+    const deleted = this.getDeletedPapers();
+    if (!deleted.includes(paperId)) {
+      deleted.push(paperId);
+      try {
+        localStorage.setItem("edupeak_deleted_papers_db", JSON.stringify(deleted));
+      } catch(e) {}
+      this.setSharedData("edupeak_deleted_papers_db", deleted);
+    }
+  },
+
   async syncCourses() {
     if (!this.isConnected || !this.client) return null;
+    const deletedIds = this.getDeletedCourses();
     try {
       const { data, error } = await this.client.from("courses").select("*");
-      if (!error && Array.isArray(data) && data.length > 0) {
-        this.setSharedData("edupeak_courses_db", data);
-        try { localStorage.setItem("edupeak_courses_db", JSON.stringify(data)); } catch (e) {}
-        if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = data;
+      if (!error && Array.isArray(data)) {
+        const filtered = data.filter(c => !deletedIds.includes(c.id));
+        this.setSharedData("edupeak_courses_db", filtered);
+        try { localStorage.setItem("edupeak_courses_db", JSON.stringify(filtered)); } catch (e) {}
+        if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = filtered;
 
         if (typeof window.dispatchEvent === "function") {
-          window.dispatchEvent(new CustomEvent("edupeak:courses-synced", { detail: data }));
+          window.dispatchEvent(new CustomEvent("edupeak:courses-synced", { detail: filtered }));
         }
 
         if (typeof window.renderCourses === "function") window.renderCourses();
@@ -148,7 +196,7 @@ const SUPABASE_HELPER = {
           if (typeof window.ADMIN_CONTROLLER.renderCourses === "function") window.ADMIN_CONTROLLER.renderCourses();
           if (typeof window.ADMIN_CONTROLLER.renderOverview === "function") window.ADMIN_CONTROLLER.renderOverview();
         }
-        return data;
+        return filtered;
       }
     } catch (e) {
       console.warn("syncCourses error:", e);
@@ -183,14 +231,16 @@ const SUPABASE_HELPER = {
 
   async syncPapers() {
     if (!this.isConnected || !this.client) return null;
+    const deletedIds = this.getDeletedPapers();
     try {
       const { data, error } = await this.client.from("past_papers").select("*").order("year", { ascending: false });
-      if (!error && Array.isArray(data) && data.length > 0) {
-        this.setSharedData("edupeak_papers_db", data);
-        try { localStorage.setItem("edupeak_papers_db", JSON.stringify(data)); } catch (e) {}
+      if (!error && Array.isArray(data)) {
+        const filtered = data.filter(p => !deletedIds.includes(p.id));
+        this.setSharedData("edupeak_papers_db", filtered);
+        try { localStorage.setItem("edupeak_papers_db", JSON.stringify(filtered)); } catch (e) {}
 
         if (typeof window.dispatchEvent === "function") {
-          window.dispatchEvent(new CustomEvent("edupeak:papers-synced", { detail: data }));
+          window.dispatchEvent(new CustomEvent("edupeak:papers-synced", { detail: filtered }));
         }
 
         if (typeof window.renderPastPapersGrid === "function") window.renderPastPapersGrid();
@@ -198,7 +248,7 @@ const SUPABASE_HELPER = {
         if (window.TEACHER_CONTROLLER && window.TEACHER_CONTROLLER.currentTab === "papers" && typeof window.TEACHER_CONTROLLER.renderPapers === "function") {
           window.TEACHER_CONTROLLER.renderPapers();
         }
-        return data;
+        return filtered;
       }
     } catch (e) {
       console.warn("syncPapers error:", e);
@@ -627,16 +677,19 @@ const SUPABASE_HELPER = {
 
   // 3. COURSES
   async getCourses() {
+    const deletedIds = this.getDeletedCourses();
+
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("courses").select("*");
-        if (!error && Array.isArray(data) && data.length > 0) {
-          this.setSharedData("edupeak_courses_db", data);
+        if (!error && Array.isArray(data)) {
+          const filtered = data.filter(c => !deletedIds.includes(c.id));
+          this.setSharedData("edupeak_courses_db", filtered);
           try {
-            localStorage.setItem("edupeak_courses_db", JSON.stringify(data));
+            localStorage.setItem("edupeak_courses_db", JSON.stringify(filtered));
           } catch (e) {}
-          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = data;
-          return data;
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = filtered;
+          return filtered;
         }
       } catch (e) {
         console.warn("Supabase fetch courses error, using local:", e);
@@ -644,26 +697,28 @@ const SUPABASE_HELPER = {
     }
     const shared = this.getSharedData("edupeak_courses_db");
     if (shared !== null && Array.isArray(shared)) {
-      if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = shared;
+      const filtered = shared.filter(c => !deletedIds.includes(c.id));
+      if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = filtered;
       try {
-        localStorage.setItem("edupeak_courses_db", JSON.stringify(shared));
+        localStorage.setItem("edupeak_courses_db", JSON.stringify(filtered));
       } catch (e) {}
-      return shared;
+      return filtered;
     }
     try {
       const stored = localStorage.getItem("edupeak_courses_db");
       if (stored !== null) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          this.setSharedData("edupeak_courses_db", parsed);
-          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = parsed;
-          return parsed;
+          const filtered = parsed.filter(c => !deletedIds.includes(c.id));
+          this.setSharedData("edupeak_courses_db", filtered);
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = filtered;
+          return filtered;
         }
       }
     } catch (e) {}
 
-    const defaultCourses = (window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.courses) && window.EDUPEAK_DATA.courses.length > 0)
-      ? window.EDUPEAK_DATA.courses
+    const defaultCourses = (window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.courses))
+      ? window.EDUPEAK_DATA.courses.filter(c => !deletedIds.includes(c.id))
       : [];
     if (defaultCourses.length > 0) {
       this.setSharedData("edupeak_courses_db", defaultCourses);
@@ -674,6 +729,15 @@ const SUPABASE_HELPER = {
 
   async saveCourse(courseData) {
     if (!courseData || !courseData.id) return null;
+    // Remove from deleted list if re-added
+    try {
+      let deleted = this.getDeletedCourses();
+      if (deleted.includes(courseData.id)) {
+        deleted = deleted.filter(id => id !== courseData.id);
+        localStorage.setItem("edupeak_deleted_courses_db", JSON.stringify(deleted));
+      }
+    } catch(e) {}
+
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("courses").upsert([courseData]).select();
@@ -709,6 +773,8 @@ const SUPABASE_HELPER = {
 
   async deleteCourse(courseId) {
     if (!courseId) return false;
+    this.addDeletedCourse(courseId);
+
     if (this.isConnected && this.client) {
       try {
         await this.client.from("courses").delete().eq("id", courseId);
@@ -722,9 +788,14 @@ const SUPABASE_HELPER = {
     try {
       localStorage.setItem("edupeak_courses_db", JSON.stringify(courses));
     } catch (e) {}
-    if (window.EDUPEAK_DATA) {
-      window.EDUPEAK_DATA.courses = courses;
+    if (window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.courses)) {
+      window.EDUPEAK_DATA.courses = window.EDUPEAK_DATA.courses.filter(c => c.id !== courseId);
     }
+    try {
+      let custom = JSON.parse(localStorage.getItem("edupeak_custom_courses") || "[]");
+      custom = custom.filter(c => c.id !== courseId);
+      localStorage.setItem("edupeak_custom_courses", JSON.stringify(custom));
+    } catch(e) {}
 
     const matchId = (id1, id2) => {
       if (!id1 || !id2) return false;
@@ -841,13 +912,16 @@ const SUPABASE_HELPER = {
 
   // 4. PAST PAPERS (PDF Vault)
   async getPapers() {
+    const deletedIds = this.getDeletedPapers();
+
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("past_papers").select("*").order("year", { ascending: false });
-        if (!error && Array.isArray(data) && data.length > 0) {
-          this.setSharedData("edupeak_papers_db", data);
-          try { localStorage.setItem("edupeak_papers_db", JSON.stringify(data)); } catch (e) {}
-          return data;
+        if (!error && Array.isArray(data)) {
+          const filtered = data.filter(p => !deletedIds.includes(p.id));
+          this.setSharedData("edupeak_papers_db", filtered);
+          try { localStorage.setItem("edupeak_papers_db", JSON.stringify(filtered)); } catch (e) {}
+          return filtered;
         }
       } catch (e) {
         console.warn("Supabase fetch past_papers error, using local:", e);
@@ -855,16 +929,18 @@ const SUPABASE_HELPER = {
     }
     const shared = this.getSharedData("edupeak_papers_db");
     if (shared !== null && Array.isArray(shared)) {
-      try { localStorage.setItem("edupeak_papers_db", JSON.stringify(shared)); } catch (e) {}
-      return shared;
+      const filtered = shared.filter(p => !deletedIds.includes(p.id));
+      try { localStorage.setItem("edupeak_papers_db", JSON.stringify(filtered)); } catch (e) {}
+      return filtered;
     }
     try {
       const stored = localStorage.getItem("edupeak_papers_db");
       if (stored !== null) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          this.setSharedData("edupeak_papers_db", parsed);
-          return parsed;
+          const filtered = parsed.filter(p => !deletedIds.includes(p.id));
+          this.setSharedData("edupeak_papers_db", filtered);
+          return filtered;
         }
       }
     } catch (e) {}
@@ -915,14 +991,26 @@ const SUPABASE_HELPER = {
         pdfUrl: "assets/papers/2022_AL_Physics_Paper.pdf",
         storageType: "local"
       }
-    ];
+    ].filter(p => !deletedIds.includes(p.id));
 
-    this.setSharedData("edupeak_papers_db", defaultPapers);
-    try { localStorage.setItem("edupeak_papers_db", JSON.stringify(defaultPapers)); } catch (e) {}
+    if (defaultPapers.length > 0) {
+      this.setSharedData("edupeak_papers_db", defaultPapers);
+      try { localStorage.setItem("edupeak_papers_db", JSON.stringify(defaultPapers)); } catch (e) {}
+    }
     return defaultPapers;
   },
 
   async savePaper(paperData) {
+    if (!paperData || !paperData.id) return null;
+    // Un-tombstone if re-created
+    try {
+      let deleted = this.getDeletedPapers();
+      if (deleted.includes(paperData.id)) {
+        deleted = deleted.filter(id => id !== paperData.id);
+        localStorage.setItem("edupeak_deleted_papers_db", JSON.stringify(deleted));
+      }
+    } catch(e) {}
+
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("past_papers").upsert([paperData]).select();
@@ -944,6 +1032,9 @@ const SUPABASE_HELPER = {
   },
 
   async deletePaper(paperId) {
+    if (!paperId) return false;
+    this.addDeletedPaper(paperId);
+
     if (this.isConnected && this.client) {
       try {
         await this.client.from("past_papers").delete().eq("id", paperId);

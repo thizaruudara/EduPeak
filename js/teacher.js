@@ -74,13 +74,21 @@ const TEACHER_CONTROLLER = {
           } catch (e) {}
         }
       }
-      if (loadedCourses !== null && loadedCourses.length > 0) {
+      if (loadedCourses !== null) {
         if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = loadedCourses;
       } else {
+        const deletedIds = (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getDeletedCourses === "function")
+          ? window.SUPABASE_HELPER.getDeletedCourses()
+          : JSON.parse(localStorage.getItem("edupeak_deleted_courses_db") || "[]");
+
+        if (window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.courses)) {
+          window.EDUPEAK_DATA.courses = window.EDUPEAK_DATA.courses.filter(c => !deletedIds.includes(c.id));
+        }
+
         const customCourses = JSON.parse(localStorage.getItem(this.storageKeys.customCourses || "edupeak_custom_courses") || "[]");
         if (customCourses.length && window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) {
           customCourses.forEach(c => {
-            if (!window.EDUPEAK_DATA.courses.find(item => item.id === c.id)) {
+            if (!deletedIds.includes(c.id) && !window.EDUPEAK_DATA.courses.find(item => item.id === c.id)) {
               window.EDUPEAK_DATA.courses.unshift(c);
             }
           });
@@ -178,22 +186,31 @@ const TEACHER_CONTROLLER = {
 
   getTeacherCourses() {
     try {
+      const deletedIds = (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getDeletedCourses === "function")
+        ? window.SUPABASE_HELPER.getDeletedCourses()
+        : JSON.parse(localStorage.getItem("edupeak_deleted_courses") || "[]");
+      const filterDeleted = (list) => Array.isArray(list) ? list.filter(c => c && !deletedIds.includes(c.id)) : [];
+
       if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
         const shared = window.SUPABASE_HELPER.getSharedData("edupeak_courses_db");
         if (shared !== null && Array.isArray(shared)) {
-          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = shared;
-          return shared;
+          const filtered = filterDeleted(shared);
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = filtered;
+          return filtered;
         }
       }
       const stored = localStorage.getItem("edupeak_courses_db");
       if (stored !== null) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = parsed;
-          return parsed;
+          const filtered = filterDeleted(parsed);
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = filtered;
+          return filtered;
         }
       }
-      return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
+      const fallback = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? filterDeleted(window.EDUPEAK_DATA.courses) : [];
+      if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = fallback;
+      return fallback;
     } catch (e) {
       return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
     }
@@ -208,10 +225,8 @@ const TEACHER_CONTROLLER = {
     try {
       localStorage.setItem("edupeak_courses_db", JSON.stringify(coursesList));
     } catch (e) {}
-    const defaultIds = ["crs-phy-2027-theory", "crs-phy-2027-revision", "crs-phy-2028-theory", "crs-phy-2028-paper", "crs-phy-2029-theory"];
-    const customList = (coursesList || []).filter(c => !defaultIds.includes(c.id));
     try {
-      localStorage.setItem(this.storageKeys.customCourses || "edupeak_custom_courses", JSON.stringify(customList));
+      localStorage.setItem(this.storageKeys.customCourses || "edupeak_custom_courses", JSON.stringify(coursesList));
     } catch (e) {}
     if (window.EDUPEAK_DATA) {
       window.EDUPEAK_DATA.courses = coursesList;
@@ -457,6 +472,14 @@ const TEACHER_CONTROLLER = {
 
       if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.deleteCourse === "function") {
         window.SUPABASE_HELPER.deleteCourse(courseId);
+      } else {
+        try {
+          const dels = JSON.parse(localStorage.getItem("edupeak_deleted_courses") || "[]");
+          if (!dels.includes(courseId)) {
+            dels.push(courseId);
+            localStorage.setItem("edupeak_deleted_courses", JSON.stringify(dels));
+          }
+        } catch (e) {}
       }
 
       if (window.showToast) {
@@ -1504,14 +1527,20 @@ const TEACHER_CONTROLLER = {
   // 3.5. PAST PAPERS & PDF VAULT MANAGEMENT (Connected with Supabase & Students)
   // --------------------------------------------------------------------------
   async getPapers() {
+    const deletedIds = (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getDeletedPapers === "function")
+      ? window.SUPABASE_HELPER.getDeletedPapers()
+      : JSON.parse(localStorage.getItem("edupeak_deleted_papers") || "[]");
+    const filterDeleted = (list) => Array.isArray(list) ? list.filter(p => p && !deletedIds.includes(p.id) && !deletedIds.includes(String(p.id))) : [];
+
     if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getPapers === "function") {
-      return await window.SUPABASE_HELPER.getPapers();
+      const papers = await window.SUPABASE_HELPER.getPapers();
+      return filterDeleted(papers);
     }
     const saved = localStorage.getItem(this.storageKeys.papers || "edupeak_papers_db");
     if (saved !== null) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) return filterDeleted(parsed);
       } catch (e) {}
     }
     return [];
@@ -1842,6 +1871,13 @@ const TEACHER_CONTROLLER = {
     if (window.SUPABASE_HELPER) {
       await window.SUPABASE_HELPER.deletePaper(paperId);
     } else {
+      try {
+        const dels = JSON.parse(localStorage.getItem("edupeak_deleted_papers") || "[]");
+        if (!dels.includes(paperId)) {
+          dels.push(paperId);
+          localStorage.setItem("edupeak_deleted_papers", JSON.stringify(dels));
+        }
+      } catch (e) {}
       const updated = papers.filter(item => item.id !== paperId);
       localStorage.setItem("edupeak_papers_db", JSON.stringify(updated));
     }

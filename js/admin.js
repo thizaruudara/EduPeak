@@ -1863,8 +1863,14 @@ const ADMIN_CONTROLLER = {
   // 5. PAST PAPERS & PDF VAULT MANAGEMENT (STRICTLY ADMIN ONLY)
   // =========================================================================
   async getPapers() {
+    const deletedIds = (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getDeletedPapers === "function")
+      ? window.SUPABASE_HELPER.getDeletedPapers()
+      : JSON.parse(localStorage.getItem("edupeak_deleted_papers") || "[]");
+    const filterDeleted = (list) => Array.isArray(list) ? list.filter(p => p && !deletedIds.includes(p.id) && !deletedIds.includes(String(p.id))) : [];
+
     if (window.SUPABASE_HELPER) {
-      return await window.SUPABASE_HELPER.getPapers();
+      const papers = await window.SUPABASE_HELPER.getPapers();
+      return filterDeleted(papers);
     }
     const saved = localStorage.getItem("edupeak_papers_db");
     if (saved !== null) {
@@ -1882,7 +1888,7 @@ const ADMIN_CONTROLLER = {
           if (modified) {
             localStorage.setItem("edupeak_papers_db", JSON.stringify(parsed));
           }
-          return parsed;
+          return filterDeleted(parsed);
         }
       } catch (e) {}
     }
@@ -1989,10 +1995,11 @@ const ADMIN_CONTROLLER = {
       }
     ];
 
+    const activeDefaults = filterDeleted(defaultPapers);
     try {
-      localStorage.setItem("edupeak_papers_db", JSON.stringify(defaultPapers));
+      localStorage.setItem("edupeak_papers_db", JSON.stringify(activeDefaults));
     } catch (e) {}
-    return defaultPapers;
+    return activeDefaults;
   },
 
   parsePdfCloudUrl(rawUrl) {
@@ -2318,6 +2325,13 @@ const ADMIN_CONTROLLER = {
     if (window.SUPABASE_HELPER) {
       await window.SUPABASE_HELPER.deletePaper(paperId);
     } else {
+      try {
+        const dels = JSON.parse(localStorage.getItem("edupeak_deleted_papers") || "[]");
+        if (!dels.includes(paperId)) {
+          dels.push(paperId);
+          localStorage.setItem("edupeak_deleted_papers", JSON.stringify(dels));
+        }
+      } catch (e) {}
       const updated = papers.filter(item => item.id !== paperId);
       localStorage.setItem("edupeak_papers_db", JSON.stringify(updated));
     }

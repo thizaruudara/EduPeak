@@ -1881,12 +1881,15 @@
           try { schedules = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]"); } catch(e) {}
         }
 
-        const session = schedules.find(s => s.id === sessionId);
+        const session = schedules.find(s => s.id === sessionId) || this.activeSession;
         if (!session) {
           if (schedules.length === 0) {
             this.loadEmptyState();
           }
           return;
+        }
+        if (this.activeSession && this.activeSession.id === sessionId && this.activeSession.status === "ended") {
+          session.status = "ended";
         }
         this.activeSession = session;
 
@@ -2280,25 +2283,40 @@
       },
 
       async handleAutoEndStream(sessionId) {
+        if (!sessionId) sessionId = this.activeSessionId;
         if (!sessionId) return;
         if (this.activeSession && this.activeSession.id === sessionId && this.activeSession.status === "ended") {
           return;
         }
         const nowIso = new Date().toISOString();
-        if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
-          await window.SUPABASE_HELPER.updateLiveSessionStatus(sessionId, "ended", { endedAt: nowIso });
-        } else {
+        if (this.activeSession && (this.activeSession.id === sessionId || !sessionId)) {
+          this.activeSession.status = "ended";
+          this.activeSession.endedAt = nowIso;
+        }
+        try {
+          let scheds = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
+          const s = scheds.find(item => item.id === sessionId);
+          if (s) {
+            s.status = "ended";
+            s.endedAt = nowIso;
+            s.updatedAt = nowIso;
+            localStorage.setItem("edupeak_schedules_db", JSON.stringify(scheds));
+          }
+        } catch (e) {}
+
+        if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
           try {
             let scheds = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
-            const s = scheds.find(item => item.id === sessionId);
-            if (s) {
-              s.status = "ended";
-              s.endedAt = nowIso;
-              s.updatedAt = nowIso;
-              localStorage.setItem("edupeak_schedules_db", JSON.stringify(scheds));
-            }
+            window.SUPABASE_HELPER.setSharedData("edupeak_schedules_db", scheds);
           } catch (e) {}
         }
+
+        if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
+          try {
+            await window.SUPABASE_HELPER.updateLiveSessionStatus(sessionId, "ended", { endedAt: nowIso });
+          } catch (e) {}
+        }
+
         if (window.showToast) {
           window.showToast("⏹️ Live broadcast has finished and concluded.", "info");
         }

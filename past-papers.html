@@ -279,14 +279,20 @@
 
   <script>
     async function getPapersDatabase() {
+      const deletedIds = (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getDeletedPapers === "function")
+        ? window.SUPABASE_HELPER.getDeletedPapers()
+        : JSON.parse(localStorage.getItem("edupeak_deleted_papers") || "[]");
+      const filterDeleted = (list) => Array.isArray(list) ? list.filter(p => p && !deletedIds.includes(p.id) && !deletedIds.includes(String(p.id))) : [];
+
       if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getPapers === "function") {
-        return await window.SUPABASE_HELPER.getPapers();
+        const papers = await window.SUPABASE_HELPER.getPapers();
+        return filterDeleted(papers);
       }
       const saved = localStorage.getItem("edupeak_papers_db");
       if (saved !== null) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) return parsed;
+          if (Array.isArray(parsed)) return filterDeleted(parsed);
         } catch (e) {}
       }
       return [];

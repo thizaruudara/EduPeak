@@ -757,6 +757,10 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   let streamEndCallbacks = [];
   let durationCheckInterval = null;
 
+  function loadLiveStream(videoUrl, sessionData = null) {
+    initLivePlayer(videoUrl, sessionData);
+  }
+
   function initLivePlayer(videoUrl = "https://www.youtube.com/embed/dQw4w9WgXcQ", sessionData = null) {
     if (sessionData) activeSessionData = sessionData;
     const videoId = extractYouTubeId(videoUrl);
@@ -788,7 +792,8 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     if (liveYtPlayer && typeof liveYtPlayer.pauseVideo === "function") {
       try { liveYtPlayer.pauseVideo(); } catch(e) {}
     }
-    const sessionId = activeSessionData ? (activeSessionData.id || activeSessionData.scheduleId) : null;
+    const sessionId = (activeSessionData && (activeSessionData.id || activeSessionData.scheduleId)) 
+      || (window.LIVE_APP ? window.LIVE_APP.activeSessionId : null);
 
     try {
       window.dispatchEvent(new CustomEvent("edupeak-live-ended", {
