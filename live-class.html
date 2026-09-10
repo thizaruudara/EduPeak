@@ -719,6 +719,11 @@
       border-color: rgba(168, 85, 247, 0.3);
     }
 
+    .chat-message-bubble.is-me {
+      background: rgba(34, 122, 255, 0.09);
+      border-color: rgba(34, 122, 255, 0.28);
+    }
+
     .chat-sender-row {
       display: flex;
       align-items: center;
@@ -756,6 +761,11 @@
     .chat-role-badge.student {
       background: rgba(255, 255, 255, 0.1);
       color: #94a3b8;
+    }
+
+    .chat-role-badge.you {
+      background: rgba(34, 122, 255, 0.25);
+      color: #93c5fd;
     }
 
     .chat-time {
@@ -936,6 +946,14 @@
 
     .live-form-input:focus, .live-form-select:focus, .live-form-textarea:focus {
       border-color: var(--live-primary);
+    }
+
+    .live-form-input[readonly] {
+      background: rgba(15, 23, 42, 0.75) !important;
+      color: #94a3b8 !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      cursor: not-allowed !important;
+      user-select: none !important;
     }
   </style>
 </head>
@@ -1326,12 +1344,12 @@
 
           <div class="form-group-grid">
             <div>
-              <label class="live-form-label">Assigned Lecturer *</label>
-              <input type="text" class="live-form-input" id="formLecturerName" value="Amalsha Wanniarachchi" required>
+              <label class="live-form-label"><i class="fa-solid fa-lock" style="font-size: 0.72rem; color: #64748b; margin-right: 4px;"></i> Assigned Lecturer *</label>
+              <input type="text" class="live-form-input" id="formLecturerName" value="Amalsha Wanniarachchi" readonly tabindex="-1" required title="Auto-filled from active lecturer profile; cannot be edited">
             </div>
             <div>
-              <label class="live-form-label">Lecturer ID / Code *</label>
-              <input type="text" class="live-form-input" id="formTeacherId" value="tch-amalsha" required>
+              <label class="live-form-label"><i class="fa-solid fa-lock" style="font-size: 0.72rem; color: #64748b; margin-right: 4px;"></i> Lecturer ID / Code *</label>
+              <input type="text" class="live-form-input" id="formTeacherId" value="tch-amalsha" readonly tabindex="-1" required title="Auto-filled from active lecturer profile; cannot be edited">
             </div>
           </div>
 
@@ -1429,13 +1447,17 @@
       currentUser: null,
       watermarkTimer: null,
       countdownTimer: null,
+      standbyWatchTimer: null,
+      sessionBroadcast: null,
+      chatBroadcast: null,
+      chatPollTimer: null,
       clockTimer: null,
 
       async init() {
         this.startClock();
         this.initUser();
         
-        // Listen for realtime broadcast updates
+        // 1. Same-window broadcast event listener
         window.addEventListener("edupeak-live-sessions-updated", (e) => {
           this.renderStreamsList();
           if (this.activeSessionId && e.detail && e.detail.session && e.detail.session.id === this.activeSessionId) {
@@ -1443,13 +1465,125 @@
           }
         });
 
+        // 2. Cross-tab BroadcastChannel listener for instant live stream activation
+        if (typeof BroadcastChannel !== "undefined") {
+          try {
+            this.sessionBroadcast = new BroadcastChannel("edupeak_live_sessions_channel");
+            this.sessionBroadcast.onmessage = async (event) => {
+              const data = event.data;
+              if (!data) return;
+              if (data.all) {
+                this.renderStreamsList(data.all);
+              } else {
+                this.renderStreamsList();
+              }
+              if (this.activeSessionId && (data.sessionId === this.activeSessionId || !data.sessionId)) {
+                if (data.status === "live") {
+                  if (this.countdownTimer) {
+                    clearInterval(this.countdownTimer);
+                    this.countdownTimer = null;
+                  }
+                  if (this.standbyWatchTimer) {
+                    clearInterval(this.standbyWatchTimer);
+                    this.standbyWatchTimer = null;
+                  }
+                  if (window.showToast) {
+                    window.showToast("🔴 Broadcaster is NOW LIVE! Connecting you to the stream...", "success");
+                  }
+                }
+                await this.loadSession(this.activeSessionId, false);
+              }
+            };
+          } catch(e) {}
+        }
+
+        // 3. Multi-tab storage event listener for live session updates and chat sync
+        window.addEventListener("storage", async (e) => {
+          if (e.key && (e.key.startsWith("edupeak_live_chat") || e.key === "edupeak_live_chat_messages")) {
+            this.renderChatMessages(false);
+          }
+          if (e.key === "edupeak_live_session_event" || e.key === "edupeak_schedules_db" || e.key === "edupeak_live_stream_config") {
+            let all = [];
+            if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getLiveSessions === "function") {
+              all = await window.SUPABASE_HELPER.getLiveSessions();
+            } else {
+              try { all = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]"); } catch(err) {}
+            }
+            this.renderStreamsList(all);
+            if (this.activeSessionId) {
+              const active = all.find(s => s.id === this.activeSessionId);
+              if (active && active.status === "live" && this.activeSession && this.activeSession.status !== "live") {
+                if (this.countdownTimer) {
+                  clearInterval(this.countdownTimer);
+                  this.countdownTimer = null;
+                }
+                if (this.standbyWatchTimer) {
+                  clearInterval(this.standbyWatchTimer);
+                  this.standbyWatchTimer = null;
+                }
+                if (window.showToast) {
+                  window.showToast("🔴 Broadcaster is NOW LIVE! Connecting you to the stream...", "success");
+                }
+              }
+              await this.loadSession(this.activeSessionId, false);
+            }
+          }
+        });
+
+        // 4. Same-window chat event listener
         window.addEventListener("edupeak-live-chat-updated", (e) => {
           this.renderChatMessages();
         });
 
-        // Parse query parameter for initial stream selection
+        // 5. Multi-tab BroadcastChannel listener (Instant 0ms cross-tab sync)
+        if (typeof BroadcastChannel !== "undefined") {
+          try {
+            this.chatBroadcast = new BroadcastChannel("edupeak_live_chat_channel");
+            this.chatBroadcast.onmessage = (event) => {
+              const data = event.data;
+              if (!data) return;
+              if (data.sessionId && this.activeSessionId && data.sessionId !== this.activeSessionId) {
+                return;
+              }
+              if (data.message && this.activeSessionId) {
+                try {
+                  const sKey = `edupeak_live_chat_${this.activeSessionId}`;
+                  let cur = JSON.parse(localStorage.getItem(sKey) || "[]");
+                  if (!cur.some(m => m.id === data.message.id)) {
+                    cur.push(data.message);
+                    localStorage.setItem(sKey, JSON.stringify(cur));
+                  }
+                } catch(e) {}
+              }
+              this.renderChatMessages(false);
+            };
+          } catch (e) {}
+        }
+
+        // 6. Automatic stream conclusion event listener (when pre-recorded YT video ends or duration expires)
+        window.addEventListener("edupeak-live-ended", (e) => {
+          const sessId = e.detail?.sessionId || this.activeSessionId;
+          if (sessId && this.activeSession && this.activeSession.status === "live") {
+            this.handleAutoEndStream(sessId);
+          }
+        });
+
+        // 7. Polling timer for real-time chat sync across separate windows/devices
+        if (this.chatPollTimer) clearInterval(this.chatPollTimer);
+        this.chatPollTimer = setInterval(() => {
+          if (this.activeSessionId) {
+            this.renderChatMessages(true);
+          }
+        }, 2500);
+
+        // Parse query parameter or last active stream for persistence across reloads
         const params = new URLSearchParams(window.location.search);
-        const requestedId = params.get("stream") || params.get("id");
+        let requestedId = params.get("stream") || params.get("id");
+        if (!requestedId) {
+          try {
+            requestedId = localStorage.getItem("edupeak_last_active_stream");
+          } catch(e) {}
+        }
 
         await this.loadInitialStreams(requestedId);
         this.initWatermarkDrift();
@@ -1479,6 +1613,7 @@
       initUser() {
         this.currentUser = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
         this.renderUserBadge();
+        this.initWatermarkDrift();
       },
 
       renderUserBadge() {
@@ -1540,17 +1675,25 @@
           return;
         }
 
-        // Pick preferred session, or first live stream, or first scheduled stream
+        // Pick preferred session, or last visited session, or first live stream, or first scheduled stream
         let target = null;
         if (preferredId) {
           target = schedules.find(s => s.id === preferredId);
+        }
+        if (!target) {
+          try {
+            const lastSavedId = localStorage.getItem("edupeak_last_active_stream");
+            if (lastSavedId) {
+              target = schedules.find(s => s.id === lastSavedId);
+            }
+          } catch(e) {}
         }
         if (!target) {
           target = schedules.find(s => s.status === "live") || schedules[0];
         }
 
         if (target) {
-          await this.loadSession(target.id);
+          await this.loadSession(target.id, false);
         } else {
           this.loadEmptyState();
         }
@@ -1582,6 +1725,13 @@
         if (deck) deck.style.display = "none";
         if (readOnlyNotice) readOnlyNotice.style.display = "none";
         if (noStreamsScreen) noStreamsScreen.style.display = "flex";
+
+        const watermark = document.getElementById("liveDrmWatermark");
+        if (watermark) watermark.style.display = "none";
+        if (this.watermarkTimer) {
+          clearInterval(this.watermarkTimer);
+          this.watermarkTimer = null;
+        }
 
         if (offlineScheduleBtn) {
           const canSchedule = this.currentUser && (this.currentUser.role === "admin" || this.currentUser.role === "teacher");
@@ -1714,6 +1864,16 @@
       async loadSession(sessionId, smoothScroll = true) {
         this.activeSessionId = sessionId;
 
+        // Persist session ID to localStorage and update URL query param
+        try {
+          localStorage.setItem("edupeak_last_active_stream", sessionId);
+          const currentUrl = new URL(window.location.href);
+          if (currentUrl.searchParams.get("stream") !== sessionId) {
+            currentUrl.searchParams.set("stream", sessionId);
+            window.history.replaceState({ stream: sessionId }, "", currentUrl.toString());
+          }
+        } catch (e) {}
+
         let schedules = [];
         if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getLiveSessions === "function") {
           schedules = await window.SUPABASE_HELPER.getLiveSessions();
@@ -1744,17 +1904,43 @@
         if (noStreamsScreen) noStreamsScreen.style.display = "none";
 
         if (session.status === "live") {
+          if (this.countdownTimer) {
+            clearInterval(this.countdownTimer);
+            this.countdownTimer = null;
+          }
+          if (this.standbyWatchTimer) {
+            clearInterval(this.standbyWatchTimer);
+            this.standbyWatchTimer = null;
+          }
+
+          // Ensure startedAt timestamp exists for continuous playback synchronization
+          if (!session.startedAt) {
+            session.startedAt = new Date().toISOString();
+            if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
+              window.SUPABASE_HELPER.updateLiveSessionStatus(session.id, "live", { startedAt: session.startedAt });
+            } else {
+              try {
+                let scheds = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
+                const idx = scheds.findIndex(item => item.id === session.id);
+                if (idx >= 0) {
+                  scheds[idx].startedAt = session.startedAt;
+                  localStorage.setItem("edupeak_schedules_db", JSON.stringify(scheds));
+                }
+              } catch(e) {}
+            }
+          }
+
           const streamSrc = session.rawUrl || session.embedUrl;
           const isYouTube = !session.provider || session.provider === "youtube" || (streamSrc && (streamSrc.includes("youtube.com") || streamSrc.includes("youtu.be") || (streamSrc.length === 11 && !streamSrc.includes("/"))));
 
           if (isYouTube && window.EDUPEAK_LIVE_PLAYER) {
-            // Load in custom player with cropped YouTube & disabled timeline scrubber
+            // Load in custom player with cropped YouTube, disabled timeline scrubber & continuous playback offset
             if (customPlayer) customPlayer.style.display = "block";
             if (iframe) {
               iframe.style.display = "none";
               iframe.src = "about:blank";
             }
-            window.EDUPEAK_LIVE_PLAYER.loadLiveStream(streamSrc);
+            window.EDUPEAK_LIVE_PLAYER.loadLiveStream(streamSrc, session);
           } else {
             // Non-YouTube stream (Zoom, Vimeo direct embed)
             if (customPlayer) customPlayer.style.display = "none";
@@ -1774,9 +1960,24 @@
           }
           if (standbyScreen) standbyScreen.style.display = "flex";
           if (endedScreen) endedScreen.style.display = "none";
+
+          const standbyTopic = document.getElementById("standbyTopicTitle");
+          const standbyLecturer = document.getElementById("standbyLecturerName");
+          if (standbyTopic) standbyTopic.textContent = session.topic;
+          if (standbyLecturer) standbyLecturer.textContent = `Conducted by ${session.teacherName || 'Faculty Lecturer'} • ${session.examYear || '2027 A/L'} ${session.subject || 'Physics'}`;
+
           this.initCountdown(session);
+          this.startStandbyStatusWatch(session.id);
         } else {
           // ended
+          if (this.countdownTimer) {
+            clearInterval(this.countdownTimer);
+            this.countdownTimer = null;
+          }
+          if (this.standbyWatchTimer) {
+            clearInterval(this.standbyWatchTimer);
+            this.standbyWatchTimer = null;
+          }
           if (customPlayer) customPlayer.style.display = "none";
           if (session.recordingUrl) {
             if (iframe) {
@@ -1846,7 +2047,10 @@
         // 5. Load Session-Specific Chat
         this.renderChatMessages();
 
-        // 6. Smooth Scroll if triggered by user click
+        // 6. Update DRM Watermark visibility according to role and session settings
+        this.initWatermarkDrift();
+
+        // 7. Smooth Scroll if triggered by user click
         if (smoothScroll && window.innerWidth < 992) {
           document.getElementById("theaterPlayerContainer")?.scrollIntoView({ behavior: "smooth" });
         }
@@ -1905,13 +2109,61 @@
         }
       },
 
+      startStandbyStatusWatch(sessionId) {
+        if (this.standbyWatchTimer) clearInterval(this.standbyWatchTimer);
+        this.standbyWatchTimer = setInterval(async () => {
+          if (!this.activeSessionId || this.activeSessionId !== sessionId) {
+            clearInterval(this.standbyWatchTimer);
+            this.standbyWatchTimer = null;
+            return;
+          }
+          let all = [];
+          if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getLiveSessions === "function") {
+            all = await window.SUPABASE_HELPER.getLiveSessions();
+          } else {
+            try { all = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]"); } catch(e) {}
+          }
+          const current = all.find(s => s.id === sessionId);
+          if (current && current.status === "live") {
+            if (this.standbyWatchTimer) {
+              clearInterval(this.standbyWatchTimer);
+              this.standbyWatchTimer = null;
+            }
+            if (this.countdownTimer) {
+              clearInterval(this.countdownTimer);
+              this.countdownTimer = null;
+            }
+            if (window.showToast) {
+              window.showToast("🔴 Broadcaster is NOW LIVE! Connecting you to the stream...", "success");
+            }
+            await this.loadSession(sessionId, false);
+          }
+        }, 2000);
+      },
+
       initCountdown(session) {
         if (this.countdownTimer) clearInterval(this.countdownTimer);
         const hoursEl = document.getElementById("cdHours");
         const minsEl = document.getElementById("cdMins");
         const secsEl = document.getElementById("cdSecs");
 
-        const updateTimer = () => {
+        // If session is already live, immediately load live stream without counting down
+        if (session.status === "live") {
+          this.loadSession(session.id, false);
+          return;
+        }
+
+        const updateTimer = async () => {
+          // Instant check: If active session status became live in memory or local storage, stop countdown immediately
+          if (this.activeSession && this.activeSession.status === "live") {
+            if (this.countdownTimer) {
+              clearInterval(this.countdownTimer);
+              this.countdownTimer = null;
+            }
+            this.loadSession(session.id, false);
+            return;
+          }
+
           const now = new Date();
           const targetTime = new Date();
           if (session.scheduleStartTime) {
@@ -1927,6 +2179,18 @@
             if (hoursEl) hoursEl.textContent = "00";
             if (minsEl) minsEl.textContent = "00";
             if (secsEl) secsEl.textContent = "00";
+            // Check if stream started
+            if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getLiveSessions === "function") {
+              const all = await window.SUPABASE_HELPER.getLiveSessions();
+              const s = all.find(item => item.id === session.id);
+              if (s && s.status === "live") {
+                if (this.countdownTimer) {
+                  clearInterval(this.countdownTimer);
+                  this.countdownTimer = null;
+                }
+                this.loadSession(session.id, false);
+              }
+            }
             return;
           }
 
@@ -1947,11 +2211,37 @@
         const watermark = document.getElementById("liveDrmWatermark");
         if (!watermark) return;
 
-        const student = (this.currentUser && this.currentUser.role === "student")
-          ? this.currentUser
-          : { name: "Kasun Jayasundara", nic: "200512345678" };
+        // 1. Teachers and Admins must NEVER see a student DRM watermark
+        const role = this.currentUser?.role;
+        if (role === "teacher" || role === "admin") {
+          watermark.style.display = "none";
+          if (this.watermarkTimer) {
+            clearInterval(this.watermarkTimer);
+            this.watermarkTimer = null;
+          }
+          return;
+        }
 
-        watermark.textContent = `🔒 EduPeak Live DRM • ${student.name} (NIC: ${student.nic || '200512345678'}) • ${new Date().toLocaleTimeString()}`;
+        // 2. Broadcast session watermark toggle check
+        if (this.activeSession && this.activeSession.watermarkEnabled === false) {
+          watermark.style.display = "none";
+          if (this.watermarkTimer) {
+            clearInterval(this.watermarkTimer);
+            this.watermarkTimer = null;
+          }
+          return;
+        }
+
+        // 3. For students, display their verified student name and NIC
+        watermark.style.display = "block";
+        const student = (role === "student")
+          ? this.currentUser
+          : (this.currentUser || { name: "Kasun Jayasundara", nic: "200512345678" });
+
+        const studentName = student.name || "Student";
+        const studentNic = student.nic || student.id || "200512345678";
+
+        watermark.textContent = `🔒 EduPeak Live DRM • ${studentName} (NIC: ${studentNic}) • ${new Date().toLocaleTimeString()}`;
 
         const drift = () => {
           const top = Math.floor(Math.random() * 75) + 10;
@@ -1967,16 +2257,18 @@
       // --- Stream Lifecycle Operations ---
       async handleStartStream(sessionId) {
         if (!sessionId) return;
+        const nowIso = new Date().toISOString();
         if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
-          await window.SUPABASE_HELPER.updateLiveSessionStatus(sessionId, "live", { viewersCount: 342 });
+          await window.SUPABASE_HELPER.updateLiveSessionStatus(sessionId, "live", { viewersCount: 342, startedAt: nowIso });
         } else {
           try {
             let scheds = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
             const s = scheds.find(item => item.id === sessionId);
             if (s) {
               s.status = "live";
+              s.startedAt = s.startedAt || nowIso;
               s.viewersCount = 342;
-              s.updatedAt = new Date().toISOString();
+              s.updatedAt = nowIso;
               localStorage.setItem("edupeak_schedules_db", JSON.stringify(scheds));
             }
           } catch (e) {}
@@ -1987,18 +2279,46 @@
         await this.loadSession(sessionId);
       },
 
+      async handleAutoEndStream(sessionId) {
+        if (!sessionId) return;
+        if (this.activeSession && this.activeSession.id === sessionId && this.activeSession.status === "ended") {
+          return;
+        }
+        const nowIso = new Date().toISOString();
+        if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
+          await window.SUPABASE_HELPER.updateLiveSessionStatus(sessionId, "ended", { endedAt: nowIso });
+        } else {
+          try {
+            let scheds = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
+            const s = scheds.find(item => item.id === sessionId);
+            if (s) {
+              s.status = "ended";
+              s.endedAt = nowIso;
+              s.updatedAt = nowIso;
+              localStorage.setItem("edupeak_schedules_db", JSON.stringify(scheds));
+            }
+          } catch (e) {}
+        }
+        if (window.showToast) {
+          window.showToast("⏹️ Live broadcast has finished and concluded.", "info");
+        }
+        await this.loadSession(sessionId, false);
+      },
+
       async handleEndStream(sessionId) {
         if (!sessionId) return;
         if (confirm("Are you sure you want to conclude and end this live broadcast?")) {
+          const nowIso = new Date().toISOString();
           if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
-            await window.SUPABASE_HELPER.updateLiveSessionStatus(sessionId, "ended");
+            await window.SUPABASE_HELPER.updateLiveSessionStatus(sessionId, "ended", { endedAt: nowIso });
           } else {
             try {
               let scheds = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
               const s = scheds.find(item => item.id === sessionId);
               if (s) {
                 s.status = "ended";
-                s.updatedAt = new Date().toISOString();
+                s.endedAt = nowIso;
+                s.updatedAt = nowIso;
                 localStorage.setItem("edupeak_schedules_db", JSON.stringify(scheds));
               }
             } catch (e) {}
@@ -2023,8 +2343,18 @@
         }
       },
 
+      escapeHtml(str) {
+        if (!str) return "";
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      },
+
       // --- Chat Operations ---
-      async renderChatMessages() {
+      async renderChatMessages(isBackgroundPoll = false) {
         const container = document.getElementById("chatMessagesContainer");
         if (!container || !this.activeSessionId) return;
 
@@ -2037,48 +2367,83 @@
           } catch(e) {}
         }
 
-        if (!Array.isArray(messages) || messages.length === 0) {
-          // Default greeting messages
+        if (!Array.isArray(messages)) messages = [];
+
+        // Baseline greeting messages for newly created / empty classroom sessions
+        if (messages.length === 0) {
           messages = [
             {
               id: "msg-sys-1",
               senderName: "EduPeak System",
               userRole: "admin",
-              time: "Just Now",
+              time: "Live Now",
               text: "Welcome to the EduPeak Real-Time Live Classroom! Ask your physics questions and doubts directly to the lecturer."
             },
             {
               id: "msg-tch-1",
               senderName: (this.activeSession?.teacherName || "Amalsha Wanniarachchi"),
               userRole: "teacher",
-              time: "Just Now",
+              time: "Live Now",
               text: "Hello students! Welcome to today's live session. Please feel free to type any doubts here."
             }
           ];
         }
 
+        // Signature check: prevents flickering / scroll jumps during background polling
+        const newSig = messages.map(m => (m.id || '') + (m.text || '')).join('|');
+        if (isBackgroundPoll && container._lastChatSig === newSig) {
+          return;
+        }
+        container._lastChatSig = newSig;
+
+        const wasNearBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) < 90;
+
+        const currentUserId = this.currentUser?.id;
+        const currentUserName = this.currentUser?.name?.toLowerCase();
+        const currentUserNic = this.currentUser?.nic;
+
         container.innerHTML = messages.map(m => {
-          const isTeacher = m.userRole === "teacher";
+          const isTeacher = m.userRole === "teacher" || m.userRole === "lecturer";
           const isAdmin = m.userRole === "admin";
+          const isMe = this.currentUser && (
+            (currentUserId && m.userId === currentUserId) ||
+            (currentUserNic && m.senderNic && m.senderNic === currentUserNic) ||
+            (currentUserName && m.senderName && m.senderName.toLowerCase() === currentUserName)
+          );
+
           let roleBadge = `<span class="chat-role-badge student">Student</span>`;
-          if (isTeacher) roleBadge = `<span class="chat-role-badge teacher"><i class="fa-solid fa-chalkboard-user"></i> Lecturer</span>`;
-          if (isAdmin) roleBadge = `<span class="chat-role-badge admin"><i class="fa-solid fa-shield-halved"></i> Admin</span>`;
+          if (isTeacher) {
+            roleBadge = `<span class="chat-role-badge teacher"><i class="fa-solid fa-chalkboard-user"></i> Lecturer</span>`;
+          } else if (isAdmin) {
+            roleBadge = `<span class="chat-role-badge admin"><i class="fa-solid fa-shield-halved"></i> Admin</span>`;
+          } else if (isMe) {
+            roleBadge = `<span class="chat-role-badge you">You</span>`;
+          }
+
+          const bubbleClasses = [
+            'chat-message-bubble',
+            isTeacher ? 'is-teacher' : '',
+            isAdmin ? 'is-admin' : '',
+            isMe ? 'is-me' : ''
+          ].filter(Boolean).join(' ');
 
           return `
-            <div class="chat-message-bubble ${isTeacher ? 'is-teacher' : (isAdmin ? 'is-admin' : '')}">
+            <div class="${bubbleClasses}">
               <div class="chat-sender-row">
                 <div class="chat-sender-name">
-                  <span>${m.senderName || 'Anonymous'}</span>
+                  <span>${this.escapeHtml(m.senderName || 'Anonymous')}</span>
                   ${roleBadge}
                 </div>
-                <span class="chat-time">${m.time || 'Live'}</span>
+                <span class="chat-time">${this.escapeHtml(m.time || 'Live')}</span>
               </div>
-              <div class="chat-text">${m.text}</div>
+              <div class="chat-text">${this.escapeHtml(m.text || '')}</div>
             </div>
           `;
         }).join("");
 
-        container.scrollTop = container.scrollHeight;
+        if (!isBackgroundPoll || wasNearBottom) {
+          container.scrollTop = container.scrollHeight;
+        }
       },
 
       async handleSendChatMessage(e) {
@@ -2094,7 +2459,7 @@
         const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
         const msgObj = {
-          id: "msg-" + Date.now().toString(36),
+          id: "msg-" + Date.now().toString(36) + "-" + Math.random().toString(36).substr(2, 5),
           sessionId: this.activeSessionId,
           courseId: this.activeSession?.courseId || "",
           senderName: sender.name || "Student",
@@ -2113,9 +2478,12 @@
           let msgs = JSON.parse(localStorage.getItem(key) || "[]");
           msgs.push(msgObj);
           localStorage.setItem(key, JSON.stringify(msgs));
+          try {
+            window.dispatchEvent(new CustomEvent("edupeak-live-chat-updated", { detail: msgObj }));
+          } catch(err) {}
         }
 
-        this.renderChatMessages();
+        await this.renderChatMessages(false);
       },
 
       insertEmoji(emoji) {
@@ -2133,7 +2501,7 @@
           } else {
             localStorage.removeItem(`edupeak_live_chat_${this.activeSessionId}`);
           }
-          this.renderChatMessages();
+          await this.renderChatMessages(false);
         }
       },
 
@@ -2155,12 +2523,23 @@
         document.getElementById("formPinnedNotice").value = "📢 Welcome students! Today's physics tute is ready for discussion.";
         document.getElementById("formDescription").value = "Comprehensive live masterclass with conceptual derivations and speed MCQ questions.";
 
-        if (this.currentUser && this.currentUser.role === "teacher") {
-          document.getElementById("formLecturerName").value = this.currentUser.name || "Amalsha Wanniarachchi";
-          document.getElementById("formTeacherId").value = this.currentUser.id || "tch-amalsha";
-        } else {
-          document.getElementById("formLecturerName").value = "Amalsha Wanniarachchi";
-          document.getElementById("formTeacherId").value = "tch-amalsha";
+        const activeUser = this.currentUser || (window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null);
+        let lectName = "Amalsha Wanniarachchi";
+        let lectId = "tch-amalsha";
+        if (activeUser) {
+          lectName = activeUser.name || lectName;
+          lectId = activeUser.id || activeUser.teacherId || lectId;
+        }
+
+        const nameInput = document.getElementById("formLecturerName");
+        const idInput = document.getElementById("formTeacherId");
+        if (nameInput) {
+          nameInput.value = lectName;
+          nameInput.readOnly = true;
+        }
+        if (idInput) {
+          idInput.value = lectId;
+          idInput.readOnly = true;
         }
 
         document.getElementById("scheduleLiveModal").classList.add("active");
@@ -2182,8 +2561,16 @@
         document.getElementById("formSubject").value = s.subject || "Physics";
         document.getElementById("formTopic").value = s.topic || "";
         document.getElementById("formTopicSi").value = s.topic_si || "";
-        document.getElementById("formLecturerName").value = s.teacherName || "Amalsha Wanniarachchi";
-        document.getElementById("formTeacherId").value = s.teacherId || "tch-amalsha";
+        const editNameInput = document.getElementById("formLecturerName");
+        const editIdInput = document.getElementById("formTeacherId");
+        if (editNameInput) {
+          editNameInput.value = s.teacherName || "Amalsha Wanniarachchi";
+          editNameInput.readOnly = true;
+        }
+        if (editIdInput) {
+          editIdInput.value = s.teacherId || "tch-amalsha";
+          editIdInput.readOnly = true;
+        }
         document.getElementById("formDate").value = s.scheduleDate || new Date().toISOString().split("T")[0];
         document.getElementById("formStartTime").value = s.scheduleStartTime || "08:30";
         document.getElementById("formEndTime").value = s.scheduleEndTime || "12:30";
@@ -2242,6 +2629,12 @@
         // Auto format schedule string
         const scheduleTime = `${scheduleDate} • ${scheduleStartTime} - ${scheduleEndTime}`;
 
+        const existingSched = id ? (this.allSchedules || []).find(s => s.id === id) : null;
+        let startedAt = existingSched?.startedAt || null;
+        if (status === "live" && !startedAt) {
+          startedAt = new Date().toISOString();
+        }
+
         const schedData = {
           id: id || ("sched-" + Date.now().toString(36)),
           topic,
@@ -2266,7 +2659,8 @@
           chatEnabled,
           pinnedNotice,
           description,
-          viewersCount: status === "live" ? 340 : 0
+          viewersCount: status === "live" ? 340 : 0,
+          startedAt: startedAt
         };
 
         if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.saveLiveSession === "function") {

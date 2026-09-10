@@ -753,8 +753,12 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   let liveVolume = 100;
   let liveQuality = "auto";
   let isWatermarkEnabled = false;
+  let activeSessionData = null;
+  let streamEndCallbacks = [];
+  let durationCheckInterval = null;
 
-  function initLivePlayer(videoUrl = "https://www.youtube.com/embed/dQw4w9WgXcQ") {
+  function initLivePlayer(videoUrl = "https://www.youtube.com/embed/dQw4w9WgXcQ", sessionData = null) {
+    if (sessionData) activeSessionData = sessionData;
     const videoId = extractYouTubeId(videoUrl);
     createLiveYTPlayer(videoId);
     updateLiveWatermark();
@@ -770,7 +774,67 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     return (match && match[2].length === 11) ? match[2] : "dQw4w9WgXcQ";
   }
 
-  function createLiveYTPlayer(videoId) {
+  function getElapsedSeconds() {
+    if (!activeSessionData || !activeSessionData.startedAt) return 0;
+    const startMs = new Date(activeSessionData.startedAt).getTime();
+    if (isNaN(startMs) || startMs <= 0) return 0;
+    const nowMs = Date.now();
+    const elapsed = Math.floor((nowMs - startMs) / 1000);
+    return Math.max(0, elapsed);
+  }
+
+  function triggerLiveEnded() {
+    stopDurationWatchdog();
+    if (liveYtPlayer && typeof liveYtPlayer.pauseVideo === "function") {
+      try { liveYtPlayer.pauseVideo(); } catch(e) {}
+    }
+    const sessionId = activeSessionData ? (activeSessionData.id || activeSessionData.scheduleId) : null;
+
+    try {
+      window.dispatchEvent(new CustomEvent("edupeak-live-ended", {
+        detail: {
+          sessionId: sessionId,
+          session: activeSessionData,
+          endedAt: new Date().toISOString()
+        }
+      }));
+    } catch(e) {}
+
+    streamEndCallbacks.forEach(cb => {
+      try { cb(sessionId, activeSessionData); } catch(e) {}
+    });
+
+    if (window.LIVE_APP && typeof window.LIVE_APP.handleAutoEndStream === "function") {
+      window.LIVE_APP.handleAutoEndStream(sessionId);
+    }
+  }
+
+  function startDurationWatchdog() {
+    stopDurationWatchdog();
+    durationCheckInterval = setInterval(() => {
+      if (!liveYtPlayer) return;
+      try {
+        const vidDuration = typeof liveYtPlayer.getDuration === "function" ? liveYtPlayer.getDuration() : 0;
+        const isLiveType = typeof liveYtPlayer.getVideoData === "function" && liveYtPlayer.getVideoData()?.isLive;
+        if (!isLiveType && vidDuration > 0) {
+          const currentElapsed = getElapsedSeconds();
+          const curTime = typeof liveYtPlayer.getCurrentTime === "function" ? liveYtPlayer.getCurrentTime() : 0;
+          if (currentElapsed >= vidDuration || (curTime >= vidDuration - 0.5 && curTime > 0)) {
+            triggerLiveEnded();
+          }
+        }
+      } catch(e) {}
+    }, 2000);
+  }
+
+  function stopDurationWatchdog() {
+    if (durationCheckInterval) {
+      clearInterval(durationCheckInterval);
+      durationCheckInterval = null;
+    }
+  }
+
+  function createLiveYTPlayer(videoId, startOffset = null) {
     const container = document.getElementById("edupeakLiveYTPlayerMount");
     if (!container) return;
 
@@ -786,12 +850,12 @@ const EDUPEAK_LIVE_PLAYER = (function() {
           document.head.appendChild(tag);
         }
       }
-      setTimeout(() => createLiveYTPlayer(videoId), 350);
+      setTimeout(() => createLiveYTPlayer(videoId, startOffset), 350);
       return;
     }
 
     if (!window.YT.Player) {
-      setTimeout(() => createLiveYTPlayer(videoId), 350);
+      setTimeout(() => createLiveYTPlayer(videoId, startOffset), 350);
       return;
     }
 
@@ -827,6 +891,8 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       }, 500);
     }
 
+    const initialStart = (typeof startOffset === "number" && startOffset >= 0) ? Math.floor(startOffset) : getElapsedSeconds();
+
     try {
       liveYtPlayer = new window.YT.Player('edupeakLiveYTPlayerMount', {
         host: 'https://www.youtube.com',
@@ -844,6 +910,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
           rel: 0,
           showinfo: 0,
           playsinline: 1,
+          start: initialStart > 0 ? initialStart : 0,
           origin: window.location.origin
         },
         events: {
@@ -851,11 +918,30 @@ const EDUPEAK_LIVE_PLAYER = (function() {
             try {
               liveYtPlayer.setVolume(liveVolume);
               enforceLiveNoCaptions(liveYtPlayer);
-            } catch (e) {}
+
+              const currentElapsed = getElapsedSeconds();
+              const vidDuration = typeof liveYtPlayer.getDuration === "function" ? liveYtPlayer.getDuration() : 0;
+              const isLiveType = typeof liveYtPlayer.getVideoData === "function" && liveYtPlayer.getVideoData()?.isLive;
+
+              // If pre-recorded video duration has already completed prior to reload / joining
+              if (!isLiveType && vidDuration > 0 && currentElapsed >= vidDuration) {
+                triggerLiveEnded();
+                return;
+              }
+
+              if (currentElapsed > 0) {
+                liveYtPlayer.seekTo(currentElapsed, true);
+              }
+
+              startDurationWatchdog();
+            } catch (e) {
+              console.warn("Live player init notice:", e);
+            }
           },
           'onStateChange': (event) => {
             const PLAYING = (window.YT && window.YT.PlayerState) ? window.YT.PlayerState.PLAYING : 1;
             const PAUSED = (window.YT && window.YT.PlayerState) ? window.YT.PlayerState.PAUSED : 2;
+            const ENDED = (window.YT && window.YT.PlayerState) ? window.YT.PlayerState.ENDED : 0;
             const bigPlayBtn = document.getElementById("livePlayerBigPlayBtn");
 
             if (event.data === PLAYING) {
@@ -863,9 +949,14 @@ const EDUPEAK_LIVE_PLAYER = (function() {
               if (bigPlayBtn) bigPlayBtn.classList.add("hidden");
               enforceLiveNoCaptions(liveYtPlayer);
               updateLiveWatermark();
+              startDurationWatchdog();
             } else if (event.data === PAUSED) {
               isLivePlaying = false;
               if (bigPlayBtn) bigPlayBtn.classList.remove("hidden");
+            } else if (event.data === ENDED) {
+              isLivePlaying = false;
+              if (bigPlayBtn) bigPlayBtn.classList.remove("hidden");
+              triggerLiveEnded();
             }
           }
         }
@@ -875,16 +966,29 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     }
   }
 
-  function loadLiveStream(url) {
+  function loadLiveStream(url, sessionData = null) {
+    if (sessionData) {
+      activeSessionData = sessionData;
+    }
     const videoId = extractYouTubeId(url);
+    const startSec = getElapsedSeconds();
+
     if (liveYtPlayer && liveYtPlayer.loadVideoById) {
       try {
-        liveYtPlayer.loadVideoById(videoId);
+        if (startSec > 0) {
+          liveYtPlayer.loadVideoById({
+            videoId: videoId,
+            startSeconds: startSec
+          });
+        } else {
+          liveYtPlayer.loadVideoById(videoId);
+        }
+        startDurationWatchdog();
       } catch (e) {
-        createLiveYTPlayer(videoId);
+        createLiveYTPlayer(videoId, startSec);
       }
     } else {
-      createLiveYTPlayer(videoId);
+      createLiveYTPlayer(videoId, startSec);
     }
     updateLiveWatermark();
   }
@@ -892,6 +996,11 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   function joinStream() {
     if (liveYtPlayer && typeof liveYtPlayer.playVideo === "function") {
       try {
+        const currentElapsed = getElapsedSeconds();
+        const curTime = typeof liveYtPlayer.getCurrentTime === "function" ? liveYtPlayer.getCurrentTime() : 0;
+        if (currentElapsed > 0 && Math.abs(currentElapsed - curTime) > 3) {
+          liveYtPlayer.seekTo(currentElapsed, true);
+        }
         liveYtPlayer.playVideo();
         if (liveYtPlayer.isMuted && liveYtPlayer.isMuted()) {
           liveYtPlayer.unMute();
@@ -1090,7 +1199,11 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     setPlaybackQuality: setPlaybackQuality,
     toggleFullscreen: toggleFullscreen,
     setWatermarkEnabled: setWatermarkEnabled,
-    updateLiveWatermark: updateLiveWatermark
+    updateLiveWatermark: updateLiveWatermark,
+    onStreamEnded: function(cb) { if (typeof cb === "function") streamEndCallbacks.push(cb); },
+    getElapsedSeconds: getElapsedSeconds,
+    setSessionData: function(s) { activeSessionData = s; },
+    triggerLiveEnded: triggerLiveEnded
   };
 })();
 

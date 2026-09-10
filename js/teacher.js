@@ -1968,6 +1968,19 @@ const TEACHER_CONTROLLER = {
       if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
         window.SUPABASE_HELPER.setSharedData(this.storageKeys.schedulesDb || "edupeak_schedules_db", list);
       }
+      try {
+        window.dispatchEvent(new CustomEvent("edupeak-live-sessions-updated", { detail: { all: list } }));
+      } catch(e) {}
+      if (typeof BroadcastChannel !== "undefined") {
+        try {
+          const ch = new BroadcastChannel("edupeak_live_sessions_channel");
+          ch.postMessage({ type: "LIVE_SESSION_UPDATED", all: list });
+          ch.close();
+        } catch(e) {}
+      }
+      try {
+        localStorage.setItem("edupeak_live_session_event", JSON.stringify({ type: "LIVE_SESSION_UPDATED", timestamp: Date.now() }));
+      } catch(e) {}
     } catch (e) {}
   },
 
@@ -2056,8 +2069,10 @@ const TEACHER_CONTROLLER = {
     const s = schedules.find(item => item.id === scheduleId);
     if (!s) return;
 
+    const nowIso = new Date().toISOString();
     s.status = "live";
-    s.updatedAt = new Date().toISOString();
+    s.startedAt = s.startedAt || nowIso;
+    s.updatedAt = nowIso;
 
     schedules.forEach(item => {
       if (item.id !== scheduleId && item.status === "live") {
@@ -2072,7 +2087,7 @@ const TEACHER_CONTROLLER = {
         window.SUPABASE_HELPER.setSharedData(this.storageKeys.liveStream || "edupeak_live_stream_config", s);
       }
       if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
-        window.SUPABASE_HELPER.updateLiveSessionStatus(scheduleId, "live");
+        window.SUPABASE_HELPER.updateLiveSessionStatus(scheduleId, "live", { startedAt: s.startedAt });
       }
     } catch (e) {}
 
@@ -2088,8 +2103,10 @@ const TEACHER_CONTROLLER = {
     const s = schedules.find(item => item.id === scheduleId);
     if (!s) return;
 
+    const nowIso = new Date().toISOString();
     s.status = "ended";
-    s.updatedAt = new Date().toISOString();
+    s.endedAt = nowIso;
+    s.updatedAt = nowIso;
 
     this.saveScheduledBroadcasts(schedules);
     try {
@@ -2098,7 +2115,7 @@ const TEACHER_CONTROLLER = {
         window.SUPABASE_HELPER.setSharedData(this.storageKeys.liveStream || "edupeak_live_stream_config", s);
       }
       if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
-        window.SUPABASE_HELPER.updateLiveSessionStatus(scheduleId, "ended");
+        window.SUPABASE_HELPER.updateLiveSessionStatus(scheduleId, "ended", { endedAt: nowIso });
       }
     } catch (e) {}
 
@@ -2138,6 +2155,20 @@ const TEACHER_CONTROLLER = {
     const end = document.getElementById("liveStudioScheduleEndTime")?.value || "13:30";
     const scheduleTime = this.buildScheduleString(day, start, end);
 
+    const nowIso = new Date().toISOString();
+    const schedules = this.getAllScheduledBroadcasts();
+    const existingIdx = schedules.findIndex(item => item.id === scheduleId);
+    const existing = existingIdx >= 0 ? schedules[existingIdx] : null;
+
+    let startedAt = existing?.startedAt || null;
+    if (status === "live" && !startedAt) {
+      startedAt = nowIso;
+    }
+    let endedAt = existing?.endedAt || null;
+    if (status === "ended") {
+      endedAt = nowIso;
+    }
+
     const streamConfig = {
       scheduleId,
       id: scheduleId,
@@ -2149,7 +2180,9 @@ const TEACHER_CONTROLLER = {
       rawUrl,
       embedUrl,
       status,
-      updatedAt: new Date().toISOString()
+      startedAt,
+      endedAt,
+      updatedAt: nowIso
     };
 
     try {
@@ -2157,12 +2190,13 @@ const TEACHER_CONTROLLER = {
       if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
         window.SUPABASE_HELPER.setSharedData(this.storageKeys.liveStream || "edupeak_live_stream_config", streamConfig);
       }
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
+        window.SUPABASE_HELPER.updateLiveSessionStatus(scheduleId, status, { startedAt, endedAt });
+      }
     } catch (e) {}
 
-    const schedules = this.getAllScheduledBroadcasts();
-    const existingIdx = schedules.findIndex(item => item.id === scheduleId);
     if (existingIdx >= 0) {
-      schedules[existingIdx] = streamConfig;
+      schedules[existingIdx] = { ...schedules[existingIdx], ...streamConfig };
     } else {
       schedules.unshift(streamConfig);
     }

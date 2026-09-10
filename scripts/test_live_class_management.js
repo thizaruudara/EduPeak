@@ -303,6 +303,9 @@ async function runLiveClassTests() {
     const deckVisibleForAdmin = await page.locator('#liveControlDeck').isVisible();
     assertTest(deckVisibleForAdmin, 'Control Deck is FULLY VISIBLE for Super Administrator on any stream');
 
+    const watermarkHiddenForAdmin = await page.locator('#liveDrmWatermark').isHidden();
+    assertTest(watermarkHiddenForAdmin, 'Student DRM watermark is cleanly HIDDEN for Teachers & Administrators');
+
     // ---------------------------------------------------------
     // TEST 9: Student Experience & Real-Time Live Chat
     // ---------------------------------------------------------

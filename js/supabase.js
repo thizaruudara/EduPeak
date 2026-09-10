@@ -324,6 +324,16 @@ const SUPABASE_HELPER = {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'broadcast_schedules' }, () => {
           this.syncSchedules();
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat_messages' }, (payload) => {
+          if (payload.new) {
+            const norm = this.normalizeLiveChatMessage(payload.new);
+            if (norm) {
+              this.saveLiveChatMessage(norm, true /* fromRemote */);
+            }
+          } else if (payload.eventType === 'DELETE') {
+            window.dispatchEvent(new CustomEvent("edupeak-live-chat-updated", { detail: { cleared: true } }));
+          }
+        })
         .subscribe();
     } catch (e) {
       console.warn("Realtime subscription setup failed:", e);
@@ -1411,7 +1421,8 @@ const SUPABASE_HELPER = {
       zoomUrl: sched.zoomUrl || sched.zoom_url || "",
       zoom_url: sched.zoomUrl || sched.zoom_url || "",
       status: status,
-      watermarkEnabled: sched.watermarkEnabled !== undefined ? Boolean(sched.watermarkEnabled) : true,
+      watermarkEnabled: sched.watermarkEnabled !== undefined ? Boolean(sched.watermarkEnabled) : (sched.watermarkenabled !== undefined ? Boolean(sched.watermarkenabled) : true),
+      watermarkenabled: sched.watermarkEnabled !== undefined ? Boolean(sched.watermarkEnabled) : (sched.watermarkenabled !== undefined ? Boolean(sched.watermarkenabled) : true),
       chatEnabled: sched.chatEnabled !== undefined ? Boolean(sched.chatEnabled) : true,
       description: sched.description || "",
       pinnedNotice: sched.pinnedNotice || sched.pinned_notice || "",
@@ -1452,19 +1463,31 @@ const SUPABASE_HELPER = {
 
   async getLiveSessions() {
     let localSchedules = [];
+    try {
+      const stored = localStorage.getItem("edupeak_schedules_db");
+      if (stored !== null) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          localSchedules = parsed.map(s => this.normalizeLiveSession(s));
+        }
+      }
+    } catch (e) {}
+
     const shared = this.getSharedData("edupeak_schedules_db");
-    if (shared !== null && Array.isArray(shared)) {
-      localSchedules = shared.map(s => this.normalizeLiveSession(s));
-    } else {
-      try {
-        const stored = localStorage.getItem("edupeak_schedules_db");
-        if (stored !== null) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) {
-            localSchedules = parsed.map(s => this.normalizeLiveSession(s));
+    if (Array.isArray(shared) && shared.length > 0) {
+      shared.forEach(s => {
+        const norm = this.normalizeLiveSession(s);
+        const idx = localSchedules.findIndex(l => l.id === norm.id);
+        if (idx === -1) {
+          localSchedules.push(norm);
+        } else {
+          const localTime = new Date(localSchedules[idx].updatedAt || localSchedules[idx].updated_at || 0).getTime();
+          const sharedTime = new Date(norm.updatedAt || norm.updated_at || 0).getTime();
+          if (sharedTime > localTime) {
+            localSchedules[idx] = { ...localSchedules[idx], ...norm };
           }
         }
-      } catch (e) {}
+      });
     }
 
     if (this.isConnected && this.client) {
@@ -1513,18 +1536,22 @@ const SUPABASE_HELPER = {
     const normalized = this.normalizeLiveSession(schedData);
 
     // 1. Immediately update local storage & memory
-    let schedules = this.getSharedData("edupeak_schedules_db");
-    if (!Array.isArray(schedules) || schedules.length === 0) {
-      try {
-        schedules = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
-      } catch (e) {
-        schedules = [];
-      }
+    let schedules = [];
+    try {
+      schedules = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
+    } catch (e) {
+      schedules = [];
     }
     if (!Array.isArray(schedules)) schedules = [];
 
     const existingIndex = schedules.findIndex(s => s.id === normalized.id);
     if (existingIndex >= 0) {
+      if (!normalized.startedAt && schedules[existingIndex].startedAt) {
+        normalized.startedAt = schedules[existingIndex].startedAt;
+      }
+      if (!normalized.endedAt && schedules[existingIndex].endedAt) {
+        normalized.endedAt = schedules[existingIndex].endedAt;
+      }
       schedules[existingIndex] = { ...schedules[existingIndex], ...normalized };
     } else {
       schedules.unshift(normalized);
@@ -1540,30 +1567,49 @@ const SUPABASE_HELPER = {
       } catch (e) {}
     }
 
-    // 2. Persist to Supabase Cloud
+    // 2. Instantly dispatch multi-channel reactive broadcast events (same-window, BroadcastChannel, and localStorage storage event)
+    try {
+      window.dispatchEvent(new CustomEvent("edupeak-live-sessions-updated", { detail: { session: normalized, all: schedules } }));
+    } catch(e) {}
+
+    try {
+      if (typeof BroadcastChannel !== "undefined") {
+        const ch = new BroadcastChannel("edupeak_live_sessions_channel");
+        ch.postMessage({
+          type: "LIVE_SESSION_UPDATED",
+          sessionId: normalized.id,
+          status: normalized.status,
+          session: normalized,
+          all: schedules
+        });
+        ch.close();
+      }
+    } catch(e) {}
+
+    try {
+      localStorage.setItem("edupeak_live_session_event", JSON.stringify({
+        type: "LIVE_SESSION_UPDATED",
+        sessionId: normalized.id,
+        status: normalized.status,
+        timestamp: Date.now()
+      }));
+    } catch(e) {}
+
+    // 3. Persist to Supabase Cloud with sanitized column payload matching PostgreSQL schema
     if (this.isConnected && this.client) {
       try {
         const payload = {
           id: normalized.id,
           topic: normalized.topic,
-          topic_si: normalized.topic_si,
-          course_id: normalized.courseId,
-          subject: normalized.subject,
-          subject_si: normalized.subject_si,
-          examYear: normalized.examYear,
-          teacherId: normalized.teacherId,
-          teacherName: normalized.teacherName,
-          scheduleDate: normalized.scheduleDate,
-          scheduleStartTime: normalized.scheduleStartTime,
-          scheduleEndTime: normalized.scheduleEndTime,
-          scheduleTime: normalized.scheduleTime,
-          provider: normalized.provider,
-          rawUrl: normalized.rawUrl,
-          embedUrl: normalized.embedUrl,
-          zoomUrl: normalized.zoomUrl,
+          course_id: normalized.courseId || normalized.course_id || null,
+          courseid: normalized.courseId || normalized.course_id || null,
+          coursetitle: normalized.courseTitle || normalized.course_title || null,
+          scheduletime: normalized.scheduleTime || normalized.scheduletime || null,
+          provider: normalized.provider || "youtube",
+          rawurl: normalized.rawUrl || normalized.rawurl || null,
+          embedurl: normalized.embedUrl || normalized.embedurl || null,
           status: normalized.status,
-          pinnedNotice: normalized.pinnedNotice,
-          recordingUrl: normalized.recordingUrl,
+          watermarkenabled: Boolean(normalized.watermarkEnabled),
           updated_at: new Date().toISOString()
         };
         const { data, error } = await this.client.from("broadcast_schedules").upsert([payload]).select();
@@ -1574,11 +1620,6 @@ const SUPABASE_HELPER = {
         console.warn("Supabase upsert broadcast_schedule error:", e);
       }
     }
-
-    // Dispatch global reactive broadcast event
-    try {
-      window.dispatchEvent(new CustomEvent("edupeak-live-sessions-updated", { detail: { session: normalized, all: schedules } }));
-    } catch(e) {}
 
     return normalized;
   },
@@ -1593,8 +1634,15 @@ const SUPABASE_HELPER = {
       } catch (e) {}
     }
     if (!target) {
-      console.warn("updateLiveSessionStatus: target session not found for id:", sessionId);
-      return null;
+      try {
+        const singleConfig = JSON.parse(localStorage.getItem("edupeak_live_stream_config") || "null");
+        if (singleConfig && (singleConfig.id === sessionId || singleConfig.scheduleId === sessionId)) {
+          target = this.normalizeLiveSession(singleConfig);
+        }
+      } catch (e) {}
+    }
+    if (!target) {
+      target = this.normalizeLiveSession({ id: sessionId, status: newStatus, ...extraData });
     }
 
     target.status = newStatus;
@@ -1628,6 +1676,30 @@ const SUPABASE_HELPER = {
       try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(schedules)); } catch (e) {}
     }
 
+    try {
+      window.dispatchEvent(new CustomEvent("edupeak-live-sessions-updated", { detail: { deletedId: schedId, all: schedules } }));
+    } catch(e) {}
+
+    try {
+      if (typeof BroadcastChannel !== "undefined") {
+        const ch = new BroadcastChannel("edupeak_live_sessions_channel");
+        ch.postMessage({
+          type: "LIVE_SESSION_DELETED",
+          deletedId: schedId,
+          all: schedules
+        });
+        ch.close();
+      }
+    } catch(e) {}
+
+    try {
+      localStorage.setItem("edupeak_live_session_event", JSON.stringify({
+        type: "LIVE_SESSION_DELETED",
+        deletedId: schedId,
+        timestamp: Date.now()
+      }));
+    } catch(e) {}
+
     if (this.isConnected && this.client) {
       try {
         await this.client.from("broadcast_schedules").delete().eq("id", schedId);
@@ -1636,148 +1708,245 @@ const SUPABASE_HELPER = {
       }
     }
 
-    try {
-      window.dispatchEvent(new CustomEvent("edupeak-live-sessions-updated", { detail: { deletedId: schedId, all: schedules } }));
-    } catch(e) {}
-
     return true;
   },
 
   // 9. REAL-TIME LIVE CHAT ENGINE
-  async getLiveChatMessages(sessionId = null) {
-    if (this.isConnected && this.client) {
-      try {
-        let query = this.client.from("live_chat_messages").select("*").order("timestamp", { ascending: true }).limit(200);
-        if (sessionId) {
-          query = query.eq("sessionId", sessionId);
-        }
-        const { data, error } = await query;
-        if (!error && Array.isArray(data) && data.length > 0) {
-          const key = sessionId ? `edupeak_live_chat_${sessionId}` : "edupeak_live_chat_messages";
-          this.setSharedData(key, data);
-          try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) {}
-          return data;
-        }
-      } catch (e) {
-        console.warn("Supabase fetch live chat messages error:", e);
-      }
-    }
-
-    const key = sessionId ? `edupeak_live_chat_${sessionId}` : "edupeak_live_chat_messages";
-    const shared = this.getSharedData(key);
-    if (shared !== null && Array.isArray(shared)) {
-      try { localStorage.setItem(key, JSON.stringify(shared)); } catch (e) {}
-      return shared;
-    }
-    try {
-      const stored = localStorage.getItem(key) || (sessionId ? localStorage.getItem("edupeak_live_chat_messages") : null);
-      if (stored !== null) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          if (sessionId) {
-            const filtered = parsed.filter(m => !m.sessionId || m.sessionId === sessionId);
-            return filtered;
-          }
-          return parsed;
-        }
-      }
-    } catch (e) {}
-    return [];
+  normalizeLiveChatMessage(msg) {
+    if (!msg) return null;
+    return {
+      id: msg.id || ("msg_" + Date.now().toString(36) + "_" + Math.random().toString(36).substr(2, 6)),
+      sessionId: msg.sessionId || msg.sessionid || msg.session_id || "global",
+      courseId: msg.courseId || msg.courseid || msg.course_id || "",
+      senderName: msg.senderName || msg.sendername || msg.sender_name || "Student",
+      userRole: msg.userRole || msg.userrole || msg.user_role || "student",
+      userId: msg.userId || msg.userid || msg.user_id || "",
+      senderNic: msg.senderNic || msg.sendernic || msg.sender_nic || "",
+      time: msg.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: Number(msg.timestamp) || Date.now(),
+      text: msg.text || "",
+      isPinned: Boolean(msg.isPinned || msg.ispinned || msg.is_pinned),
+      isAnnouncement: Boolean(msg.isAnnouncement || msg.isannouncement || msg.is_announcement),
+      createdAt: msg.createdAt || msg.created_at || new Date().toISOString()
+    };
   },
 
-  async saveLiveChatMessage(msgObj) {
-    if (!msgObj || !msgObj.text) return null;
-    if (!msgObj.id) {
-      msgObj.id = "msg_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
-    }
-    if (!msgObj.timestamp) msgObj.timestamp = Date.now();
-    if (!msgObj.time) {
-      msgObj.time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
-
-    if (this.isConnected && this.client) {
-      try {
-        const payload = {
-          id: msgObj.id,
-          sessionId: msgObj.sessionId || "global",
-          courseId: msgObj.courseId || "",
-          senderName: msgObj.senderName || "User",
-          userRole: msgObj.userRole || "student",
-          userId: msgObj.userId || "",
-          senderNic: msgObj.senderNic || "",
-          time: msgObj.time,
-          timestamp: msgObj.timestamp,
-          text: msgObj.text,
-          isPinned: Boolean(msgObj.isPinned),
-          isAnnouncement: Boolean(msgObj.isAnnouncement),
-          created_at: new Date().toISOString()
-        };
-        await this.client.from("live_chat_messages").upsert([payload]);
-      } catch (e) {
-        console.warn("Supabase save live chat error:", e);
-      }
-    }
-
-    // Save to global & session local stores
+  async getLiveChatMessages(sessionId = null) {
+    const sessionKey = sessionId ? `edupeak_live_chat_${sessionId}` : "edupeak_live_chat_messages";
     const allKey = "edupeak_live_chat_messages";
-    let allMessages = [];
-    try {
-      allMessages = JSON.parse(localStorage.getItem(allKey) || "[]");
-    } catch (e) {}
-    allMessages.push(msgObj);
-    if (allMessages.length > 200) allMessages.splice(0, allMessages.length - 200);
-    this.setSharedData(allKey, allMessages);
-    try { localStorage.setItem(allKey, JSON.stringify(allMessages)); } catch (e) {}
 
-    if (msgObj.sessionId) {
-      const sessionKey = `edupeak_live_chat_${msgObj.sessionId}`;
-      let sessionMessages = [];
+    // 1. Gather all local messages first (session-specific + relevant global)
+    let localMessages = [];
+    try {
+      const storedSession = localStorage.getItem(sessionKey);
+      if (storedSession) {
+        const parsed = JSON.parse(storedSession);
+        if (Array.isArray(parsed)) {
+          localMessages = parsed;
+        }
+      }
+    } catch (e) {}
+
+    try {
+      const storedAll = localStorage.getItem(allKey);
+      if (storedAll) {
+        const parsedAll = JSON.parse(storedAll);
+        if (Array.isArray(parsedAll)) {
+          parsedAll.forEach(m => {
+            const sid = m.sessionId || m.sessionid || m.session_id;
+            if (!sessionId || sid === sessionId) {
+              if (!localMessages.some(exist => exist.id === m.id)) {
+                localMessages.push(m);
+              }
+            }
+          });
+        }
+      }
+    } catch (e) {}
+
+    // Normalize and sort by timestamp
+    localMessages = localMessages
+      .map(m => this.normalizeLiveChatMessage(m))
+      .filter(Boolean)
+      .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+    // Preserve normalized messages in localStorage
+    if (localMessages.length > 0) {
       try {
-        sessionMessages = JSON.parse(localStorage.getItem(sessionKey) || "[]");
+        localStorage.setItem(sessionKey, JSON.stringify(localMessages));
       } catch (e) {}
-      sessionMessages.push(msgObj);
-      if (sessionMessages.length > 200) sessionMessages.splice(0, sessionMessages.length - 200);
-      this.setSharedData(sessionKey, sessionMessages);
-      try { localStorage.setItem(sessionKey, JSON.stringify(sessionMessages)); } catch (e) {}
+    }
+
+    // 2. Fetch from Supabase Cloud in background so UI gets immediate 0ms response
+    if (this.isConnected && this.client) {
+      Promise.resolve().then(async () => {
+        try {
+          let query = this.client.from("live_chat_messages").select("*").order("timestamp", { ascending: true }).limit(200);
+          if (sessionId) {
+            query = query.or(`sessionId.eq.${sessionId},sessionid.eq.${sessionId}`);
+          }
+          const { data, error } = await query;
+          if (!error && Array.isArray(data) && data.length > 0) {
+            const remoteNormalized = data.map(m => this.normalizeLiveChatMessage(m)).filter(Boolean);
+            let curLocal = [];
+            try {
+              curLocal = JSON.parse(localStorage.getItem(sessionKey) || "[]");
+            } catch (e) {}
+            const merged = [...remoteNormalized];
+            curLocal.forEach(loc => {
+              if (!merged.some(r => r.id === loc.id)) {
+                merged.push(loc);
+              }
+            });
+            merged.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+            const curStr = JSON.stringify(curLocal);
+            const newStr = JSON.stringify(merged);
+            if (curStr !== newStr) {
+              try {
+                localStorage.setItem(sessionKey, newStr);
+              } catch (e) {}
+              window.dispatchEvent(new CustomEvent("edupeak-live-chat-updated", { detail: { synced: true, sessionId } }));
+            }
+          }
+        } catch (e) {
+          // Cloud fetch error is non-fatal
+        }
+      });
+    }
+
+    return localMessages;
+  },
+
+  async saveLiveChatMessage(msgObj, fromRemote = false) {
+    if (!msgObj || !msgObj.text) return null;
+    const normalized = this.normalizeLiveChatMessage(msgObj);
+    const sessionKey = normalized.sessionId ? `edupeak_live_chat_${normalized.sessionId}` : null;
+    const allKey = "edupeak_live_chat_messages";
+
+    // 1. Immediately save to localStorage synchronously (Zero-latency)
+    if (sessionKey) {
+      try {
+        let sessionMsgs = JSON.parse(localStorage.getItem(sessionKey) || "[]");
+        const idx = sessionMsgs.findIndex(m => m.id === normalized.id);
+        if (idx === -1) {
+          sessionMsgs.push(normalized);
+        } else {
+          sessionMsgs[idx] = normalized;
+        }
+        if (sessionMsgs.length > 300) sessionMsgs.splice(0, sessionMsgs.length - 300);
+        localStorage.setItem(sessionKey, JSON.stringify(sessionMsgs));
+      } catch (e) {}
     }
 
     try {
-      window.dispatchEvent(new CustomEvent("edupeak-live-chat-updated", { detail: msgObj }));
+      let allMsgs = JSON.parse(localStorage.getItem(allKey) || "[]");
+      const idxAll = allMsgs.findIndex(m => m.id === normalized.id);
+      if (idxAll === -1) {
+        allMsgs.push(normalized);
+      } else {
+        allMsgs[idxAll] = normalized;
+      }
+      if (allMsgs.length > 500) allMsgs.splice(0, allMsgs.length - 500);
+      localStorage.setItem(allKey, JSON.stringify(allMsgs));
     } catch (e) {}
 
-    return msgObj;
+    // 2. Dispatch immediate multi-channel real-time notifications
+    try {
+      window.dispatchEvent(new CustomEvent("edupeak-live-chat-updated", { detail: normalized }));
+    } catch (e) {}
+
+    try {
+      if (typeof BroadcastChannel !== "undefined") {
+        if (!this._chatBroadcastChannel) {
+          this._chatBroadcastChannel = new BroadcastChannel("edupeak_live_chat_channel");
+        }
+        this._chatBroadcastChannel.postMessage({
+          type: "NEW_MESSAGE",
+          sessionId: normalized.sessionId,
+          message: normalized
+        });
+      }
+    } catch (e) {}
+
+    // 3. Asynchronously push to Supabase Cloud in background (Non-blocking)
+    if (!fromRemote && this.isConnected && this.client) {
+      Promise.resolve().then(async () => {
+        try {
+          const payload = {
+            id: normalized.id,
+            sessionId: normalized.sessionId,
+            sessionid: normalized.sessionId,
+            courseId: normalized.courseId,
+            senderName: normalized.senderName,
+            sendername: normalized.senderName,
+            userRole: normalized.userRole,
+            userrole: normalized.userRole,
+            userId: normalized.userId,
+            userid: normalized.userId,
+            senderNic: normalized.senderNic,
+            sendernic: normalized.senderNic,
+            time: normalized.time,
+            timestamp: normalized.timestamp,
+            text: normalized.text,
+            isPinned: Boolean(normalized.isPinned),
+            isAnnouncement: Boolean(normalized.isAnnouncement),
+            created_at: normalized.createdAt
+          };
+          await this.client.from("live_chat_messages").upsert([payload]);
+        } catch (e) {
+          // Non-fatal, local copy is preserved
+        }
+      });
+    }
+
+    return normalized;
   },
 
   async clearLiveChat(sessionId = null) {
     if (sessionId) {
       const sessionKey = `edupeak_live_chat_${sessionId}`;
-      this.setSharedData(sessionKey, []);
       try { localStorage.removeItem(sessionKey); } catch (e) {}
     }
     const allKey = "edupeak_live_chat_messages";
-    let all = [];
-    if (sessionId) {
-      try {
-        all = JSON.parse(localStorage.getItem(allKey) || "[]");
-        all = all.filter(m => m.sessionId !== sessionId);
-      } catch (e) {}
-    }
-    this.setSharedData(allKey, all);
-    try { localStorage.setItem(allKey, JSON.stringify(all)); } catch (e) {}
+    try {
+      if (sessionId) {
+        let all = JSON.parse(localStorage.getItem(allKey) || "[]");
+        all = all.filter(m => (m.sessionId !== sessionId && m.sessionid !== sessionId));
+        localStorage.setItem(allKey, JSON.stringify(all));
+      } else {
+        localStorage.removeItem(allKey);
+      }
+    } catch (e) {}
 
-    if (this.isConnected && this.client) {
-      try {
-        if (sessionId) {
-          await this.client.from("live_chat_messages").delete().eq("sessionId", sessionId);
-        } else {
-          await this.client.from("live_chat_messages").delete().neq("id", "none");
-        }
-      } catch (e) {}
-    }
-
+    // Multi-channel clear broadcast
     try {
       window.dispatchEvent(new CustomEvent("edupeak-live-chat-updated", { detail: { cleared: true, sessionId } }));
     } catch (e) {}
+
+    try {
+      if (typeof BroadcastChannel !== "undefined") {
+        if (!this._chatBroadcastChannel) {
+          this._chatBroadcastChannel = new BroadcastChannel("edupeak_live_chat_channel");
+        }
+        this._chatBroadcastChannel.postMessage({
+          type: "CLEAR_CHAT",
+          sessionId
+        });
+      }
+    } catch (e) {}
+
+    if (this.isConnected && this.client) {
+      Promise.resolve().then(async () => {
+        try {
+          if (sessionId) {
+            await this.client.from("live_chat_messages").delete().or(`sessionId.eq.${sessionId},sessionid.eq.${sessionId}`);
+          } else {
+            await this.client.from("live_chat_messages").delete().neq("id", "none");
+          }
+        } catch (e) {}
+      });
+    }
     return true;
   },
 

@@ -135,7 +135,7 @@ function syncLiveStreamWithTeacher() {
       if (standbyWrapper) standbyWrapper.style.display = "none";
 
       if (window.EDUPEAK_LIVE_PLAYER) {
-        window.EDUPEAK_LIVE_PLAYER.loadStream(liveStreamUrl);
+        window.EDUPEAK_LIVE_PLAYER.loadStream(liveStreamUrl, cfg);
         window.EDUPEAK_LIVE_PLAYER.setWatermarkEnabled(isWatermarkEnabled);
       }
 
@@ -214,6 +214,11 @@ function syncLiveStreamWithTeacher() {
     console.warn("Live stream sync notice:", e);
   }
 }
+
+// Re-synchronize LMS stream state when a live video ends automatically
+window.addEventListener("edupeak-live-ended", () => {
+  syncLiveStreamWithTeacher();
+});
 
 // Load data from LocalStorage
 function loadSavedLMSData() {
