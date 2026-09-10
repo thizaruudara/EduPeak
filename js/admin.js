@@ -722,7 +722,7 @@ const ADMIN_CONTROLLER = {
     }
   },
 
-  openManageCourseAccessModal(studentId) {
+  async openManageCourseAccessModal(studentId) {
     if (!studentId) return;
 
     let users = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getUsers() : [];
