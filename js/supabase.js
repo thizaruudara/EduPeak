@@ -1539,6 +1539,39 @@ const SUPABASE_HELPER = {
     const examYear = sched.examYear || sched.exam_year || sched.batch || "2027 A/L";
     const subject = sched.subject || "Physics";
 
+    // Helper: convert "7:30 AM" / "13:30" style strings to 24h "HH:MM"
+    const _to24 = (t) => {
+      if (!t) return "";
+      const m = String(t).trim().match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+      if (!m) return "";
+      let h = parseInt(m[1], 10);
+      const min = m[2];
+      const ap = m[3] ? m[3].toUpperCase() : null;
+      if (ap === "PM" && h < 12) h += 12;
+      if (ap === "AM" && h === 12) h = 0;
+      return `${String(h).padStart(2,"0")}:${min}`;
+    };
+
+    // Resolve the combined scheduleTime string
+    const resolvedScheduleTime = sched.scheduleTime || sched.schedule_time || "";
+
+    // Resolve start/end times:
+    // Priority: (1) explicit 24h field, (2) snake_case column, (3) parsed from scheduleTime string
+    let resolvedStart = sched.scheduleStartTime || sched.schedule_start_time || "";
+    let resolvedEnd   = sched.scheduleEndTime   || sched.schedule_end_time   || "";
+    if ((!resolvedStart || !resolvedEnd) && resolvedScheduleTime) {
+      const tokens = Array.from(resolvedScheduleTime.matchAll(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)/gi)).map(m => m[0]);
+      if (tokens.length >= 2) {
+        resolvedStart = resolvedStart || _to24(tokens[0]);
+        resolvedEnd   = resolvedEnd   || _to24(tokens[1]);
+      } else if (tokens.length === 1) {
+        resolvedStart = resolvedStart || _to24(tokens[0]);
+      }
+    }
+    // Final fallback only if nothing at all was found
+    resolvedStart = resolvedStart || "08:30";
+    resolvedEnd   = resolvedEnd   || "12:30";
+
     return {
       ...sched,
       id: String(sched.id || ("sched-" + Date.now().toString(36))).trim(),
@@ -1561,9 +1594,9 @@ const SUPABASE_HELPER = {
       creatorEmail: sched.creatorEmail || sched.creator_email || "",
       creatorRole: sched.creatorRole || sched.creator_role || "teacher",
       scheduleDate: sched.scheduleDate || sched.schedule_date || new Date().toISOString().split("T")[0],
-      scheduleStartTime: sched.scheduleStartTime || sched.schedule_start_time || "08:30",
-      scheduleEndTime: sched.scheduleEndTime || sched.schedule_end_time || "12:30",
-      scheduleTime: sched.scheduleTime || sched.schedule_time || "Today • 08:30 AM - 12:30 PM",
+      scheduleStartTime: resolvedStart,
+      scheduleEndTime: resolvedEnd,
+      scheduleTime: resolvedScheduleTime,
       provider: provider,
       rawUrl: rawUrl,
       raw_url: rawUrl,
