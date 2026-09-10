@@ -211,12 +211,13 @@ const SUPABASE_HELPER = {
     try {
       const { data, error } = await this.client.from("institutes").select("*");
       if (!error && Array.isArray(data) && data.length > 0) {
-        this.setSharedData("edupeak_institutes_db", data);
-        try { localStorage.setItem("edupeak_institutes_db", JSON.stringify(data)); } catch (e) {}
-        if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = data;
+        const normalizedList = data.map(item => this.normalizeInstitute(item));
+        this.setSharedData("edupeak_institutes_db", normalizedList);
+        try { localStorage.setItem("edupeak_institutes_db", JSON.stringify(normalizedList)); } catch (e) {}
+        if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = normalizedList;
 
         if (typeof window.dispatchEvent === "function") {
-          window.dispatchEvent(new CustomEvent("edupeak:institutes-synced", { detail: data }));
+          window.dispatchEvent(new CustomEvent("edupeak:institutes-synced", { detail: normalizedList }));
         }
 
         if (typeof window.renderInstitutes === "function") window.renderInstitutes();
@@ -226,7 +227,7 @@ const SUPABASE_HELPER = {
         if (window.ADMIN_CONTROLLER && typeof window.ADMIN_CONTROLLER.renderInstitutes === "function") {
           window.ADMIN_CONTROLLER.renderInstitutes();
         }
-        return data;
+        return normalizedList;
       }
     } catch (e) {
       console.warn("syncInstitutes error:", e);
@@ -948,40 +949,90 @@ const SUPABASE_HELPER = {
   },
 
   // 5. CAMPUS BRANCHES & INSTITUTES
+  normalizeInstitute(inst) {
+    if (!inst || typeof inst !== "object") return inst;
+    const isPhysical = (inst.hasPhysicalLocation !== undefined)
+      ? Boolean(inst.hasPhysicalLocation)
+      : (inst.hasphysicallocation !== undefined ? Boolean(inst.hasphysicallocation) : !String(inst.type || "").toLowerCase().includes("online"));
+
+    const mapUrl = inst.mapUrl || inst.mapurl || inst.map_url || "";
+    let facs = inst.facilities;
+    if (typeof facs === "string") {
+      try { facs = JSON.parse(facs); } catch (e) { facs = facs.split("\n").filter(Boolean); }
+    }
+    if (!Array.isArray(facs)) facs = [];
+
+    let facsSi = inst.facilities_si || inst.facilitiesSi;
+    if (typeof facsSi === "string") {
+      try { facsSi = JSON.parse(facsSi); } catch (e) { facsSi = facsSi.split("\n").filter(Boolean); }
+    }
+    if (!Array.isArray(facsSi)) facsSi = facs;
+
+    const status = (inst.status === "coming_soon" || inst.status === "pending" || inst.status === "inactive") ? "coming_soon" : "active";
+
+    return {
+      ...inst,
+      id: String(inst.id || "").trim(),
+      name: inst.name || "",
+      name_si: inst.name_si || inst.nameSi || inst.name || "",
+      status: status,
+      hasPhysicalLocation: isPhysical,
+      hasphysicallocation: isPhysical,
+      type: inst.type || (isPhysical ? "Physical Campus & Smart Auditorium" : "Online Educational Platform & LMS"),
+      type_si: inst.type_si || inst.typeSi || inst.type || "",
+      badge: inst.badge || (status === "coming_soon" ? "Coming Soon" : (isPhysical ? "Physical Campus Hub" : "24/7 Global Cloud LMS")),
+      badge_si: inst.badge_si || inst.badgeSi || (status === "coming_soon" ? "ඉදිරියේදී විවෘත වේ" : (isPhysical ? "ප්‍රධාන භෞතික මධ්‍යස්ථානය" : "ගෝලීය මාර්ගගත LMS")),
+      icon: inst.icon || (isPhysical ? "🏫" : "🌐"),
+      location: inst.location || "",
+      location_si: inst.location_si || inst.locationSi || inst.location || "",
+      phone: inst.phone || "+94 76 068 7578",
+      email: inst.email || "",
+      mapUrl: mapUrl,
+      mapurl: mapUrl,
+      website: inst.website || "",
+      facebook: inst.facebook || "",
+      facilities: facs.length > 0 ? facs : ["Air Conditioned Auditorium", "Smart Campus Wi-Fi"],
+      facilities_si: facsSi.length > 0 ? facsSi : ["වායුසමනය කළ ශ්‍රවණාගාරය", "Smart LMS Wi-Fi"]
+    };
+  },
+
   async getInstitutes() {
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("institutes").select("*");
         if (!error && Array.isArray(data) && data.length > 0) {
-          this.setSharedData("edupeak_institutes_db", data);
-          try { localStorage.setItem("edupeak_institutes_db", JSON.stringify(data)); } catch (e) {}
-          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = data;
-          return data;
+          const normalizedList = data.map(item => this.normalizeInstitute(item));
+          this.setSharedData("edupeak_institutes_db", normalizedList);
+          try { localStorage.setItem("edupeak_institutes_db", JSON.stringify(normalizedList)); } catch (e) {}
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = normalizedList;
+          return normalizedList;
         }
       } catch (e) {
         console.warn("Supabase fetch institutes error, using local:", e);
       }
     }
     const shared = this.getSharedData("edupeak_institutes_db");
-    if (shared !== null && Array.isArray(shared)) {
-      if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = shared;
-      try { localStorage.setItem("edupeak_institutes_db", JSON.stringify(shared)); } catch (e) {}
-      return shared;
+    if (shared !== null && Array.isArray(shared) && shared.length > 0) {
+      const normalizedList = shared.map(item => this.normalizeInstitute(item));
+      if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = normalizedList;
+      try { localStorage.setItem("edupeak_institutes_db", JSON.stringify(normalizedList)); } catch (e) {}
+      return normalizedList;
     }
     try {
       const stored = localStorage.getItem("edupeak_institutes_db");
       if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          this.setSharedData("edupeak_institutes_db", parsed);
-          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = parsed;
-          return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const normalizedList = parsed.map(item => this.normalizeInstitute(item));
+          this.setSharedData("edupeak_institutes_db", normalizedList);
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.institutes = normalizedList;
+          return normalizedList;
         }
       }
     } catch (e) {}
 
     const defaultInstitutes = (window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.institutes) && window.EDUPEAK_DATA.institutes.length > 0)
-      ? window.EDUPEAK_DATA.institutes
+      ? window.EDUPEAK_DATA.institutes.map(item => this.normalizeInstitute(item))
       : [];
     if (defaultInstitutes.length > 0) {
       this.setSharedData("edupeak_institutes_db", defaultInstitutes);
@@ -991,13 +1042,29 @@ const SUPABASE_HELPER = {
   },
 
   async saveInstitute(instData) {
-    const institutes = await this.getInstitutes();
-    const existingIndex = institutes.findIndex(i => i.id === instData.id);
-    if (existingIndex >= 0) {
-      institutes[existingIndex] = { ...institutes[existingIndex], ...instData };
-    } else {
-      institutes.push(instData);
+    if (!instData || !instData.id) return null;
+    const normalized = this.normalizeInstitute(instData);
+
+    // 1. Immediately update in local storage & memory
+    let institutes = this.getSharedData("edupeak_institutes_db");
+    if (!Array.isArray(institutes) || institutes.length === 0) {
+      try {
+        institutes = JSON.parse(localStorage.getItem("edupeak_institutes_db") || "[]");
+      } catch (e) {
+        institutes = [];
+      }
     }
+    if (!Array.isArray(institutes) || institutes.length === 0) {
+      institutes = (window.EDUPEAK_DATA && Array.isArray(window.EDUPEAK_DATA.institutes)) ? [...window.EDUPEAK_DATA.institutes] : [];
+    }
+
+    const existingIndex = institutes.findIndex(i => i.id === normalized.id);
+    if (existingIndex >= 0) {
+      institutes[existingIndex] = { ...institutes[existingIndex], ...normalized };
+    } else {
+      institutes.push(normalized);
+    }
+
     this.setSharedData("edupeak_institutes_db", institutes);
     try { localStorage.setItem("edupeak_institutes_db", JSON.stringify(institutes)); } catch (e) {}
     if (window.EDUPEAK_DATA) {
@@ -1011,19 +1078,76 @@ const SUPABASE_HELPER = {
       window.ADMIN_CONTROLLER.renderInstitutes();
     }
 
+    // 2. Persist to Supabase Cloud
     if (this.isConnected && this.client) {
       try {
-        const { data, error } = await this.client.from("institutes").upsert([instData]).select();
-        if (!error && data && data.length > 0) return data[0];
+        // Build payload matching PostgreSQL column definitions
+        const payload = {
+          id: normalized.id,
+          name: normalized.name,
+          name_si: normalized.name_si,
+          status: normalized.status,
+          hasphysicallocation: normalized.hasPhysicalLocation,
+          hasPhysicalLocation: normalized.hasPhysicalLocation,
+          type: normalized.type,
+          type_si: normalized.type_si,
+          badge: normalized.badge,
+          badge_si: normalized.badge_si,
+          icon: normalized.icon,
+          location: normalized.location,
+          location_si: normalized.location_si,
+          phone: normalized.phone,
+          email: normalized.email,
+          mapurl: normalized.mapUrl,
+          mapUrl: normalized.mapUrl,
+          website: normalized.website,
+          facebook: normalized.facebook,
+          facilities: normalized.facilities,
+          facilities_si: normalized.facilities_si
+        };
+
+        const { data, error } = await this.client.from("institutes").upsert([payload]).select();
+        if (error) {
+          // Fallback with sanitized strictly lowercase PostgreSQL keys if column cache error
+          const cleanPayload = {
+            id: normalized.id,
+            name: normalized.name,
+            name_si: normalized.name_si,
+            status: normalized.status,
+            hasphysicallocation: normalized.hasPhysicalLocation,
+            type: normalized.type,
+            type_si: normalized.type_si,
+            badge: normalized.badge,
+            badge_si: normalized.badge_si,
+            icon: normalized.icon,
+            location: normalized.location,
+            location_si: normalized.location_si,
+            phone: normalized.phone,
+            email: normalized.email,
+            mapurl: normalized.mapUrl,
+            website: normalized.website,
+            facebook: normalized.facebook,
+            facilities: normalized.facilities,
+            facilities_si: normalized.facilities_si
+          };
+          const fallbackRes = await this.client.from("institutes").upsert([cleanPayload]).select();
+          if (fallbackRes.error) {
+            console.warn("Supabase institute upsert fallback warning:", fallbackRes.error);
+          }
+        }
       } catch (e) {
         console.warn("Supabase upsert institute error:", e);
       }
     }
-    return instData;
+
+    return normalized;
   },
 
   async deleteInstitute(instId) {
-    let institutes = await this.getInstitutes();
+    let institutes = this.getSharedData("edupeak_institutes_db");
+    if (!Array.isArray(institutes) || institutes.length === 0) {
+      try { institutes = JSON.parse(localStorage.getItem("edupeak_institutes_db") || "[]"); } catch (e) { institutes = []; }
+    }
     institutes = institutes.filter(i => i.id !== instId);
     this.setSharedData("edupeak_institutes_db", institutes);
     try { localStorage.setItem("edupeak_institutes_db", JSON.stringify(institutes)); } catch (e) {}
@@ -1229,6 +1353,99 @@ const SUPABASE_HELPER = {
   },
 
   // 8. BROADCAST SCHEDULES & MULTI-LIVE SESSIONS
+  normalizeLiveSession(sched) {
+    if (!sched || typeof sched !== "object") return sched;
+    const provider = sched.provider || "youtube";
+    let embedUrl = sched.embedUrl || sched.embed_url || "";
+    const rawUrl = sched.rawUrl || sched.raw_url || "";
+    
+    // Auto-compute clean embed URL if not provided
+    if (!embedUrl && rawUrl) {
+      if (rawUrl.includes("youtube.com") || rawUrl.includes("youtu.be")) {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = rawUrl.match(regExp);
+        const yId = (match && match[2].length === 11) ? match[2] : rawUrl;
+        embedUrl = `https://www.youtube.com/embed/${yId}?enablejsapi=1&rel=0`;
+      } else if (rawUrl.includes("vimeo.com")) {
+        const vId = rawUrl.split("/").filter(Boolean).pop();
+        embedUrl = `https://player.vimeo.com/video/${vId}`;
+      } else {
+        embedUrl = rawUrl;
+      }
+    }
+
+    const status = (sched.status === "live" || sched.status === "ended") ? sched.status : "scheduled";
+    const examYear = sched.examYear || sched.exam_year || sched.batch || "2027 A/L";
+    const subject = sched.subject || "Physics";
+
+    return {
+      ...sched,
+      id: String(sched.id || ("sched-" + Date.now().toString(36))).trim(),
+      topic: sched.topic || "Physics Live Masterclass",
+      topic_si: sched.topic_si || sched.topicSi || sched.topic || "භෞතික විද්‍යාව සජීවී පන්තිය",
+      courseId: sched.courseId || sched.course_id || "",
+      course_id: sched.courseId || sched.course_id || "",
+      courseTitle: sched.courseTitle || sched.course_title || "",
+      subject: subject,
+      subject_si: sched.subject_si || sched.subjectSi || (subject === "Physics" ? "භෞතික විද්‍යාව" : subject),
+      examYear: examYear,
+      exam_year: examYear,
+      teacherId: sched.teacherId || sched.teacher_id || "tch-amalsha",
+      teacher_id: sched.teacherId || sched.teacher_id || "tch-amalsha",
+      teacherName: sched.teacherName || sched.teacher_name || "Amalsha Wanniarachchi",
+      teacher_name: sched.teacherName || sched.teacher_name || "Amalsha Wanniarachchi",
+      creatorId: sched.creatorId || sched.creator_id || sched.teacherId || "tch-amalsha",
+      creator_id: sched.creatorId || sched.creator_id || sched.teacherId || "tch-amalsha",
+      creatorName: sched.creatorName || sched.creator_name || sched.teacherName || "Faculty Instructor",
+      creatorEmail: sched.creatorEmail || sched.creator_email || "",
+      creatorRole: sched.creatorRole || sched.creator_role || "teacher",
+      scheduleDate: sched.scheduleDate || sched.schedule_date || new Date().toISOString().split("T")[0],
+      scheduleStartTime: sched.scheduleStartTime || sched.schedule_start_time || "08:30",
+      scheduleEndTime: sched.scheduleEndTime || sched.schedule_end_time || "12:30",
+      scheduleTime: sched.scheduleTime || sched.schedule_time || "Today • 08:30 AM - 12:30 PM",
+      provider: provider,
+      rawUrl: rawUrl,
+      raw_url: rawUrl,
+      embedUrl: embedUrl,
+      embed_url: embedUrl,
+      zoomUrl: sched.zoomUrl || sched.zoom_url || "",
+      zoom_url: sched.zoomUrl || sched.zoom_url || "",
+      status: status,
+      watermarkEnabled: sched.watermarkEnabled !== undefined ? Boolean(sched.watermarkEnabled) : true,
+      chatEnabled: sched.chatEnabled !== undefined ? Boolean(sched.chatEnabled) : true,
+      description: sched.description || "",
+      pinnedNotice: sched.pinnedNotice || sched.pinned_notice || "",
+      recordingUrl: sched.recordingUrl || sched.recording_url || "",
+      viewersCount: Number(sched.viewersCount || sched.viewers_count || (status === "live" ? 180 : 0)),
+      startedAt: sched.startedAt || sched.started_at || null,
+      endedAt: sched.endedAt || sched.ended_at || null,
+      createdAt: sched.createdAt || sched.created_at || new Date().toISOString(),
+      updatedAt: sched.updatedAt || sched.updated_at || new Date().toISOString()
+    };
+  },
+
+  canManageLiveSession(session, user) {
+    if (!user) return false;
+    if (user.role === "admin") return true;
+    if (user.role === "teacher") {
+      if (!session) return true; // Teachers can create new lives
+      const sTeacherId = String(session.teacherId || session.teacher_id || "").toLowerCase();
+      const sCreatorId = String(session.creatorId || session.creator_id || "").toLowerCase();
+      const sCreatorEmail = String(session.creatorEmail || session.creator_email || "").toLowerCase();
+      const sTeacherName = String(session.teacherName || session.teacher_name || "").toLowerCase();
+
+      const uId = String(user.id || "").toLowerCase();
+      const uEmail = String(user.email || "").toLowerCase();
+      const uName = String(user.name || "").toLowerCase();
+
+      if (sTeacherId && (sTeacherId === uId || sTeacherId.includes(uId) || uId.includes(sTeacherId))) return true;
+      if (sCreatorId && (sCreatorId === uId || sCreatorId.includes(uId) || uId.includes(sCreatorId))) return true;
+      if (sCreatorEmail && sCreatorEmail === uEmail) return true;
+      if (sTeacherName && uName && (sTeacherName.includes(uName) || uName.includes(sTeacherName))) return true;
+    }
+    return false;
+  },
+
   async getSchedules() {
     return this.getLiveSessions();
   },
@@ -1238,30 +1455,101 @@ const SUPABASE_HELPER = {
       try {
         const { data, error } = await this.client.from("broadcast_schedules").select("*").order("updated_at", { ascending: false });
         if (!error && Array.isArray(data) && data.length > 0) {
-          this.setSharedData("edupeak_schedules_db", data);
-          try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(data)); } catch (e) {}
-          return data;
+          const normalized = data.map(s => this.normalizeLiveSession(s));
+          this.setSharedData("edupeak_schedules_db", normalized);
+          try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(normalized)); } catch (e) {}
+          return normalized;
         }
       } catch (e) {
         console.warn("Supabase fetch schedules error, using local:", e);
       }
     }
     const shared = this.getSharedData("edupeak_schedules_db");
-    if (shared !== null && Array.isArray(shared)) {
-      try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(shared)); } catch (e) {}
-      return shared;
+    if (shared !== null && Array.isArray(shared) && shared.length > 0) {
+      const normalized = shared.map(s => this.normalizeLiveSession(s));
+      try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(normalized)); } catch (e) {}
+      return normalized;
     }
     try {
       const stored = localStorage.getItem("edupeak_schedules_db");
       if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          this.setSharedData("edupeak_schedules_db", parsed);
-          return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const normalized = parsed.map(s => this.normalizeLiveSession(s));
+          this.setSharedData("edupeak_schedules_db", normalized);
+          return normalized;
         }
       }
     } catch (e) {}
-    return [];
+
+    // Default canonical schedules for multi-live showcase
+    const defaultSchedules = [
+      {
+        id: "sched-phy-2027-theory",
+        topic: "2027 A/L Physics - Mechanics & Circular Motion Advanced Masterclass",
+        topic_si: "2027 උසස් පෙළ භෞතික විද්‍යාව - යාන්ත්‍ර විද්‍යාව සහ වෘත්ත චලිතය විශේෂ සජීවී පන්තිය",
+        courseId: "crs-phy-2027-theory",
+        courseTitle: "2027 A/L Physics - Complete Theory & Mechanics Masterclass",
+        subject: "Physics",
+        subject_si: "භෞතික විද්‍යාව",
+        examYear: "2027 A/L",
+        teacherId: "tch-amalsha",
+        teacherName: "Amalsha Wanniarachchi",
+        creatorId: "tch-amalsha",
+        creatorName: "Amalsha Wanniarachchi",
+        creatorEmail: "amalsha@edupeak.lk",
+        creatorRole: "teacher",
+        scheduleDate: new Date().toISOString().split("T")[0],
+        scheduleStartTime: "08:30",
+        scheduleEndTime: "12:30",
+        scheduleTime: "Today • 08:30 AM - 12:30 PM",
+        provider: "youtube",
+        rawUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        embedUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&enablejsapi=1&rel=0",
+        zoomUrl: "https://zoom.us/j/9876543210",
+        status: "live",
+        startedAt: new Date(Date.now() - 3600000).toISOString(),
+        viewersCount: 342,
+        watermarkEnabled: true,
+        chatEnabled: true,
+        description: "In-depth derivation of gravitational fields, circular motion kinematics, angular momentum, and live student doubt clearing with real-time MCQ practice.",
+        pinnedNotice: "📢 Welcome students! Today's handout PDF is available in the Resources tab below. Keep your Physics tute ready."
+      },
+      {
+        id: "sched-phy-2026-revision",
+        topic: "2026 A/L Physics - Past Paper Speed Analysis & Structured Essay Arena",
+        topic_si: "2026 උසස් පෙළ භෞතික විද්‍යාව - පසුගිය විභාග ප්‍රශ්න පත්‍ර වේගවත් විවරණය",
+        courseId: "crs-phy-2027-revision",
+        courseTitle: "2027 A/L Physics - Unit Revision & Practical Analysis",
+        subject: "Physics",
+        subject_si: "භෞතික විද්‍යාව",
+        examYear: "2026 A/L",
+        teacherId: "TCH-PHYSICS",
+        teacherName: "Prof. K. M. Liyanage",
+        creatorId: "TCH-PHYSICS",
+        creatorName: "Prof. K. M. Liyanage",
+        creatorEmail: "teacher@edupeak.lk",
+        creatorRole: "teacher",
+        scheduleDate: new Date().toISOString().split("T")[0],
+        scheduleStartTime: "14:00",
+        scheduleEndTime: "18:00",
+        scheduleTime: "Today • 02:00 PM - 06:00 PM",
+        provider: "youtube",
+        rawUrl: "https://www.youtube.com/watch?v=L_LUpnjgPso",
+        embedUrl: "https://www.youtube.com/embed/L_LUpnjgPso?enablejsapi=1&rel=0",
+        zoomUrl: "https://zoom.us/j/1234567890",
+        status: "scheduled",
+        viewersCount: 0,
+        watermarkEnabled: true,
+        chatEnabled: true,
+        description: "Special intensive revision covering Thermal Physics & Waves past exam structured questions with marking scheme criteria.",
+        pinnedNotice: "📌 The structured marking scheme model will be projected live on screen."
+      }
+    ].map(s => this.normalizeLiveSession(s));
+
+    this.setSharedData("edupeak_schedules_db", defaultSchedules);
+    try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(defaultSchedules)); } catch (e) {}
+    return defaultSchedules;
   },
 
   async saveSchedule(schedData) {
@@ -1270,78 +1558,101 @@ const SUPABASE_HELPER = {
 
   async saveLiveSession(schedData) {
     if (!schedData || !schedData.id) return null;
-    
-    // Ensure all standard properties exist
-    schedData.updatedAt = new Date().toISOString();
-    if (!schedData.createdAt) schedData.createdAt = new Date().toISOString();
-    if (!schedData.status) schedData.status = "scheduled";
-    if (schedData.chatEnabled === undefined) schedData.chatEnabled = true;
+    const normalized = this.normalizeLiveSession(schedData);
 
+    // 1. Immediately update local storage & memory
+    let schedules = this.getSharedData("edupeak_schedules_db");
+    if (!Array.isArray(schedules) || schedules.length === 0) {
+      try {
+        schedules = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
+      } catch (e) {
+        schedules = [];
+      }
+    }
+    if (!Array.isArray(schedules)) schedules = [];
+
+    const existingIndex = schedules.findIndex(s => s.id === normalized.id);
+    if (existingIndex >= 0) {
+      schedules[existingIndex] = { ...schedules[existingIndex], ...normalized };
+    } else {
+      schedules.unshift(normalized);
+    }
+    this.setSharedData("edupeak_schedules_db", schedules);
+    try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(schedules)); } catch (e) {}
+
+    // Also update legacy single-live config for backward compatibility
+    if (normalized.status === "live" || !localStorage.getItem("edupeak_live_stream_config")) {
+      try {
+        localStorage.setItem("edupeak_live_stream_config", JSON.stringify(normalized));
+        this.setSharedData("edupeak_live_stream_config", normalized);
+      } catch (e) {}
+    }
+
+    // 2. Persist to Supabase Cloud
     if (this.isConnected && this.client) {
       try {
         const payload = {
-          id: schedData.id,
-          topic: schedData.topic,
-          topic_si: schedData.topic_si || schedData.topic,
-          course_id: schedData.courseId || schedData.course_id || "",
-          courseId: schedData.courseId || schedData.course_id || "",
-          courseTitle: schedData.courseTitle || "",
-          subject: schedData.subject || "Physics",
-          subject_si: schedData.subject_si || "භෞතික විද්‍යාව",
-          examYear: schedData.examYear || "2026 A/L",
-          teacherId: schedData.teacherId || "TCH-PHYSICS",
-          teacherName: schedData.teacherName || "Amalsha Wanniarachchi",
-          scheduleDate: schedData.scheduleDate || "",
-          scheduleStartTime: schedData.scheduleStartTime || "",
-          scheduleEndTime: schedData.scheduleEndTime || "",
-          scheduleTime: schedData.scheduleTime || "",
-          provider: schedData.provider || "youtube",
-          rawUrl: schedData.rawUrl || "",
-          embedUrl: schedData.embedUrl || "",
-          zoomUrl: schedData.zoomUrl || "",
-          status: schedData.status || "scheduled",
-          watermarkEnabled: Boolean(schedData.watermarkEnabled),
-          chatEnabled: Boolean(schedData.chatEnabled),
-          description: schedData.description || "",
-          pinnedNotice: schedData.pinnedNotice || "",
-          recordingUrl: schedData.recordingUrl || "",
+          id: normalized.id,
+          topic: normalized.topic,
+          topic_si: normalized.topic_si,
+          course_id: normalized.courseId,
+          courseId: normalized.courseId,
+          courseTitle: normalized.courseTitle,
+          subject: normalized.subject,
+          subject_si: normalized.subject_si,
+          examYear: normalized.examYear,
+          teacherId: normalized.teacherId,
+          teacherName: normalized.teacherName,
+          scheduleDate: normalized.scheduleDate,
+          scheduleStartTime: normalized.scheduleStartTime,
+          scheduleEndTime: normalized.scheduleEndTime,
+          scheduleTime: normalized.scheduleTime,
+          provider: normalized.provider,
+          rawUrl: normalized.rawUrl,
+          embedUrl: normalized.embedUrl,
+          zoomUrl: normalized.zoomUrl,
+          status: normalized.status,
+          watermarkEnabled: Boolean(normalized.watermarkEnabled),
+          chatEnabled: Boolean(normalized.chatEnabled),
+          description: normalized.description,
+          pinnedNotice: normalized.pinnedNotice,
+          recordingUrl: normalized.recordingUrl,
           updated_at: new Date().toISOString()
         };
         const { data, error } = await this.client.from("broadcast_schedules").upsert([payload]).select();
-        if (!error && data && data.length > 0) {
-          schedData = { ...schedData, ...data[0] };
+        if (error) {
+          console.warn("Supabase upsert broadcast_schedule warning:", error);
         }
       } catch (e) {
         console.warn("Supabase upsert broadcast_schedule error:", e);
       }
     }
-    const schedules = await this.getLiveSessions();
-    const existingIndex = schedules.findIndex(s => s.id === schedData.id);
-    if (existingIndex >= 0) {
-      schedules[existingIndex] = { ...schedules[existingIndex], ...schedData };
-    } else {
-      schedules.unshift(schedData);
-    }
-    this.setSharedData("edupeak_schedules_db", schedules);
-    try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(schedules)); } catch (e) {}
 
-    // Dispatch global event for reactive multi-live refresh
+    // Dispatch global reactive broadcast event
     try {
-      window.dispatchEvent(new CustomEvent("edupeak-live-sessions-updated", { detail: { session: schedData, all: schedules } }));
+      window.dispatchEvent(new CustomEvent("edupeak-live-sessions-updated", { detail: { session: normalized, all: schedules } }));
     } catch(e) {}
 
-    return schedData;
+    return normalized;
   },
 
-  async updateLiveSessionStatus(sessionId, newStatus) {
+  async updateLiveSessionStatus(sessionId, newStatus, extraData = {}) {
     const schedules = await this.getLiveSessions();
     const target = schedules.find(s => s.id === sessionId);
     if (!target) return null;
 
     target.status = newStatus;
     target.updatedAt = new Date().toISOString();
-    if (newStatus === "live") target.startedAt = new Date().toISOString();
-    if (newStatus === "ended") target.endedAt = new Date().toISOString();
+    if (newStatus === "live") {
+      target.startedAt = target.startedAt || new Date().toISOString();
+      target.viewersCount = Math.max(Number(target.viewersCount || 0), 120);
+    }
+    if (newStatus === "ended") {
+      target.endedAt = new Date().toISOString();
+    }
+    if (extraData && typeof extraData === "object") {
+      Object.assign(target, extraData);
+    }
 
     return this.saveLiveSession(target);
   },
@@ -1351,6 +1662,16 @@ const SUPABASE_HELPER = {
   },
 
   async deleteLiveSession(schedId) {
+    let schedules = this.getSharedData("edupeak_schedules_db");
+    if (!Array.isArray(schedules) || schedules.length === 0) {
+      try { schedules = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]"); } catch (e) { schedules = []; }
+    }
+    if (Array.isArray(schedules)) {
+      schedules = schedules.filter(s => s.id !== schedId);
+      this.setSharedData("edupeak_schedules_db", schedules);
+      try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(schedules)); } catch (e) {}
+    }
+
     if (this.isConnected && this.client) {
       try {
         await this.client.from("broadcast_schedules").delete().eq("id", schedId);
@@ -1358,10 +1679,6 @@ const SUPABASE_HELPER = {
         console.warn("Supabase delete broadcast_schedule error:", e);
       }
     }
-    let schedules = await this.getLiveSessions();
-    schedules = schedules.filter(s => s.id !== schedId);
-    this.setSharedData("edupeak_schedules_db", schedules);
-    try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(schedules)); } catch (e) {}
 
     try {
       window.dispatchEvent(new CustomEvent("edupeak-live-sessions-updated", { detail: { deletedId: schedId, all: schedules } }));
@@ -1557,7 +1874,8 @@ const SUPABASE_HELPER = {
       }
       // Sync institutes
       if (institutes.length > 0) {
-        await this.client.from("institutes").upsert(institutes);
+        const normalizedInsts = institutes.map(inst => this.normalizeInstitute(inst));
+        await this.client.from("institutes").upsert(normalizedInsts);
       }
       // Sync lessons
       if (lessons.length > 0) {

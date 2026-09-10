@@ -1498,19 +1498,36 @@ const ADMIN_CONTROLLER = {
     document.getElementById("instFormId").value = inst.id;
     document.getElementById("instFormName").value = cleanName;
     document.getElementById("instFormNameSi").value = inst.name_si || "";
-    document.getElementById("instFormStatus").value = inst.status === "coming_soon" ? "coming_soon" : "active";
+    document.getElementById("instFormStatus").value = (inst.status === "coming_soon" || inst.status === "pending" || inst.status === "inactive") ? "coming_soon" : "active";
     document.getElementById("instFormType").value = inst.type || "Physical Campus & Smart Auditorium";
-    document.getElementById("instFormBadge").value = inst.badge || "Physical Campus Hub";
+    document.getElementById("instFormBadge").value = inst.badge || (inst.status === "coming_soon" ? "Coming Soon" : "Physical Campus Hub");
     document.getElementById("instFormIcon").value = inst.icon || "🏫";
     document.getElementById("instFormLocation").value = inst.location || "";
     document.getElementById("instFormPhone").value = inst.phone || "";
     document.getElementById("instFormEmail").value = inst.email || "";
-    document.getElementById("instFormMapUrl").value = inst.mapUrl || "";
+    document.getElementById("instFormMapUrl").value = inst.mapUrl || inst.mapurl || "";
 
     const facs = Array.isArray(inst.facilities) ? inst.facilities.join("\n") : (inst.facilities || "");
     document.getElementById("instFormFacilities").value = facs;
 
     modal.classList.add("active");
+  },
+
+  handleStatusDropdownChange(newStatus) {
+    const badgeInput = document.getElementById("instFormBadge");
+    const typeInput = document.getElementById("instFormType");
+    if (!badgeInput) return;
+    const isOnline = typeInput && typeInput.value.toLowerCase().includes("online");
+    const currentVal = badgeInput.value.trim();
+    if (newStatus === "active") {
+      if (!currentVal || currentVal === "Coming Soon" || currentVal === "Coming Soon (Online)" || currentVal === "ඉදිරියේදී විවෘත වේ") {
+        badgeInput.value = isOnline ? "24/7 Global Cloud LMS" : "Physical Campus Hub";
+      }
+    } else if (newStatus === "coming_soon") {
+      if (!currentVal || currentVal === "Physical Campus Hub" || currentVal === "24/7 Global Cloud LMS" || currentVal === "ප්‍රධාන භෞතික මධ්‍යස්ථානය") {
+        badgeInput.value = isOnline ? "Coming Soon (Online)" : "Coming Soon";
+      }
+    }
   },
 
   async handleSaveInstituteSubmit(e) {
@@ -1521,8 +1538,20 @@ const ADMIN_CONTROLLER = {
     const name_si = document.getElementById("instFormNameSi").value.trim() || name;
     const status = document.getElementById("instFormStatus").value;
     const type = document.getElementById("instFormType").value.trim();
-    const badge = document.getElementById("instFormBadge").value.trim() || (status === "coming_soon" ? "Coming Soon" : "Physical Campus Hub");
-    const icon = document.getElementById("instFormIcon").value.trim() || "🏫";
+    const isOnline = type.toLowerCase().includes("online");
+    let badge = document.getElementById("instFormBadge").value.trim();
+
+    // Auto-align default badge text with active vs coming_soon if it was not custom
+    if (status === "active" && (badge === "Coming Soon" || badge === "Coming Soon (Online)" || badge === "ඉදිරියේදී විවෘත වේ")) {
+      badge = isOnline ? "24/7 Global Cloud LMS" : "Physical Campus Hub";
+    } else if (status === "coming_soon" && (badge === "Physical Campus Hub" || badge === "24/7 Global Cloud LMS" || badge === "ප්‍රධාන භෞතික මධ්‍යස්ථානය")) {
+      badge = isOnline ? "Coming Soon (Online)" : "Coming Soon";
+    }
+    if (!badge) {
+      badge = status === "coming_soon" ? (isOnline ? "Coming Soon (Online)" : "Coming Soon") : (isOnline ? "24/7 Global Cloud LMS" : "Physical Campus Hub");
+    }
+
+    const icon = document.getElementById("instFormIcon").value.trim() || (isOnline ? "🌐" : "🏫");
     const location = document.getElementById("instFormLocation").value.trim();
     const phone = document.getElementById("instFormPhone").value.trim();
     const email = document.getElementById("instFormEmail").value.trim();
@@ -1530,28 +1559,34 @@ const ADMIN_CONTROLLER = {
     const rawFacilities = document.getElementById("instFormFacilities").value.trim();
     const facilities = rawFacilities.split("\n").map(f => f.trim()).filter(Boolean);
 
+    const existingInstitutes = window.EDUPEAK_INSTITUTES ? window.EDUPEAK_INSTITUTES.getAll() : [];
+    const existingInst = existingInstitutes.find(i => i.id === id);
+
     const instData = {
+      ...(existingInst || {}),
       id: id || ("inst-" + Date.now().toString(36)),
       name: name,
       name_si: name_si,
       status: status,
-      hasPhysicalLocation: !type.toLowerCase().includes("online"),
+      hasPhysicalLocation: !isOnline,
+      hasphysicallocation: !isOnline,
       type: type,
       type_si: type,
       badge: badge,
-      badge_si: status === "coming_soon" ? "ඉදිරියේදී විවෘත වේ" : badge,
+      badge_si: status === "coming_soon" ? "ඉදිරියේදී විවෘත වේ" : (badge === "Physical Campus Hub" ? "ප්‍රධාන භෞතික මධ්‍යස්ථානය" : badge),
       icon: icon,
       location: location,
       location_si: location,
       phone: phone,
       email: email,
       mapUrl: mapUrl,
+      mapurl: mapUrl,
       facilities: facilities.length > 0 ? facilities : ["Air Conditioned Auditorium", "Smart Campus Wi-Fi"],
       facilities_si: facilities.length > 0 ? facilities : ["වායුසමනය කළ ශ්‍රවණාගාරය", "Smart LMS Wi-Fi"]
     };
 
     // 1. Immediately persist locally
-    const institutes = window.EDUPEAK_INSTITUTES ? [...window.EDUPEAK_INSTITUTES.getAll()] : [];
+    const institutes = [...existingInstitutes];
     const existingIndex = institutes.findIndex(i => i.id === instData.id);
     if (existingIndex >= 0) {
       institutes[existingIndex] = { ...institutes[existingIndex], ...instData };
@@ -1581,13 +1616,14 @@ const ADMIN_CONTROLLER = {
     if (!inst) return;
 
     const newStatus = inst.status === "active" ? "coming_soon" : "active";
+    const isOnline = (inst.type && inst.type.toLowerCase().includes("online")) || inst.hasPhysicalLocation === false;
     inst.status = newStatus;
     if (newStatus === "coming_soon") {
-      inst.badge = "Coming Soon";
+      inst.badge = isOnline ? "Coming Soon (Online)" : "Coming Soon";
       inst.badge_si = "ඉදිරියේදී විවෘත වේ";
     } else {
-      inst.badge = "Physical Campus Hub";
-      inst.badge_si = "ප්‍රධාන භෞතික මධ්‍යස්ථානය";
+      inst.badge = isOnline ? "24/7 Global Cloud LMS" : "Physical Campus Hub";
+      inst.badge_si = isOnline ? "ගෝලීය මාර්ගගත LMS" : "ප්‍රධාන භෞතික මධ්‍යස්ථානය";
     }
 
     if (window.EDUPEAK_INSTITUTES) {

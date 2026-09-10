@@ -524,6 +524,10 @@
                   <i class="fa-solid fa-gauge-high" style="color: #227aff;"></i>
                   <span>Student Dashboard</span>
                 </a>
+                <a href="live-class.html" class="dropdown-nav-item" onclick="closeProfileDropdown();">
+                  <i class="fa-solid fa-tower-broadcast" style="color: #ef4444;"></i>
+                  <span>🔴 Live Interactive Hub</span>
+                </a>
                 <a href="profile.html" class="dropdown-nav-item" onclick="closeProfileDropdown();">
                   <i class="fa-solid fa-user-pen" style="color: #8b5cf6;"></i>
                   <span>My Profile & Avatar</span>
@@ -584,6 +588,9 @@
         </div>
 
         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <a href="live-class.html" class="btn btn-accent" style="font-weight: 800; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; border: none; box-shadow: 0 4px 15px rgba(239,68,68,0.4); display: inline-flex; align-items: center; gap: 0.45rem;">
+            <i class="fa-solid fa-tower-broadcast fa-fade"></i> 🔴 Live Classroom Hub
+          </a>
           <a href="#courses" onclick="switchStudentPortalTab('courses', event)" class="btn btn-outline" style="background: rgba(255,255,255,0.1); color: #ffffff; font-weight: 700; border-color: rgba(255,255,255,0.3);">
             <i class="fa-solid fa-compass"></i> Explore Courses
           </a>
@@ -595,6 +602,14 @@
 
       <!-- Quick Navigation Icons Bar -->
       <div class="quick-actions-grid">
+        <a href="live-class.html" class="quick-action-btn" style="border-color: rgba(239, 68, 68, 0.3); background: #fffcfc;">
+          <div class="quick-action-icon" style="background: #fef2f2; color: #ef4444;">
+            <i class="fa-solid fa-tower-broadcast"></i>
+          </div>
+          <strong style="font-size: 0.9rem; color: #dc2626;">🔴 Live Interactive Hub</strong>
+          <span style="font-size: 0.75rem; color: var(--dash-muted);">Real-Time Masterclass</span>
+        </a>
+
         <a href="index.html?openLms=video-classroom" class="quick-action-btn">
           <div class="quick-action-icon" style="background: #eff6ff; color: #227aff;">
             <i class="fa-solid fa-video"></i>

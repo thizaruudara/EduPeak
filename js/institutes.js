@@ -9,20 +9,29 @@ const EDUPEAK_INSTITUTES = {
   storageKey: "edupeak_institutes_db",
 
   getAll() {
+    let result = null;
     if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
       const shared = window.SUPABASE_HELPER.getSharedData(this.storageKey);
-      if (shared !== null && Array.isArray(shared)) return shared;
+      if (shared !== null && Array.isArray(shared) && shared.length > 0) result = shared;
     }
-    try {
-      const stored = localStorage.getItem(this.storageKey);
-      if (stored !== null) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return parsed;
+    if (!result) {
+      try {
+        const stored = localStorage.getItem(this.storageKey);
+        if (stored !== null) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) result = parsed;
+        }
+      } catch (e) {
+        console.warn("Error parsing institutes db:", e);
       }
-    } catch (e) {
-      console.warn("Error parsing institutes db:", e);
     }
-    return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.institutes) ? window.EDUPEAK_DATA.institutes : [];
+    if (!result) {
+      result = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.institutes) ? window.EDUPEAK_DATA.institutes : [];
+    }
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.normalizeInstitute === "function" && Array.isArray(result)) {
+      return result.map(i => window.SUPABASE_HELPER.normalizeInstitute(i));
+    }
+    return result;
   },
 
   saveAll(institutesList) {
