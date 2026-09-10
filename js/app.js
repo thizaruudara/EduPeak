@@ -189,13 +189,12 @@ function renderCourses() {
     courses = window.getLMSCourses();
   } else {
     const stored = localStorage.getItem("edupeak_courses_db");
-    if (stored) {
+    if (stored !== null) {
       try {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) courses = parsed;
       } catch (e) {}
-    }
-    if (!courses.length) {
+    } else {
       courses = (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.courses : []);
       try {
         const customCourses = JSON.parse(localStorage.getItem("edupeak_custom_courses") || "[]");

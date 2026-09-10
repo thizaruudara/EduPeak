@@ -136,10 +136,15 @@ function loadSavedLMSData() {
       LMS_STATE.enrolledCourses = JSON.parse(savedEnrolled);
     }
 
-    // Load custom courses database created in Teacher Studio
-    const storedCoursesDb = JSON.parse(localStorage.getItem("edupeak_courses_db") || "null");
-    if (storedCoursesDb && Array.isArray(storedCoursesDb) && window.EDUPEAK_DATA) {
-      window.EDUPEAK_DATA.courses = storedCoursesDb;
+    // Load custom courses database created in Teacher Studio / Admin
+    const storedCoursesDb = localStorage.getItem("edupeak_courses_db");
+    if (storedCoursesDb !== null) {
+      try {
+        const parsed = JSON.parse(storedCoursesDb);
+        if (Array.isArray(parsed) && window.EDUPEAK_DATA) {
+          window.EDUPEAK_DATA.courses = parsed;
+        }
+      } catch (e) {}
     } else {
       const customCourses = JSON.parse(localStorage.getItem("edupeak_custom_courses") || "[]");
       if (customCourses.length && window.EDUPEAK_DATA) {
@@ -184,21 +189,14 @@ function loadSavedLMSData() {
 function getLMSCourses() {
   try {
     const stored = localStorage.getItem("edupeak_courses_db");
-    if (stored) {
+    if (stored !== null) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed)) {
         if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = parsed;
         return parsed;
       }
     }
-    const custom = JSON.parse(localStorage.getItem("edupeak_custom_courses") || "[]");
-    let courses = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? [...window.EDUPEAK_DATA.courses] : [];
-    if (Array.isArray(custom) && custom.length) {
-      custom.forEach(c => {
-        if (!courses.find(item => item.id === c.id)) courses.unshift(c);
-      });
-    }
-    return courses;
+    return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
   } catch (e) {
     return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
   }

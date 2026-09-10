@@ -57,9 +57,14 @@ const TEACHER_CONTROLLER = {
 
   loadCustomData() {
     try {
-      const storedCoursesDb = JSON.parse(localStorage.getItem("edupeak_courses_db") || "null");
-      if (storedCoursesDb && Array.isArray(storedCoursesDb) && window.EDUPEAK_DATA) {
-        window.EDUPEAK_DATA.courses = storedCoursesDb;
+      const storedCoursesDb = localStorage.getItem("edupeak_courses_db");
+      if (storedCoursesDb !== null) {
+        try {
+          const parsed = JSON.parse(storedCoursesDb);
+          if (Array.isArray(parsed) && window.EDUPEAK_DATA) {
+            window.EDUPEAK_DATA.courses = parsed;
+          }
+        } catch (e) {}
       } else {
         const customCourses = JSON.parse(localStorage.getItem(this.storageKeys.customCourses || "edupeak_custom_courses") || "[]");
         if (customCourses.length && window.EDUPEAK_DATA) {
@@ -131,29 +136,19 @@ const TEACHER_CONTROLLER = {
   },
 
   getTeacherCourses() {
-    let allCourses = [];
     try {
       const stored = localStorage.getItem("edupeak_courses_db");
-      if (stored) {
+      if (stored !== null) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
           if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = parsed;
           return parsed;
         }
       }
-      const customCourses = JSON.parse(localStorage.getItem(this.storageKeys.customCourses || "edupeak_custom_courses") || "[]");
-      allCourses = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? [...window.EDUPEAK_DATA.courses] : [];
-      if (Array.isArray(customCourses) && customCourses.length) {
-        customCourses.forEach(c => {
-          if (!allCourses.find(item => item.id === c.id)) {
-            allCourses.unshift(c);
-          }
-        });
-      }
+      return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
     } catch (e) {
-      allCourses = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? [...window.EDUPEAK_DATA.courses] : [];
+      return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
     }
-    return allCourses;
   },
 
   getAllCourses() {
@@ -2310,10 +2305,7 @@ const TEACHER_CONTROLLER = {
     const enrolled = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getStudentEnrolledCourses(s.id) : (s.enrolledCourses || []);
 
     // Get all teacher courses & system courses
-    let allCourses = this.getAllCourses ? this.getAllCourses() : [];
-    if (!allCourses || allCourses.length === 0) {
-      allCourses = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
-    }
+    let allCourses = this.getAllCourses ? this.getAllCourses() : (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.courses : []);
 
     if (listContainer) {
       if (allCourses.length === 0) {

@@ -340,7 +340,7 @@
             <div class="admin-stat-card students" onclick="ADMIN_CONTROLLER.switchTab('students')" style="cursor: pointer;">
               <div class="stat-card-info">
                 <h4>Total Students</h4>
-                <div class="stat-val" id="adminStatTotalStudents">1,240+</div>
+                <div class="stat-val" id="adminStatTotalStudents">0</div>
                 <div class="stat-subtitle" style="color: #10b981;"><i class="fa-solid fa-arrow-trend-up"></i> Registered in LMS</div>
               </div>
               <div class="stat-card-icon">
@@ -351,7 +351,7 @@
             <div class="admin-stat-card courses" onclick="ADMIN_CONTROLLER.switchTab('courses')" style="cursor: pointer;">
               <div class="stat-card-info">
                 <h4>Active Courses</h4>
-                <div class="stat-val" id="adminStatActiveCourses">12</div>
+                <div class="stat-val" id="adminStatActiveCourses">0</div>
                 <div class="stat-subtitle" style="color: #227aff;"><i class="fa-solid fa-layer-group"></i> Theory & Revision</div>
               </div>
               <div class="stat-card-icon">
@@ -362,7 +362,7 @@
             <div class="admin-stat-card teachers" onclick="ADMIN_CONTROLLER.switchTab('teachers')" style="cursor: pointer;">
               <div class="stat-card-info">
                 <h4>Faculty Lecturers</h4>
-                <div class="stat-val" id="adminStatTotalTeachers">5</div>
+                <div class="stat-val" id="adminStatTotalTeachers">0</div>
                 <div class="stat-subtitle" style="color: #a855f7;"><i class="fa-solid fa-chalkboard-user"></i> Master Tutors</div>
               </div>
               <div class="stat-card-icon">
@@ -1302,7 +1302,7 @@
 
   <script>
     // Standalone Admin Authentication & State Management
-    function checkAdminAuth() {
+    async function checkAdminAuth() {
       const user = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
       const gate = document.getElementById("adminLoginGate");
       const wrapper = document.getElementById("adminModalWrapper");
@@ -1313,7 +1313,7 @@
         if (window.ADMIN_CONTROLLER) {
           const tab = window.ADMIN_CONTROLLER.getTabFromHash() || "overview";
           window.ADMIN_CONTROLLER.switchTab(tab);
-          window.ADMIN_CONTROLLER.refreshAll();
+          await window.ADMIN_CONTROLLER.refreshAll();
         }
       } else {
         if (gate) gate.style.display = "flex";

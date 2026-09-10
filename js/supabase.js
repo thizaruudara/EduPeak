@@ -234,13 +234,26 @@ const SUPABASE_HELPER = {
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("teachers").select("*");
-        if (!error && data && data.length > 0) return data;
+        if (!error && Array.isArray(data)) {
+          localStorage.setItem("edupeak_teachers_db", JSON.stringify(data));
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.teachers = data;
+          return data;
+        }
       } catch (e) {
         console.warn("Supabase fetch teachers error, using local:", e);
       }
     }
     const local = localStorage.getItem("edupeak_teachers_db");
-    return local ? JSON.parse(local) : (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.teachers : []);
+    if (local !== null) {
+      try {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed)) {
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.teachers = parsed;
+          return parsed;
+        }
+      } catch (e) {}
+    }
+    return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.teachers) ? window.EDUPEAK_DATA.teachers : [];
   },
 
   async saveTeacher(teacherData) {
@@ -291,13 +304,26 @@ const SUPABASE_HELPER = {
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("courses").select("*");
-        if (!error && data && data.length > 0) return data;
+        if (!error && Array.isArray(data)) {
+          localStorage.setItem("edupeak_courses_db", JSON.stringify(data));
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = data;
+          return data;
+        }
       } catch (e) {
         console.warn("Supabase fetch courses error, using local:", e);
       }
     }
     const local = localStorage.getItem("edupeak_courses_db");
-    return local ? JSON.parse(local) : (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.courses : []);
+    if (local !== null) {
+      try {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed)) {
+          if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.courses = parsed;
+          return parsed;
+        }
+      } catch (e) {}
+    }
+    return (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
   },
 
   async saveCourse(courseData) {

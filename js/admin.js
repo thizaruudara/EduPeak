@@ -146,11 +146,11 @@ const ADMIN_CONTROLLER = {
     if (tabId === "supabase") this.renderSupabaseTab();
   },
 
-  refreshAll() {
-    this.renderOverview();
+  async refreshAll() {
+    await this.renderOverview();
     this.renderStudents();
-    this.renderCourses();
-    this.renderTeachers();
+    await this.renderCourses();
+    await this.renderTeachers();
     this.renderInstitutes();
     this.renderPapers();
   },
@@ -197,8 +197,8 @@ const ADMIN_CONTROLLER = {
   async renderOverview() {
     const users = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getUsers() : [];
     const students = users.filter(u => u.role === "student");
-    const teachers = window.EDUPEAK_DATA ? window.EDUPEAK_DATA.teachers : [];
-    const courses = (typeof window.getLMSCourses === "function") ? window.getLMSCourses() : (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.courses : []);
+    const teachers = window.SUPABASE_HELPER ? await window.SUPABASE_HELPER.getTeachers() : (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.teachers : []);
+    const courses = window.SUPABASE_HELPER ? await window.SUPABASE_HELPER.getCourses() : (typeof window.getLMSCourses === "function" ? window.getLMSCourses() : (window.EDUPEAK_DATA ? window.EDUPEAK_DATA.courses : []));
 
     const totalStudentsEl = document.getElementById("adminStatTotalStudents");
     const activeCoursesEl = document.getElementById("adminStatActiveCourses");
@@ -215,9 +215,9 @@ const ADMIN_CONTROLLER = {
     const pendingOnly = orders.filter(o => o.status === "Pending Approval");
     const pendingCount = pendingOnly.length;
 
-    if (totalStudentsEl) totalStudentsEl.textContent = students.length ? `${students.length.toLocaleString()}` : "1,240+";
-    if (activeCoursesEl) activeCoursesEl.textContent = courses.length || "12";
-    if (totalTeachersEl) totalTeachersEl.textContent = teachers.length || "5";
+    if (totalStudentsEl) totalStudentsEl.textContent = students.length.toLocaleString();
+    if (activeCoursesEl) activeCoursesEl.textContent = courses.length.toString();
+    if (totalTeachersEl) totalTeachersEl.textContent = teachers.length.toString();
     if (liveClassesEl) liveClassesEl.textContent = "Protected";
     if (pendingOrdersEl) pendingOrdersEl.textContent = `${pendingCount} Pending`;
 
@@ -751,18 +751,21 @@ const ADMIN_CONTROLLER = {
     // Get current enrolled courses
     const enrolled = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getStudentEnrolledCourses(s.id) : (s.enrolledCourses || []);
 
-    // Get all courses in system instantly from getLMSCourses or local DB
-    let allCourses = (typeof window.getLMSCourses === "function") ? window.getLMSCourses() : [];
-    if (!allCourses || allCourses.length === 0) {
+    // Get all courses in system instantly from SUPABASE_HELPER, getLMSCourses or local DB
+    let allCourses = [];
+    if (window.SUPABASE_HELPER) {
+      allCourses = await window.SUPABASE_HELPER.getCourses();
+    } else if (typeof window.getLMSCourses === "function") {
+      allCourses = window.getLMSCourses();
+    } else {
       const stored = localStorage.getItem("edupeak_courses_db");
-      if (stored) {
+      if (stored !== null) {
         try {
           allCourses = JSON.parse(stored);
         } catch (e) {}
+      } else {
+        allCourses = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
       }
-    }
-    if (!allCourses || allCourses.length === 0) {
-      allCourses = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.courses) ? window.EDUPEAK_DATA.courses : [];
     }
 
     if (listContainer) {
@@ -1093,8 +1096,8 @@ const ADMIN_CONTROLLER = {
       window.showToast("📚 Course saved successfully!", "success");
     }
 
-    this.renderCourses();
-    this.renderOverview();
+    await this.renderCourses();
+    await this.renderOverview();
   },
 
   async deleteCourse(id) {
@@ -1103,8 +1106,8 @@ const ADMIN_CONTROLLER = {
       if (window.showToast) {
         window.showToast("Course deleted successfully.", "info");
       }
-      this.renderCourses();
-      this.renderOverview();
+      await this.renderCourses();
+      await this.renderOverview();
     }
   },
 
