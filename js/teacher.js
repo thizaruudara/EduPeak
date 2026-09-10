@@ -1959,41 +1959,7 @@ const TEACHER_CONTROLLER = {
       }
     }
     if (schedules !== null) return schedules;
-
-    const defaultSchedules = [
-      {
-        id: "sched-phy-01",
-        topic: "2027 A/L Physics - Mechanics Special Live Broadcast",
-        courseId: "crs-phy-2027-theory",
-        courseTitle: "2027 A/L Physics - Complete Theory & Mechanics",
-        scheduleTime: "Every Saturday 7:30 AM - 1:30 PM",
-        provider: "youtube",
-        rawUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-        embedUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-        status: "scheduled",
-        updatedAt: new Date().toISOString()
-      },
-      {
-        id: "sched-phy-02",
-        topic: "2028 A/L Physics - Units & Dimensional Analysis Live Masterclass",
-        courseId: "crs-phy-2028-theory",
-        courseTitle: "2028 A/L Physics - Complete Theory Batch",
-        scheduleTime: "Every Sunday 8:00 AM - 12:30 PM",
-        provider: "youtube",
-        rawUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-        embedUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-        status: "scheduled",
-        updatedAt: new Date().toISOString()
-      }
-    ];
-
-    try {
-      localStorage.setItem(this.storageKeys.schedulesDb, JSON.stringify(defaultSchedules));
-      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
-        window.SUPABASE_HELPER.setSharedData(this.storageKeys.schedulesDb || "edupeak_schedules_db", defaultSchedules);
-      }
-    } catch (e) {}
-    return defaultSchedules;
+    return [];
   },
 
   saveScheduledBroadcasts(list) {

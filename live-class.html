@@ -20,6 +20,7 @@
   <!-- Base & Theme Styles -->
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/lms.css">
+  <link rel="stylesheet" href="css/custom-player.css">
 
   <style>
     :root {
@@ -1020,8 +1021,102 @@
             🔒 EduPeak DRM • Kasun Jayasundara (NIC: 200512345678)
           </div>
 
-          <!-- Video Stream Frame -->
-          <iframe id="theaterVideoIframe" class="video-player-frame" src="about:blank" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+          <!-- Custom EduPeak Live DRM Video Player (Completely Masked YouTube / Zero YouTube Logos / No Seek Bar) -->
+          <div class="edupeak-player-wrapper live-player-wrapper" id="edupeakLivePlayerWrapper" style="display: none; position: absolute; inset: 0; width: 100%; height: 100%; aspect-ratio: unset; z-index: 2;">
+            <div class="edupeak-player-viewport" id="edupeakLivePlayerViewport">
+              
+              <!-- Cropper (Crops & Scales YouTube by 1.36 to eliminate YouTube logos, watermarks, titles, avatars, and channel branding) -->
+              <div class="edupeak-yt-frame-cropper">
+                <div id="edupeakLiveYTPlayerMount"></div>
+              </div>
+
+              <!-- Transparent Click Shield (Intercepts clicks: clicking joins/unmutes stream, DOES NOT pause live broadcast) -->
+              <div class="edupeak-player-click-shield" id="livePlayerClickShield" onclick="EDUPEAK_LIVE_PLAYER.onShieldClick()"></div>
+
+              <!-- Floating Anti-Piracy Watermark (Student Verified NIC Only) -->
+              <div class="edupeak-drm-watermark" id="livePlayerDrmWatermark" style="display: none;">
+                <span id="livePlayerWatermarkText">200512345678</span>
+              </div>
+
+              <!-- Top Live Status Header -->
+              <div class="edupeak-player-top-bar" id="livePlayerTopBar">
+                <div class="edupeak-player-brand">
+                  <span class="drm-badge" style="background: rgba(239, 68, 68, 0.25); border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;"><i class="fa-solid fa-tower-broadcast"></i> EduPeak Live Studio</span>
+                  <span class="res-badge"><i class="fa-solid fa-bolt"></i> 1080p Ultra HD</span>
+                </div>
+                <div class="edupeak-player-status-tag" style="background: rgba(239, 68, 68, 0.25); border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;">
+                  <span class="live-pulse-dot" style="background: #ef4444; box-shadow: 0 0 8px #ef4444;"></span> Protected Live Session
+                </div>
+              </div>
+
+              <!-- Big Center Join / Play Button (Click to Join Stream) -->
+              <div class="edupeak-big-play-btn" id="livePlayerBigPlayBtn" onclick="EDUPEAK_LIVE_PLAYER.joinStream()">
+                <div class="big-play-icon-circle" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);">
+                  <i class="fa-solid fa-play"></i>
+                </div>
+              </div>
+
+              <!-- Custom Live Controls Bar (NO SEEK BAR / NO PROGRESS / NO FORWARD OR REWIND) -->
+              <div class="edupeak-player-controls-overlay" id="livePlayerControlsOverlay">
+                <div class="edupeak-controls-row">
+                  <div class="controls-left">
+                    <div style="background: #ef4444; color: #fff; font-size: 0.72rem; font-weight: 800; padding: 0.25rem 0.65rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.35rem; letter-spacing: 0.02em;">
+                      <span class="live-pulse-dot" style="width: 6px; height: 6px; background: #fff; box-shadow: none;"></span> LIVE BROADCAST
+                    </div>
+                    <div class="volume-control-box">
+                      <button class="player-btn" id="livePlayerVolumeBtn" onclick="EDUPEAK_LIVE_PLAYER.toggleMute()" title="Mute / Unmute">
+                        <i class="fa-solid fa-volume-high" id="livePlayerVolumeIcon"></i>
+                      </button>
+                      <input type="range" class="volume-slider" id="livePlayerVolumeSlider" min="0" max="100" value="100" oninput="EDUPEAK_LIVE_PLAYER.setVolume(this.value)">
+                    </div>
+                  </div>
+                  <div class="controls-right">
+                    <div class="quality-selector-wrapper">
+                      <button class="player-btn quality-btn-trigger" id="livePlayerQualityTriggerBtn" onclick="EDUPEAK_LIVE_PLAYER.toggleQualityMenu()" title="Stream Quality">
+                        <i class="fa-solid fa-gear" style="font-size: 0.85rem; margin-right: 0.25rem;"></i>
+                        <span id="livePlayerQualityLabel">Auto</span>
+                      </button>
+                      <div class="quality-dropdown-menu" id="livePlayerQualityMenu">
+                        <button onclick="EDUPEAK_LIVE_PLAYER.setPlaybackQuality('auto', this)" class="active"><span>Auto (1080p Max)</span></button>
+                        <button onclick="EDUPEAK_LIVE_PLAYER.setPlaybackQuality('hd1080', this)"><span>1080p HD</span></button>
+                        <button onclick="EDUPEAK_LIVE_PLAYER.setPlaybackQuality('hd720', this)"><span>720p HD</span></button>
+                        <button onclick="EDUPEAK_LIVE_PLAYER.setPlaybackQuality('large', this)"><span>480p</span></button>
+                        <button onclick="EDUPEAK_LIVE_PLAYER.setPlaybackQuality('medium', this)"><span>360p</span></button>
+                      </div>
+                    </div>
+                    <button class="player-btn" onclick="EDUPEAK_LIVE_PLAYER.toggleFullscreen()" title="Fullscreen">
+                      <i class="fa-solid fa-expand"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Fallback Direct IFrame for Zoom/Vimeo streams -->
+          <iframe id="theaterVideoIframe" class="video-player-frame" src="about:blank" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="display: none;"></iframe>
+
+          <!-- No Streams Offline Standby Screen (When 0 broadcasts are scheduled/active) -->
+          <div class="live-standby-screen" id="liveNoStreamsScreen" style="display: none; z-index: 10;">
+            <div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; margin-bottom: 1.25rem;">
+              <i class="fa-solid fa-tower-broadcast" style="font-size: 2rem; color: #64748b;"></i>
+            </div>
+            <span class="stream-status-pill ended" style="font-size: 0.8rem; padding: 0.35rem 0.85rem; background: rgba(255,255,255,0.08); color: #94a3b8;">
+              <i class="fa-solid fa-circle" style="font-size: 0.45rem; color: #64748b;"></i> OFFLINE STANDBY
+            </span>
+            <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.6rem; font-weight: 800; color: #fff; margin: 1rem 0 0.4rem;">
+              No Live Broadcast Currently On Air
+            </h2>
+            <p style="color: #94a3b8; font-size: 0.92rem; max-width: 520px; margin: 0 0 1.5rem; line-height: 1.5;">
+              There are no active masterclasses or scheduled live streams at this moment. The interactive player and live chat will connect automatically when a faculty lecturer goes live.
+            </p>
+            <div id="noStreamsActionBox">
+              <button class="btn-live-schedule" onclick="LIVE_APP.openScheduleModal()" style="display: none;" id="btnScheduleFromOffline">
+                <i class="fa-solid fa-calendar-plus"></i> Schedule New Live Broadcast
+              </button>
+            </div>
+          </div>
 
           <!-- Standby / Countdown Overlay (When status === 'scheduled') -->
           <div class="live-standby-screen" id="liveStandbyScreen" style="display: none;">
@@ -1323,6 +1418,7 @@
   <script src="js/translations.js"></script>
   <script src="js/supabase.js"></script>
   <script src="js/auth.js"></script>
+  <script src="js/custom-player.js"></script>
 
   <!-- Live Classroom Application Engine -->
   <script>
@@ -1439,6 +1535,11 @@
 
         this.renderStreamsList(schedules);
 
+        if (schedules.length === 0) {
+          this.loadEmptyState();
+          return;
+        }
+
         // Pick preferred session, or first live stream, or first scheduled stream
         let target = null;
         if (preferredId) {
@@ -1449,7 +1550,85 @@
         }
 
         if (target) {
-          this.loadSession(target.id);
+          await this.loadSession(target.id);
+        } else {
+          this.loadEmptyState();
+        }
+      },
+
+      loadEmptyState() {
+        this.activeSessionId = null;
+        this.activeSession = null;
+
+        // Hide players and show offline standby
+        const customPlayer = document.getElementById("edupeakLivePlayerWrapper");
+        const iframe = document.getElementById("theaterVideoIframe");
+        const noStreamsScreen = document.getElementById("liveNoStreamsScreen");
+        const standbyScreen = document.getElementById("liveStandbyScreen");
+        const endedScreen = document.getElementById("liveEndedScreen");
+        const zoomBtn = document.getElementById("btnLaunchZoomRoom");
+        const deck = document.getElementById("liveControlDeck");
+        const readOnlyNotice = document.getElementById("readOnlyStreamNotice");
+        const offlineScheduleBtn = document.getElementById("btnScheduleFromOffline");
+
+        if (customPlayer) customPlayer.style.display = "none";
+        if (iframe) {
+          iframe.style.display = "none";
+          iframe.src = "about:blank";
+        }
+        if (standbyScreen) standbyScreen.style.display = "none";
+        if (endedScreen) endedScreen.style.display = "none";
+        if (zoomBtn) zoomBtn.style.display = "none";
+        if (deck) deck.style.display = "none";
+        if (readOnlyNotice) readOnlyNotice.style.display = "none";
+        if (noStreamsScreen) noStreamsScreen.style.display = "flex";
+
+        if (offlineScheduleBtn) {
+          const canSchedule = this.currentUser && (this.currentUser.role === "admin" || this.currentUser.role === "teacher");
+          offlineScheduleBtn.style.display = canSchedule ? "inline-flex" : "none";
+        }
+
+        // Reset info headers to neutral standby text
+        const topicEl = document.getElementById("infoTopicTitle");
+        const topicSiEl = document.getElementById("infoTopicTitleSi");
+        const batchBadge = document.getElementById("infoBatchBadge");
+        const subjectBadge = document.getElementById("infoSubjectBadge");
+        const dateEl = document.getElementById("infoScheduleDate");
+        const timeEl = document.getElementById("infoScheduleTime");
+        const viewersEl = document.getElementById("infoViewersCount");
+        const descEl = document.getElementById("infoDescriptionText");
+        const lecturerEl = document.getElementById("infoLecturerName");
+        const avatarEl = document.getElementById("infoLecturerAvatar");
+        const statusPill = document.getElementById("infoStatusPill");
+
+        if (topicEl) topicEl.textContent = "EduPeak Live Studio Hub";
+        if (topicSiEl) topicSiEl.textContent = "සජීවී විකාශන මැදිරිය";
+        if (batchBadge) batchBadge.textContent = "All Batches";
+        if (subjectBadge) subjectBadge.innerHTML = `<i class="fa-solid fa-tower-broadcast" style="color: #227aff;"></i> Live Studio`;
+        if (dateEl) dateEl.textContent = "No Scheduled Classes";
+        if (timeEl) timeEl.textContent = "Standby";
+        if (viewersEl) viewersEl.textContent = "0 Viewers Online";
+        if (descEl) descEl.textContent = "No broadcast is currently live or scheduled. Teachers can schedule new masterclasses or launch a live stream using the controls above.";
+        if (lecturerEl) lecturerEl.innerHTML = `EduPeak Academic Faculty`;
+        if (avatarEl) avatarEl.textContent = "E";
+        if (statusPill) {
+          statusPill.className = "stream-status-pill ended";
+          statusPill.innerHTML = `<i class="fa-solid fa-circle" style="font-size: 0.45rem;"></i> OFFLINE`;
+        }
+
+        const pinBanner = document.getElementById("chatPinnedBanner");
+        if (pinBanner) pinBanner.style.display = "none";
+
+        // Render empty chat message
+        const chatContainer = document.getElementById("chatMessagesContainer");
+        if (chatContainer) {
+          chatContainer.innerHTML = `
+            <div style="text-align: center; padding: 2.5rem 1rem; color: var(--live-text-muted);">
+              <i class="fa-solid fa-comments" style="font-size: 1.8rem; margin-bottom: 0.6rem; color: #475569;"></i>
+              <p style="margin: 0; font-size: 0.85rem; font-weight: 600;">Live chat standby</p>
+              <span style="font-size: 0.75rem; color: #64748b;">The classroom discussion will open when a stream goes live.</span>
+            </div>
+          `;
         }
       },
 
@@ -1543,38 +1722,76 @@
         }
 
         const session = schedules.find(s => s.id === sessionId);
-        if (!session) return;
+        if (!session) {
+          if (schedules.length === 0) {
+            this.loadEmptyState();
+          }
+          return;
+        }
         this.activeSession = session;
 
         // Highlight active card in grid
         this.renderStreamsList(schedules);
 
         // 1. Update Video Player & Overlays
+        const customPlayer = document.getElementById("edupeakLivePlayerWrapper");
         const iframe = document.getElementById("theaterVideoIframe");
+        const noStreamsScreen = document.getElementById("liveNoStreamsScreen");
         const standbyScreen = document.getElementById("liveStandbyScreen");
         const endedScreen = document.getElementById("liveEndedScreen");
         const zoomBtn = document.getElementById("btnLaunchZoomRoom");
 
+        if (noStreamsScreen) noStreamsScreen.style.display = "none";
+
         if (session.status === "live") {
-          if (iframe) {
-            let streamSrc = session.embedUrl || session.rawUrl;
-            if (streamSrc && !streamSrc.includes("autoplay=1") && streamSrc.includes("youtube.com/embed")) {
-              streamSrc += (streamSrc.includes("?") ? "&" : "?") + "autoplay=1&enablejsapi=1";
+          const streamSrc = session.rawUrl || session.embedUrl;
+          const isYouTube = !session.provider || session.provider === "youtube" || (streamSrc && (streamSrc.includes("youtube.com") || streamSrc.includes("youtu.be") || (streamSrc.length === 11 && !streamSrc.includes("/"))));
+
+          if (isYouTube && window.EDUPEAK_LIVE_PLAYER) {
+            // Load in custom player with cropped YouTube & disabled timeline scrubber
+            if (customPlayer) customPlayer.style.display = "block";
+            if (iframe) {
+              iframe.style.display = "none";
+              iframe.src = "about:blank";
             }
-            if (iframe.src !== streamSrc) iframe.src = streamSrc || "about:blank";
+            window.EDUPEAK_LIVE_PLAYER.loadLiveStream(streamSrc);
+          } else {
+            // Non-YouTube stream (Zoom, Vimeo direct embed)
+            if (customPlayer) customPlayer.style.display = "none";
+            if (iframe) {
+              iframe.style.display = "block";
+              iframe.src = streamSrc || "about:blank";
+            }
           }
+
           if (standbyScreen) standbyScreen.style.display = "none";
           if (endedScreen) endedScreen.style.display = "none";
         } else if (session.status === "scheduled") {
-          if (iframe) iframe.src = "about:blank";
+          if (customPlayer) customPlayer.style.display = "none";
+          if (iframe) {
+            iframe.style.display = "none";
+            iframe.src = "about:blank";
+          }
           if (standbyScreen) standbyScreen.style.display = "flex";
           if (endedScreen) endedScreen.style.display = "none";
           this.initCountdown(session);
         } else {
           // ended
-          if (iframe) iframe.src = session.recordingUrl || "about:blank";
+          if (customPlayer) customPlayer.style.display = "none";
+          if (session.recordingUrl) {
+            if (iframe) {
+              iframe.style.display = "block";
+              iframe.src = session.recordingUrl;
+            }
+            if (endedScreen) endedScreen.style.display = "none";
+          } else {
+            if (iframe) {
+              iframe.style.display = "none";
+              iframe.src = "about:blank";
+            }
+            if (endedScreen) endedScreen.style.display = "flex";
+          }
           if (standbyScreen) standbyScreen.style.display = "none";
-          if (endedScreen) endedScreen.style.display = session.recordingUrl ? "none" : "flex";
         }
 
         // Zoom Launch Button
@@ -1752,6 +1969,17 @@
         if (!sessionId) return;
         if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
           await window.SUPABASE_HELPER.updateLiveSessionStatus(sessionId, "live", { viewersCount: 342 });
+        } else {
+          try {
+            let scheds = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
+            const s = scheds.find(item => item.id === sessionId);
+            if (s) {
+              s.status = "live";
+              s.viewersCount = 342;
+              s.updatedAt = new Date().toISOString();
+              localStorage.setItem("edupeak_schedules_db", JSON.stringify(scheds));
+            }
+          } catch (e) {}
         }
         if (window.showToast) {
           window.showToast("🔴 Live Stream is NOW ACTIVE & Broadcasting to students!", "success");
@@ -1764,6 +1992,16 @@
         if (confirm("Are you sure you want to conclude and end this live broadcast?")) {
           if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
             await window.SUPABASE_HELPER.updateLiveSessionStatus(sessionId, "ended");
+          } else {
+            try {
+              let scheds = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
+              const s = scheds.find(item => item.id === sessionId);
+              if (s) {
+                s.status = "ended";
+                s.updatedAt = new Date().toISOString();
+                localStorage.setItem("edupeak_schedules_db", JSON.stringify(scheds));
+              }
+            } catch (e) {}
           }
           if (window.showToast) {
             window.showToast("⏹️ Live broadcast concluded and saved to archives.", "info");

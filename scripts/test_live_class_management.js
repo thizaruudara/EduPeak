@@ -83,6 +83,13 @@ async function runLiveClassTests() {
 
   const context = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   const page = await context.newPage();
+  page.on('console', msg => console.log('  [BROWSER LOG]:', msg.type(), msg.text()));
+  page.on('pageerror', err => console.log('  [BROWSER ERROR]:', err.message));
+  page.on('response', resp => {
+    if (resp.status() >= 400) {
+      console.log(`  [HTTP ${resp.status()}]:`, resp.url());
+    }
+  });
   page.on('dialog', async dialog => {
     await dialog.accept();
   });
@@ -92,6 +99,49 @@ async function runLiveClassTests() {
     // TEST 1: Page Load & Initial Multi-Live State
     // ---------------------------------------------------------
     console.log('\n--- 1. Testing Live Class Hub Initial Load & Multi-Stream Rendering ---');
+    // Seed test schedules for multi-stream verification in the test browser context
+    await page.addInitScript(() => {
+      if (window.top !== window) return;
+      if (!localStorage.getItem("edupeak_schedules_db")) {
+        const mockSchedules = [
+          {
+            id: "sched-test-1",
+            topic: "2027 A/L Physics - Mechanics & Circular Motion Masterclass",
+            topic_si: "යාන්ත්‍ර විද්‍යාව සහ වෘත්ත චලිතය",
+            subject: "Physics",
+            examYear: "2027 A/L",
+            teacherId: "tch-amalsha",
+            teacherName: "Amalsha Wanniarachchi",
+            status: "live",
+            scheduleDate: "2026-09-10",
+            scheduleStartTime: "08:30",
+            scheduleEndTime: "12:30",
+            rawUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            embedUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+            viewersCount: 342,
+            pinnedNotice: "Welcome to Live Masterclass! Keep your Physics notes ready."
+          },
+          {
+            id: "sched-test-2",
+            topic: "2026 A/L Physics - Past Paper Speed Analysis",
+            topic_si: "පසුගිය විභාග ප්‍රශ්න විවරණය",
+            subject: "Physics",
+            examYear: "2026 A/L",
+            teacherId: "TCH-PHYSICS-2",
+            teacherName: "Prof. K. M. Liyanage",
+            status: "scheduled",
+            scheduleDate: "2026-09-11",
+            scheduleStartTime: "09:00",
+            scheduleEndTime: "12:00",
+            rawUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            embedUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+            viewersCount: 0
+          }
+        ];
+        localStorage.setItem("edupeak_schedules_db", JSON.stringify(mockSchedules));
+      }
+    });
+
     await page.goto(`http://127.0.0.1:${port}/live-class.html`, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(1000);
 

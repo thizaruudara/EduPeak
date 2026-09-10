@@ -482,25 +482,25 @@ const SUPABASE_HELPER = {
   // 2. TEACHERS
   // Cross-subdomain shared storage (*.edupeak.lk) helper
   getSharedData(key) {
-    // 1. Check shared root domain cookie (shares between admin.edupeak.lk, edupeak.lk, teacher.edupeak.lk)
+    // 1. Check localStorage first (reliable, 5MB+ capacity, avoids 4KB cookie limit truncation)
+    try {
+      const local = localStorage.getItem(key);
+      if (local !== null) {
+        const parsed = JSON.parse(local);
+        if (parsed !== null) {
+          return parsed;
+        }
+      }
+    } catch (e) {}
+
+    // 2. Check shared root domain cookie (fallback for cross-subdomain initial sync)
     try {
       const match = document.cookie.match(new RegExp('(?:^|;\\s*)' + key + '=([^;]*)'));
       if (match && match[1]) {
         const decoded = decodeURIComponent(match[1]);
         const parsed = JSON.parse(decoded);
         if (parsed !== null) {
-          localStorage.setItem(key, decoded);
-          return parsed;
-        }
-      }
-    } catch (e) {}
-
-    // 2. Check localStorage
-    try {
-      const local = localStorage.getItem(key);
-      if (local !== null) {
-        const parsed = JSON.parse(local);
-        if (parsed !== null) {
+          try { localStorage.setItem(key, decoded); } catch(e) {}
           return parsed;
         }
       }
@@ -1451,105 +1451,57 @@ const SUPABASE_HELPER = {
   },
 
   async getLiveSessions() {
+    let localSchedules = [];
+    const shared = this.getSharedData("edupeak_schedules_db");
+    if (shared !== null && Array.isArray(shared)) {
+      localSchedules = shared.map(s => this.normalizeLiveSession(s));
+    } else {
+      try {
+        const stored = localStorage.getItem("edupeak_schedules_db");
+        if (stored !== null) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            localSchedules = parsed.map(s => this.normalizeLiveSession(s));
+          }
+        }
+      } catch (e) {}
+    }
+
     if (this.isConnected && this.client) {
       try {
         const { data, error } = await this.client.from("broadcast_schedules").select("*").order("updated_at", { ascending: false });
         if (!error && Array.isArray(data) && data.length > 0) {
-          const normalized = data.map(s => this.normalizeLiveSession(s));
-          this.setSharedData("edupeak_schedules_db", normalized);
-          try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(normalized)); } catch (e) {}
-          return normalized;
+          const remoteNormalized = data.map(s => this.normalizeLiveSession(s));
+          // Merge remote with local schedules so newly created or locally modified schedules are NEVER lost
+          const merged = [...remoteNormalized];
+          localSchedules.forEach(local => {
+            const idx = merged.findIndex(m => m.id === local.id);
+            if (idx === -1) {
+              merged.push(local);
+            } else {
+              const remoteTime = new Date(merged[idx].updatedAt || merged[idx].updated_at || 0).getTime();
+              const localTime = new Date(local.updatedAt || local.updated_at || 0).getTime();
+              if (localTime >= remoteTime) {
+                merged[idx] = { ...merged[idx], ...local };
+              }
+            }
+          });
+          this.setSharedData("edupeak_schedules_db", merged);
+          try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(merged)); } catch (e) {}
+          return merged;
         }
       } catch (e) {
         console.warn("Supabase fetch schedules error, using local:", e);
       }
     }
-    const shared = this.getSharedData("edupeak_schedules_db");
-    if (shared !== null && Array.isArray(shared) && shared.length > 0) {
-      const normalized = shared.map(s => this.normalizeLiveSession(s));
-      try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(normalized)); } catch (e) {}
-      return normalized;
+
+    if (localSchedules.length > 0) {
+      this.setSharedData("edupeak_schedules_db", localSchedules);
+      try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(localSchedules)); } catch (e) {}
+      return localSchedules;
     }
-    try {
-      const stored = localStorage.getItem("edupeak_schedules_db");
-      if (stored !== null) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const normalized = parsed.map(s => this.normalizeLiveSession(s));
-          this.setSharedData("edupeak_schedules_db", normalized);
-          return normalized;
-        }
-      }
-    } catch (e) {}
 
-    // Default canonical schedules for multi-live showcase
-    const defaultSchedules = [
-      {
-        id: "sched-phy-2027-theory",
-        topic: "2027 A/L Physics - Mechanics & Circular Motion Advanced Masterclass",
-        topic_si: "2027 උසස් පෙළ භෞතික විද්‍යාව - යාන්ත්‍ර විද්‍යාව සහ වෘත්ත චලිතය විශේෂ සජීවී පන්තිය",
-        courseId: "crs-phy-2027-theory",
-        courseTitle: "2027 A/L Physics - Complete Theory & Mechanics Masterclass",
-        subject: "Physics",
-        subject_si: "භෞතික විද්‍යාව",
-        examYear: "2027 A/L",
-        teacherId: "tch-amalsha",
-        teacherName: "Amalsha Wanniarachchi",
-        creatorId: "tch-amalsha",
-        creatorName: "Amalsha Wanniarachchi",
-        creatorEmail: "amalsha@edupeak.lk",
-        creatorRole: "teacher",
-        scheduleDate: new Date().toISOString().split("T")[0],
-        scheduleStartTime: "08:30",
-        scheduleEndTime: "12:30",
-        scheduleTime: "Today • 08:30 AM - 12:30 PM",
-        provider: "youtube",
-        rawUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        embedUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&enablejsapi=1&rel=0",
-        zoomUrl: "https://zoom.us/j/9876543210",
-        status: "live",
-        startedAt: new Date(Date.now() - 3600000).toISOString(),
-        viewersCount: 342,
-        watermarkEnabled: true,
-        chatEnabled: true,
-        description: "In-depth derivation of gravitational fields, circular motion kinematics, angular momentum, and live student doubt clearing with real-time MCQ practice.",
-        pinnedNotice: "📢 Welcome students! Today's handout PDF is available in the Resources tab below. Keep your Physics tute ready."
-      },
-      {
-        id: "sched-phy-2026-revision",
-        topic: "2026 A/L Physics - Past Paper Speed Analysis & Structured Essay Arena",
-        topic_si: "2026 උසස් පෙළ භෞතික විද්‍යාව - පසුගිය විභාග ප්‍රශ්න පත්‍ර වේගවත් විවරණය",
-        courseId: "crs-phy-2027-revision",
-        courseTitle: "2027 A/L Physics - Unit Revision & Practical Analysis",
-        subject: "Physics",
-        subject_si: "භෞතික විද්‍යාව",
-        examYear: "2026 A/L",
-        teacherId: "TCH-PHYSICS",
-        teacherName: "Prof. K. M. Liyanage",
-        creatorId: "TCH-PHYSICS",
-        creatorName: "Prof. K. M. Liyanage",
-        creatorEmail: "teacher@edupeak.lk",
-        creatorRole: "teacher",
-        scheduleDate: new Date().toISOString().split("T")[0],
-        scheduleStartTime: "14:00",
-        scheduleEndTime: "18:00",
-        scheduleTime: "Today • 02:00 PM - 06:00 PM",
-        provider: "youtube",
-        rawUrl: "https://www.youtube.com/watch?v=L_LUpnjgPso",
-        embedUrl: "https://www.youtube.com/embed/L_LUpnjgPso?enablejsapi=1&rel=0",
-        zoomUrl: "https://zoom.us/j/1234567890",
-        status: "scheduled",
-        viewersCount: 0,
-        watermarkEnabled: true,
-        chatEnabled: true,
-        description: "Special intensive revision covering Thermal Physics & Waves past exam structured questions with marking scheme criteria.",
-        pinnedNotice: "📌 The structured marking scheme model will be projected live on screen."
-      }
-    ].map(s => this.normalizeLiveSession(s));
-
-    this.setSharedData("edupeak_schedules_db", defaultSchedules);
-    try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(defaultSchedules)); } catch (e) {}
-    return defaultSchedules;
+    return [];
   },
 
   async saveSchedule(schedData) {
@@ -1596,8 +1548,6 @@ const SUPABASE_HELPER = {
           topic: normalized.topic,
           topic_si: normalized.topic_si,
           course_id: normalized.courseId,
-          courseId: normalized.courseId,
-          courseTitle: normalized.courseTitle,
           subject: normalized.subject,
           subject_si: normalized.subject_si,
           examYear: normalized.examYear,
@@ -1612,9 +1562,6 @@ const SUPABASE_HELPER = {
           embedUrl: normalized.embedUrl,
           zoomUrl: normalized.zoomUrl,
           status: normalized.status,
-          watermarkEnabled: Boolean(normalized.watermarkEnabled),
-          chatEnabled: Boolean(normalized.chatEnabled),
-          description: normalized.description,
           pinnedNotice: normalized.pinnedNotice,
           recordingUrl: normalized.recordingUrl,
           updated_at: new Date().toISOString()
@@ -1637,9 +1584,18 @@ const SUPABASE_HELPER = {
   },
 
   async updateLiveSessionStatus(sessionId, newStatus, extraData = {}) {
-    const schedules = await this.getLiveSessions();
-    const target = schedules.find(s => s.id === sessionId);
-    if (!target) return null;
+    let schedules = await this.getLiveSessions();
+    let target = schedules.find(s => s.id === sessionId);
+    if (!target) {
+      try {
+        const stored = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
+        target = stored.find(s => s.id === sessionId);
+      } catch (e) {}
+    }
+    if (!target) {
+      console.warn("updateLiveSessionStatus: target session not found for id:", sessionId);
+      return null;
+    }
 
     target.status = newStatus;
     target.updatedAt = new Date().toISOString();

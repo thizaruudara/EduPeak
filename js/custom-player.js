@@ -774,8 +774,24 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     const container = document.getElementById("edupeakLiveYTPlayerMount");
     if (!container) return;
 
-    if (!window.YT || !window.YT.Player) {
-      setTimeout(() => createLiveYTPlayer(videoId), 500);
+    if (!window.YT) {
+      if (!window._edupeakYtScriptLoading) {
+        window._edupeakYtScriptLoading = true;
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        if (firstScriptTag && firstScriptTag.parentNode) {
+          firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        } else {
+          document.head.appendChild(tag);
+        }
+      }
+      setTimeout(() => createLiveYTPlayer(videoId), 350);
+      return;
+    }
+
+    if (!window.YT.Player) {
+      setTimeout(() => createLiveYTPlayer(videoId), 350);
       return;
     }
 
@@ -816,7 +832,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
         host: 'https://www.youtube.com',
         videoId: videoId,
         playerVars: {
-          autoplay: 0,
+          autoplay: 1,
           controls: 0,
           disablekb: 1,
           enablejsapi: 1,
