@@ -1137,8 +1137,8 @@ button, input, select, textarea {
 
 .hero-stats-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
   margin-top: 1.75rem;
   padding-top: 1.75rem;
   border-top: 1px solid var(--border-color);
@@ -2940,7 +2940,8 @@ svg.google-icon-svg {
   }
 
   .hero-stats-row {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
   }
 
   .teachers-grid, .courses-grid, .institutes-grid {

@@ -15,10 +15,9 @@ const EDUPEAK_DATA = {
     email: "info@edupeak.lk",
     address: "No. 450, High Level Road, Nugegoda, Colombo, Sri Lanka",
     stats: {
-      activeStudents: "45,000+",
-      islandRanks: "120+ Island Top 10 Ranks",
-      lectureHours: "50,000+ Hrs",
-      passRate: "98.4%"
+      activeStudents: "1,000+",
+      lectureHours: "20,000+ Hrs",
+      passRate: "90%"
     }
   },
 
