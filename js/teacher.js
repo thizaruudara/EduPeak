@@ -33,17 +33,8 @@ const TEACHER_CONTROLLER = {
     if (user && (user.role === "teacher" || user.role === "admin")) {
       this.teacher = user;
     } else {
-      // Default fallback session for instructor view
-      this.teacher = {
-        id: "TCH-PHYSICS",
-        name: "Amalsha Wanniarachchi (MBBS UG)",
-        name_si: "අමල්ෂ වන්නිආරච්චි (MBBS UG)",
-        email: "amalsha@edupeak.lk",
-        role: "teacher",
-        subject: "G.C.E. Advanced Level Physics",
-        branch: "Victory Embilipitiya & EduPeak",
-        avatarLetter: "A"
-      };
+      window.location.replace("index.html");
+      return;
     }
 
     // Update UI profile elements

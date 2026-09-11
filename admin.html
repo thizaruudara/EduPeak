@@ -3,6 +3,17 @@
 <head>
   <script>
     (function() {
+      try {
+        var stored = localStorage.getItem("edupeak_auth_session");
+        var user = stored ? JSON.parse(stored) : null;
+        if (!user || user.role !== "admin") {
+          window.location.replace("index.html");
+          return;
+        }
+      } catch (e) {
+        window.location.replace("index.html");
+        return;
+      }
       var h = window.location.hostname.toLowerCase();
       if (h === 'edupeak.lk' || h === 'www.edupeak.lk') {
         window.location.replace('/index.html');
@@ -182,39 +193,7 @@
 </head>
 <body class="admin-standalone-body">
 
-  <!-- =========================================================================
-       ADMIN LOGIN GATE (Displayed when unauthenticated)
-       ========================================================================= -->
-  <div class="admin-login-gate" id="adminLoginGate">
-    <div class="admin-login-card">
-      <div class="admin-gate-logo">
-        <i class="fa-solid fa-shield-halved"></i>
-      </div>
-      <div class="admin-gate-badge">
-        <i class="fa-solid fa-lock"></i> Restricted Access • admin.edupeak.lk
-      </div>
-      <h1 class="admin-gate-title">Admin Console</h1>
-      <p class="admin-gate-subtitle">Sign in with authorized administrator credentials to manage students, curriculum, faculty, and databases.</p>
-
-      <form class="admin-gate-form" id="adminGateForm" onsubmit="handleAdminGateLogin(event)">
-        <div class="form-group">
-          <label class="form-label" for="adminGateEmail">Administrator Email</label>
-          <input type="email" class="admin-gate-input" id="adminGateEmail" placeholder="admin@edupeak.lk" value="admin@edupeak.lk" required autocomplete="username">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="adminGatePassword">Master Password</label>
-          <input type="password" class="admin-gate-input" id="adminGatePassword" placeholder="••••••••" value="admin123" required autocomplete="current-password">
-        </div>
-
-        <div id="adminGateError" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; font-size: 0.82rem; padding: 0.6rem; border-radius: 8px; margin-bottom: 1rem;"></div>
-
-        <button type="submit" class="admin-gate-btn" id="adminGateSubmitBtn">
-          <i class="fa-solid fa-right-to-bracket"></i> Sign In to Admin Console
-        </button>
-      </form>
-    </div>
-  </div>
+  <!-- Standalone Admin View (Only rendered for authorized administrators) -->
 
   <!-- =========================================================================
        ADMIN PANEL DASHBOARD (Full-Screen Standalone View)
@@ -1316,11 +1295,9 @@
     // Standalone Admin Authentication & State Management
     async function checkAdminAuth() {
       const user = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
-      const gate = document.getElementById("adminLoginGate");
       const wrapper = document.getElementById("adminModalWrapper");
 
       if (user && user.role === "admin") {
-        if (gate) gate.style.display = "none";
         if (wrapper) wrapper.style.display = "flex";
         if (window.ADMIN_CONTROLLER) {
           const tab = window.ADMIN_CONTROLLER.getTabFromHash() || "overview";
@@ -1328,8 +1305,7 @@
           await window.ADMIN_CONTROLLER.refreshAll();
         }
       } else {
-        if (gate) gate.style.display = "flex";
-        if (wrapper) wrapper.style.display = "none";
+        window.location.replace("index.html");
       }
     }
 

@@ -941,19 +941,10 @@ function openLMSPortal(tabName = "video-classroom", courseId = null) {
   
   if (!currentUser) {
     closeLMSPortal();
-    if (window.showToast) {
-      const msg = window.currentLang === "si"
-        ? "🔒 කරුණාකර ඔබගේ EduPeak LMS ගිණුමට ප්‍රවේශ වන්න."
-        : "🔒 Please sign in to access your EduPeak LMS account.";
-      window.showToast(msg, "info");
-    }
-    // Clean query param
-    if (window.location.search.includes("openLms") || window.location.search.includes("lms") || window.location.search.includes("course")) {
+    // Clean query param silently without displaying any restricted area message
+    if (window.location.search.includes("openLms") || window.location.search.includes("lms") || window.location.search.includes("course") || window.location.hash === "#lms") {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-    setTimeout(() => {
-      window.location.href = "login.html";
-    }, 400);
     return;
   }
 

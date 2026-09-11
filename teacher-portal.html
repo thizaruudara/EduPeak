@@ -3,6 +3,17 @@
 <head>
   <script>
     (function() {
+      try {
+        var stored = localStorage.getItem("edupeak_auth_session");
+        var user = stored ? JSON.parse(stored) : null;
+        if (!user || (user.role !== "teacher" && user.role !== "admin")) {
+          window.location.replace("index.html");
+          return;
+        }
+      } catch (e) {
+        window.location.replace("index.html");
+        return;
+      }
       var h = window.location.hostname.toLowerCase();
       if (h === 'edupeak.lk' || h === 'www.edupeak.lk') {
         window.location.replace('/index.html');
@@ -142,37 +153,7 @@
 </head>
 <body class="teacher-body">
 
-  <!-- Teacher Login Gate (Displayed when not logged in as teacher) -->
-  <div class="teacher-login-gate" id="teacherLoginGate" style="display: none;">
-    <div class="teacher-login-card">
-      <div class="teacher-gate-logo">
-        <i class="fa-solid fa-chalkboard-user"></i>
-      </div>
-      <div class="teacher-gate-badge">
-        <i class="fa-solid fa-lock"></i> Faculty Studio • teacher.edupeak.lk
-      </div>
-      <h1 class="teacher-gate-title">Teacher & Faculty Studio</h1>
-      <p class="teacher-gate-subtitle">Sign in with authorized faculty credentials to manage physics courses, video masterclasses, speed quizzes, and live streams.</p>
-
-      <form class="teacher-gate-form" id="teacherGateForm" onsubmit="handleTeacherGateLogin(event)">
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label class="form-label" for="teacherGateEmail" style="color: #cbd5e1; font-size: 0.85rem; font-weight: 600;">Faculty Email Address</label>
-          <input type="email" class="teacher-gate-input" id="teacherGateEmail" placeholder="amalsha@edupeak.lk" value="amalsha@edupeak.lk" required autocomplete="username">
-        </div>
-
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label class="form-label" for="teacherGatePassword" style="color: #cbd5e1; font-size: 0.85rem; font-weight: 600;">Faculty Security Password</label>
-          <input type="password" class="teacher-gate-input" id="teacherGatePassword" placeholder="••••••••" value="teacher123" required autocomplete="current-password">
-        </div>
-
-        <div id="teacherGateError" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; font-size: 0.82rem; padding: 0.6rem; border-radius: 8px; margin-bottom: 1rem;"></div>
-
-        <button type="submit" class="teacher-gate-btn" id="teacherGateSubmitBtn">
-          <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In to Faculty Studio
-        </button>
-      </form>
-    </div>
-  </div>
+  <!-- Teacher & Faculty Studio (Only rendered for authorized teachers/admins) -->
 
   <!-- Teacher Top Navigation Header -->
   <header class="teacher-header">
@@ -1378,15 +1359,13 @@
   <script>
     function checkTeacherAuth() {
       const user = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
-      const gate = document.getElementById("teacherLoginGate");
       if (user && (user.role === "teacher" || user.role === "admin")) {
-        if (gate) gate.style.display = "none";
         if (window.TEACHER_CONTROLLER) {
           window.TEACHER_CONTROLLER.teacher = user;
           window.TEACHER_CONTROLLER.init();
         }
       } else {
-        if (gate) gate.style.display = "flex";
+        window.location.replace("index.html");
       }
     }
 

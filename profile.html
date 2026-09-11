@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    (function() {
+      try {
+        var stored = localStorage.getItem("edupeak_auth_session");
+        var user = stored ? JSON.parse(stored) : null;
+        if (!user) {
+          window.location.replace("index.html");
+          return;
+        }
+      } catch (e) {
+        window.location.replace("index.html");
+        return;
+      }
+    })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Student Profile Details | EduPeak LMS</title>
@@ -526,18 +541,8 @@
       }
 
       if (!activeUser) {
-        activeUser = {
-          id: "EP-2027-001",
-          name: "Kasun Jayasundara",
-          nic: "200512345678",
-          email: "student@edupeak.lk",
-          phone: "077 123 4567",
-          examYear: "2027 A/L",
-          stream: "Physical Science",
-          school: "President's College Embilipitiya",
-          district: "Ratnapura",
-          address: "Victory College, Embilipitiya Pallegama, Sri Lanka"
-        };
+        window.location.replace("index.html");
+        return;
       }
 
       // Populate Form with Student Information

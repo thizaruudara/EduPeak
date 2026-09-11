@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    (function() {
+      try {
+        var stored = localStorage.getItem("edupeak_auth_session");
+        var user = stored ? JSON.parse(stored) : null;
+        if (!user) {
+          window.location.replace("index.html");
+          return;
+        }
+      } catch (e) {
+        window.location.replace("index.html");
+        return;
+      }
+    })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Student Learning Dashboard | EduPeak LMS</title>
@@ -989,17 +1004,8 @@
       }
 
       if (!currentUser) {
-        // Default sample student if not logged in
-        currentUser = {
-          id: "EP-2027-001",
-          name: "Kasun Jayasundara",
-          role: "student",
-          examYear: "2027 A/L",
-          stream: "Physical Science",
-          branch: "Victory Embilipitiya",
-          email: "kasun.student@edupeak.lk",
-          address: "Victory Embilipitiya, Ratnapura"
-        };
+        window.location.replace("index.html");
+        return;
       }
 
       // 2. Populate User Profile Info

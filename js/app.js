@@ -28,20 +28,27 @@ document.addEventListener("DOMContentLoaded", () => {
   const openTab = urlParams.get("openLms") || urlParams.get("lms");
   const targetCourse = urlParams.get("course");
   const wasAdminOpen = sessionStorage.getItem("edupeak_admin_open") === "true";
-  if (openTab) {
-    setTimeout(() => {
-      if (window.openLMSPortal) window.openLMSPortal(openTab, targetCourse);
-    }, 400);
-  } else if (window.location.hash === "#lms") {
-    setTimeout(() => {
-      if (window.openLMSPortal) window.openLMSPortal("video-classroom");
-    }, 400);
+  const currentUser = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
+
+  if (openTab || window.location.hash === "#lms") {
+    if (!currentUser) {
+      history.replaceState(null, document.title, window.location.pathname);
+    } else {
+      setTimeout(() => {
+        if (window.openLMSPortal) window.openLMSPortal(openTab || "video-classroom", targetCourse);
+      }, 400);
+    }
   } else if (window.location.hash.startsWith("#admin") || urlParams.get("admin") !== null || wasAdminOpen) {
-    setTimeout(() => {
-      if (window.ADMIN_CONTROLLER && window.ADMIN_CONTROLLER.checkAutoOpen) {
-        window.ADMIN_CONTROLLER.checkAutoOpen();
-      }
-    }, 50);
+    if (!currentUser || currentUser.role !== "admin") {
+      history.replaceState(null, document.title, window.location.pathname);
+      sessionStorage.removeItem("edupeak_admin_open");
+    } else {
+      setTimeout(() => {
+        if (window.ADMIN_CONTROLLER && window.ADMIN_CONTROLLER.checkAutoOpen) {
+          window.ADMIN_CONTROLLER.checkAutoOpen();
+        }
+      }, 50);
+    }
   }
 });
 

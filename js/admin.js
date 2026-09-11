@@ -50,6 +50,12 @@ const ADMIN_CONTROLLER = {
     const params = new URLSearchParams(window.location.search);
     const wasOpen = sessionStorage.getItem("edupeak_admin_open") === "true";
     if (hash.startsWith("#admin") || params.get("admin") !== null || params.get("openAdmin") !== null || wasOpen) {
+      const currentUser = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
+      if (!currentUser || currentUser.role !== "admin") {
+        history.replaceState(null, document.title, window.location.pathname);
+        sessionStorage.removeItem("edupeak_admin_open");
+        return;
+      }
       const tab = this.getTabFromHash() || localStorage.getItem("edupeak_admin_active_tab") || "overview";
       this.open(tab);
     }
@@ -59,20 +65,13 @@ const ADMIN_CONTROLLER = {
   open(preferredTab) {
     const currentUser = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
     if (!currentUser || currentUser.role !== "admin") {
-      const users = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getUsers() : [];
-      const adminAcc = users.find(u => u.role === "admin");
-      if (adminAcc && (!currentUser || currentUser.role !== "admin")) {
-        // Authenticate canonical admin when accessing #admin directly
-        window.AUTH_SYSTEM.createSession(adminAcc);
-      } else {
-        if (window.showToast) {
-          window.showToast("🔒 Admin access required. Please sign in as an Administrator.", "info");
-        }
-        setTimeout(() => {
-          window.location.href = "login.html?redirect=" + encodeURIComponent(window.location.hash || "#admin");
-        }, 400);
-        return;
+      history.replaceState(null, document.title, window.location.pathname);
+      sessionStorage.removeItem("edupeak_admin_open");
+      if (typeof this.close === "function") this.close();
+      if (window.location.pathname.toLowerCase().includes("admin.html")) {
+        window.location.replace("index.html");
       }
+      return;
     }
 
     const panel = document.getElementById("adminModalWrapper");
