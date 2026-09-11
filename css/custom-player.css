@@ -80,12 +80,12 @@
 
 .edupeak-startup-mask.top-mask {
   top: 0;
-  height: 64px;
-  background: linear-gradient(180deg, #090d16 0%, rgba(9, 13, 22, 0.94) 75%, transparent 100%);
+  height: 80px;
+  background: linear-gradient(180deg, #000000 0%, rgba(9, 13, 22, 0.97) 50%, transparent 100%);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1.25rem;
+  padding: 0 1.1rem;
   color: #ffffff;
 }
 
@@ -110,33 +110,39 @@
   font-weight: 600;
 }
 
-/* Live Broadcast Dynamic Controls Bar (Glassmorphic, auto-hiding with inactivity) */
+/* Live Broadcast Dynamic Controls Bar — tall enough to fully cover YouTube bottom UI */
 .live-player-wrapper .edupeak-player-controls-overlay {
   position: absolute !important;
   bottom: 0 !important;
   left: 0 !important;
   right: 0 !important;
-  height: 56px !important;
-  min-height: 56px !important;
-  max-height: 56px !important;
-  background: linear-gradient(0deg, rgba(8, 12, 22, 0.96) 0%, rgba(8, 12, 22, 0.72) 60%, transparent 100%) !important;
+  height: 108px !important;
+  min-height: 108px !important;
+  max-height: 108px !important;
+  /* Fully solid black at bottom (covers YouTube logo, More Videos, controls), fades up */
+  background: linear-gradient(0deg,
+    #000000 0%,
+    rgba(5, 8, 18, 0.98) 40%,
+    rgba(5, 8, 18, 0.85) 68%,
+    transparent 100%) !important;
   border-top: none !important;
   box-shadow: none !important;
-  padding: 0 1.25rem !important;
+  padding: 0 1.1rem !important;
+  padding-bottom: 10px !important;
   z-index: 25 !important;
   display: flex !important;
   flex-direction: column !important;
-  justify-content: center !important;
+  justify-content: flex-end !important;
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
   visibility: visible;
-  transition: opacity 0.35s ease, transform 0.35s ease, visibility 0.35s ease !important;
+  transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s ease !important;
 }
 
 .live-player-wrapper .edupeak-player-controls-overlay.fade-out {
   opacity: 0 !important;
-  transform: translateY(14px) !important;
+  transform: translateY(16px) !important;
   pointer-events: none !important;
   visibility: hidden !important;
 }
@@ -183,24 +189,67 @@
   background: transparent;
 }
 
-/* Top Protection Header - Masks YouTube native title bar without cropping */
+/* Top Protection Header — fully covers YouTube channel name, avatar, title, watch-later, share */
 .edupeak-player-top-bar {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 56px;
-  padding: 0.75rem 1.25rem;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.7) 60%, rgba(0, 0, 0, 0) 100%);
+  height: 80px;
+  padding: 0;
+  /* Solid black at very top (where YouTube title lives), fades to transparent below */
+  background: linear-gradient(180deg,
+    #000000 0%,
+    rgba(5, 8, 18, 0.97) 35%,
+    rgba(5, 8, 18, 0.80) 60%,
+    transparent 100%);
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  z-index: 15;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  z-index: 20;
   pointer-events: none;
   opacity: 1;
   transform: translateY(0);
   visibility: visible;
-  transition: opacity 0.35s ease, transform 0.35s ease, visibility 0.35s ease;
+  transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s ease;
+}
+
+/* Inner row inside top bar */
+.edupeak-player-top-bar .top-bar-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 1.1rem 0;
+  width: 100%;
+}
+
+/* Lesson title row below the badge row */
+.edupeak-player-top-bar .top-bar-lesson {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.2rem 1.1rem 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.92);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.edupeak-player-top-bar .top-bar-lesson .lesson-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60%;
+  color: #f8fafc;
+}
+
+.edupeak-player-top-bar .top-bar-lesson .teacher-name-text {
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 0.73rem;
 }
 
 .edupeak-player-top-bar.fade-out {

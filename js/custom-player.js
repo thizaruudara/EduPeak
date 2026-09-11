@@ -1421,15 +1421,42 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   }
 
   function updateLiveWatermark() {
+    // Update anti-piracy NIC watermark
     const textEl = document.getElementById("livePlayerWatermarkText");
-    if (!textEl) return;
-    let studentNic = "200512345678";
-    if (window.AUTH_SYSTEM && window.AUTH_SYSTEM.getCurrentUser) {
-      const user = window.AUTH_SYSTEM.getCurrentUser();
-      if (user && user.nic) studentNic = user.nic;
+    if (textEl) {
+      let studentNic = "200512345678";
+      if (window.AUTH_SYSTEM && window.AUTH_SYSTEM.getCurrentUser) {
+        const user = window.AUTH_SYSTEM.getCurrentUser();
+        if (user && user.nic) studentNic = user.nic;
+      }
+      textEl.textContent = studentNic;
     }
-    textEl.textContent = studentNic;
+
+    // Pull lesson title and teacher name from activeSessionData
+    const topic = (activeSessionData && (activeSessionData.topic || activeSessionData.title || activeSessionData.subject || "")) || "";
+    const teacher = (activeSessionData && (activeSessionData.teacherName || activeSessionData.teacher_name || activeSessionData.teacher || "")) || "";
+
+    // Update top bar lesson title
+    const topLesson = document.getElementById("liveTopLessonTitle");
+    if (topLesson && topic) topLesson.textContent = topic;
+
+    // Update top bar teacher name
+    const topTeacher = document.getElementById("liveTopTeacherName");
+    if (topTeacher && teacher) topTeacher.textContent = teacher;
+
+    // Update bottom bar lesson title
+    const btmLesson = document.getElementById("liveBottomLessonTitle");
+    if (btmLesson && topic) btmLesson.textContent = topic;
+
+    // Update bottom bar teacher name
+    const btmTeacher = document.getElementById("liveBottomTeacherName");
+    if (btmTeacher && teacher) btmTeacher.textContent = teacher;
+
+    // Also update the startup veil if present
+    const veilTopic = document.getElementById("veilTopicTitle");
+    if (veilTopic && topic) veilTopic.textContent = topic;
   }
+
 
   function startLiveWatermarkMovement() {
     const watermark = document.getElementById("livePlayerDrmWatermark");
