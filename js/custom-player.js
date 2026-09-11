@@ -1051,6 +1051,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   }
 
   function loadLiveStream(url, sessionData = null) {
+    setupLivePlayerEvents();
     isSessionEnded = false;
     if (sessionData) {
       activeSessionData = sessionData;
@@ -1158,12 +1159,20 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   function showLiveControls() {
     const controls = document.getElementById("livePlayerControlsOverlay");
     const topBar = document.getElementById("livePlayerTopBar");
+    const topMask = document.getElementById("livePlayerTopMask");
     const wrapper = document.getElementById("edupeakLivePlayerWrapper");
     if (controls) {
       controls.classList.remove("fade-out");
       controls.style.opacity = "";
     }
-    if (topBar) topBar.classList.remove("fade-out");
+    if (topBar) {
+      topBar.classList.remove("fade-out");
+      topBar.style.opacity = "";
+    }
+    if (topMask) {
+      topMask.classList.remove("mask-faded", "fade-out");
+      topMask.style.opacity = "";
+    }
     if (wrapper) wrapper.classList.remove("hide-cursor");
   }
 
@@ -1177,8 +1186,14 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       controls.classList.add("fade-out");
       controls.style.opacity = "";
     }
-    if (topBar) topBar.classList.add("fade-out");
-    if (topMask) topMask.classList.add("mask-faded");
+    if (topBar) {
+      topBar.classList.add("fade-out");
+      topBar.style.opacity = "";
+    }
+    if (topMask) {
+      topMask.classList.add("mask-faded", "fade-out");
+      topMask.style.opacity = "";
+    }
     if (wrapper) wrapper.classList.add("hide-cursor");
   }
 
@@ -1188,7 +1203,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     if (isLivePlaying) {
       liveControlsTimeout = setTimeout(() => {
         hideLiveControls();
-      }, 3000);
+      }, 2800);
     }
   }
 
@@ -1434,44 +1449,88 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     }, 9000);
   }
 
+  let _liveEventsAttached = false;
   function setupLivePlayerEvents() {
-    const liveWrapper = document.getElementById("edupeakLivePlayerWrapper");
-    if (liveWrapper) {
-      liveWrapper.addEventListener("mousemove", () => {
-        scheduleLiveControlsFade();
-      });
-      liveWrapper.addEventListener("mouseleave", () => {
-        if (isLivePlaying) hideLiveControls();
-      });
-      liveWrapper.addEventListener("touchstart", () => {
-        scheduleLiveControlsFade();
-      }, { passive: true });
-    }
+    const onLiveActivity = () => {
+      scheduleLiveControlsFade();
+    };
 
-    document.addEventListener("click", (e) => {
-      const liveQWrapper = document.querySelector("#edupeakLivePlayerWrapper .quality-selector-wrapper");
-      const liveQMenu = document.getElementById("livePlayerQualityMenu");
-      if (liveQMenu && liveQWrapper && !liveQWrapper.contains(e.target)) {
-        liveQMenu.classList.remove("active");
+    const liveWrapper = document.getElementById("edupeakLivePlayerWrapper");
+    const viewport = document.getElementById("edupeakLivePlayerViewport");
+    const theater = document.getElementById("theaterPlayerContainer");
+    const shield = document.getElementById("livePlayerClickShield");
+    const topBar = document.getElementById("livePlayerTopBar");
+    const controls = document.getElementById("livePlayerControlsOverlay");
+
+    [liveWrapper, viewport, theater, shield, topBar, controls].forEach(el => {
+      if (el && !el._edupeakEventsAttached) {
+        el._edupeakEventsAttached = true;
+        el.addEventListener("mousemove", onLiveActivity);
+        el.addEventListener("mouseenter", onLiveActivity);
+        el.addEventListener("pointermove", onLiveActivity);
+        el.addEventListener("touchstart", onLiveActivity, { passive: true });
+        el.addEventListener("mouseleave", () => {
+          if (isLivePlaying) hideLiveControls();
+        });
       }
     });
 
-    const handleNativeFullscreenChange = () => {
-      const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-      const wrapper = document.getElementById("edupeakLivePlayerWrapper");
-      if (!fsEl && wrapper) {
-        wrapper.classList.remove("fullscreen-mode");
-        const fsBtns = document.querySelectorAll("#edupeakLivePlayerWrapper button[title='Fullscreen'], #livePlayerControlsOverlay .fa-expand, #livePlayerControlsOverlay .fa-compress");
-        fsBtns.forEach(btn => {
-          const icon = btn.tagName === "I" ? btn : btn.querySelector("i");
-          if (icon) icon.className = "fa-solid fa-expand";
-        });
-      }
-    };
-    document.addEventListener("fullscreenchange", handleNativeFullscreenChange);
-    document.addEventListener("webkitfullscreenchange", handleNativeFullscreenChange);
-    document.addEventListener("mozfullscreenchange", handleNativeFullscreenChange);
-    document.addEventListener("MSFullscreenChange", handleNativeFullscreenChange);
+    if (!_liveEventsAttached) {
+      _liveEventsAttached = true;
+
+      document.addEventListener("mousemove", (e) => {
+        const wrapper = document.getElementById("edupeakLivePlayerWrapper");
+        if (!wrapper || wrapper.style.display === "none") return;
+        const rect = wrapper.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return;
+        if (
+          e.clientX >= rect.left &&
+          e.clientX <= rect.right &&
+          e.clientY >= rect.top &&
+          e.clientY <= rect.bottom
+        ) {
+          onLiveActivity();
+        }
+      });
+
+      document.addEventListener("click", (e) => {
+        const liveQWrapper = document.querySelector("#edupeakLivePlayerWrapper .quality-selector-wrapper");
+        const liveQMenu = document.getElementById("livePlayerQualityMenu");
+        if (liveQMenu && liveQWrapper && !liveQWrapper.contains(e.target)) {
+          liveQMenu.classList.remove("active");
+        }
+      });
+
+      const handleNativeFullscreenChange = () => {
+        const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+        const wrapper = document.getElementById("edupeakLivePlayerWrapper");
+        if (!fsEl && wrapper) {
+          wrapper.classList.remove("fullscreen-mode");
+          const fsBtns = document.querySelectorAll("#edupeakLivePlayerWrapper button[title='Fullscreen'], #livePlayerControlsOverlay .fa-expand, #livePlayerControlsOverlay .fa-compress");
+          fsBtns.forEach(btn => {
+            const icon = btn.tagName === "I" ? btn : btn.querySelector("i");
+            if (icon) icon.className = "fa-solid fa-expand";
+          });
+        }
+      };
+      document.addEventListener("fullscreenchange", handleNativeFullscreenChange);
+      document.addEventListener("webkitfullscreenchange", handleNativeFullscreenChange);
+      document.addEventListener("mozfullscreenchange", handleNativeFullscreenChange);
+      document.addEventListener("MSFullscreenChange", handleNativeFullscreenChange);
+    }
+  }
+
+  function initLivePlayer() {
+    setupLivePlayerEvents();
+    startLiveWatermarkMovement();
+  }
+
+  if (typeof document !== "undefined") {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", setupLivePlayerEvents);
+    } else {
+      setupLivePlayerEvents();
+    }
   }
 
   function dismissBotPrompt() {

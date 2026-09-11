@@ -32,7 +32,7 @@
   display: none !important;
 }
 
-/* 100% Clean YouTube Brand-Free Cropper (Eliminates YouTube titles, avatar, logo, and captions) */
+/* 100% Clean YouTube Video (Zero Cropping - Full 100% video frame preserved) */
 .edupeak-yt-frame-cropper {
   position: absolute;
   top: 0;
@@ -48,10 +48,9 @@
 .edupeak-yt-frame-cropper #edupeakYTPlayerMount,
 .edupeak-yt-frame-cropper #edupeakLiveYTPlayerMount {
   position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -48%) scale(1.10) !important;
-  transform-origin: center center !important;
+  top: 0 !important;
+  left: 0 !important;
+  transform: none !important;
   width: 100% !important;
   height: 100% !important;
   border: none !important;
@@ -170,6 +169,9 @@
 .edupeak-player-wrapper.fullscreen-mode .edupeak-yt-frame-cropper #edupeakLiveYTPlayerMount {
   width: 100% !important;
   height: 100% !important;
+  top: 0 !important;
+  left: 0 !important;
+  transform: none !important;
 }
 
 /* Transparent click shield on top of YouTube */
