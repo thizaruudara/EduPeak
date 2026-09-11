@@ -131,6 +131,13 @@ const SUPABASE_HELPER = {
       this.updateStatusBadge(true, "Connected to Supabase Cloud");
       this.syncAllCloudData();
       this.setupRealtimeSubscriptions();
+      if (!this._schedulesSyncInterval) {
+        this._schedulesSyncInterval = setInterval(() => {
+          if (this.isConnected) {
+            this.syncSchedules();
+          }
+        }, 4000);
+      }
       return { success: true, message: "Connected to Supabase project!" };
     } catch (err) {
       this.isConnected = false;
@@ -417,7 +424,7 @@ const SUPABASE_HELPER = {
     if (!this.isConnected || !this.client) return null;
     const deletedIds = this.getDeletedSchedules();
     try {
-      const { data, error } = await this.client.from("broadcast_schedules").select("*");
+      const { data, error } = await this.client.from("broadcast_schedules").select("*").order("updated_at", { ascending: false });
       if (!error && Array.isArray(data)) {
         const filtered = data
           .map(s => this.normalizeLiveSession(s))
@@ -425,11 +432,37 @@ const SUPABASE_HELPER = {
         this.setSharedData("edupeak_schedules_db", filtered);
         try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(filtered)); } catch (e) {}
 
+        // Multi-channel instant reactive notifications (same-window, BroadcastChannel, and storage)
+        try {
+          window.dispatchEvent(new CustomEvent("edupeak-live-sessions-updated", { detail: { all: filtered } }));
+        } catch(e) {}
+
+        if (typeof BroadcastChannel !== "undefined") {
+          try {
+            const ch = new BroadcastChannel("edupeak_live_sessions_channel");
+            ch.postMessage({ type: "LIVE_SESSION_UPDATED", all: filtered });
+            ch.close();
+          } catch(e) {}
+        }
+
+        try {
+          localStorage.setItem("edupeak_live_session_event", JSON.stringify({
+            type: "LIVE_SESSION_UPDATED",
+            timestamp: Date.now()
+          }));
+        } catch(e) {}
+
         if (window.TEACHER_CONTROLLER && typeof window.TEACHER_CONTROLLER.renderSchedulesTable === "function") {
           window.TEACHER_CONTROLLER.renderSchedulesTable();
         }
         if (typeof syncLiveStreamWithTeacher === "function") {
           syncLiveStreamWithTeacher();
+        }
+        if (typeof window.checkLiveBanner === "function") {
+          try { window.checkLiveBanner(false); } catch(e) {}
+        }
+        if (window.LIVE_APP && typeof window.LIVE_APP.renderStreamsList === "function") {
+          try { window.LIVE_APP.renderStreamsList(filtered); } catch(e) {}
         }
         return filtered;
       }
@@ -1887,15 +1920,27 @@ const SUPABASE_HELPER = {
         const payload = {
           id: normalized.id,
           topic: normalized.topic,
+          topic_si: normalized.topic_si || normalized.topicSi || null,
           course_id: normalized.courseId || normalized.course_id || null,
           courseid: normalized.courseId || normalized.course_id || null,
           coursetitle: normalized.courseTitle || normalized.course_title || null,
+          subject: normalized.subject || null,
+          teacherid: normalized.teacherId || normalized.teacher_id || null,
+          teachername: normalized.teacherName || normalized.teacher_name || null,
+          scheduledate: normalized.scheduleDate || null,
+          schedulestarttime: normalized.scheduleStartTime || null,
+          scheduleendtime: normalized.scheduleEndTime || null,
           scheduletime: normalized.scheduleTime || normalized.scheduletime || null,
+          scheduleTime: normalized.scheduleTime || normalized.scheduletime || null,
           provider: normalized.provider || "youtube",
           rawurl: normalized.rawUrl || normalized.rawurl || null,
           embedurl: normalized.embedUrl || normalized.embedurl || null,
+          zoomurl: normalized.zoomUrl || normalized.zoomurl || null,
           status: normalized.status,
           watermarkenabled: Boolean(normalized.watermarkEnabled),
+          chatenabled: Boolean(normalized.chatEnabled),
+          started_at: normalized.startedAt || null,
+          ended_at: normalized.endedAt || null,
           updated_at: new Date().toISOString()
         };
         const { data, error } = await this.client.from("broadcast_schedules").upsert([payload]).select();
@@ -2029,6 +2074,12 @@ const SUPABASE_HELPER = {
     if (window.LIVE_APP && typeof window.LIVE_APP.loadInitialStreams === "function") {
       try { window.LIVE_APP.loadInitialStreams(); } catch(e) {}
     }
+    if (typeof window.checkLiveBanner === "function") {
+      try { window.checkLiveBanner(false); } catch(e) {}
+    }
+    try {
+      window.dispatchEvent(new CustomEvent("edupeak-live-sessions-updated", { detail: { all: schedules } }));
+    } catch(e) {}
 
     return true;
   },

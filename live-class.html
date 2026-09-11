@@ -1644,14 +1644,35 @@
         
         // 1. Same-window broadcast event listener
         window.addEventListener("edupeak-live-sessions-updated", (e) => {
-          this.renderStreamsList();
-          const sess = e.detail?.session;
+          const all = e.detail?.all;
+          if (Array.isArray(all)) {
+            this.renderStreamsList(all);
+          } else {
+            this.renderStreamsList();
+          }
+          const sess = e.detail?.session || (all && this.activeSessionId ? all.find(s => s.id === this.activeSessionId) : null);
           if (sess && this.activeSessionId === sess.id) {
             if (!this.activeSession || this.activeSession.status !== sess.status) {
+              if (sess.status === "live") {
+                if (this.countdownTimer) { clearInterval(this.countdownTimer); this.countdownTimer = null; }
+                if (this.standbyWatchTimer) { clearInterval(this.standbyWatchTimer); this.standbyWatchTimer = null; }
+                if (window.showToast) {
+                  window.showToast("🔴 Broadcaster is NOW LIVE! Connecting you to the stream...", "success");
+                }
+              }
               this.loadSession(sess.id, false);
             }
           }
         });
+
+        // Continuous 4-second cloud heartbeat for real-time live class detection without reloading
+        if (!this.cloudSyncTimer) {
+          this.cloudSyncTimer = setInterval(async () => {
+            if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.syncSchedules === "function") {
+              window.SUPABASE_HELPER.syncSchedules();
+            }
+          }, 4000);
+        }
 
         // 2. Cross-tab BroadcastChannel listener for instant live stream activation
         if (typeof BroadcastChannel !== "undefined") {

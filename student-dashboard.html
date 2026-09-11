@@ -765,7 +765,20 @@
             </div>
           </div>
 
-
+          <!-- Live & Upcoming Broadcast Schedules Card -->
+          <div class="dash-card" id="dashLiveSchedulesCard" style="margin-top: 1.5rem; display: none; background: #ffffff; border: 1.5px solid #e2e8f0; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
+            <div class="card-header-flex">
+              <h3 class="card-header-title" style="font-size: 1rem;">
+                <i class="fa-solid fa-tower-broadcast" style="color: #dc2626;"></i> <span>Live Class Timetable</span>
+              </h3>
+              <a href="live-class.html" style="font-size: 0.8rem; font-weight: 700; color: #dc2626; text-decoration: none;">
+                Open Live Hub ➔
+              </a>
+            </div>
+            <div id="dashLiveSchedulesList" style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <!-- Dynamically populated in real time -->
+            </div>
+          </div>
 
           <!-- Telegram Support Hotline Card -->
           <div class="dash-card" style="margin-top: 1.5rem; background: #f0f9ff; border-color: #bae6fd;">
@@ -1047,14 +1060,43 @@
       renderCourseMaterials();
       renderPendingOrders();
 
-      // 4. Check & display live class alert banner
-      checkLiveBanner();
-      setInterval(checkLiveBanner, 30000); // re-check every 30 s
-      // Listen for real-time updates from teacher portal / live-class tab
+      // 4. Real-time Live Class Alert Banner & Schedule Timetable Sync
+      checkLiveBanner(true);
+
+      // Listen for instant multi-channel updates (BroadcastChannel, Supabase Realtime, Storage)
       try {
         const _liveChannel = new BroadcastChannel("edupeak_live_sessions_channel");
-        _liveChannel.onmessage = () => checkLiveBanner();
+        _liveChannel.onmessage = (event) => {
+          if (event?.data?.all && Array.isArray(event.data.all)) {
+            renderLiveBannerAndSchedules(event.data.all);
+          } else {
+            checkLiveBanner(false);
+          }
+        };
       } catch(e) {}
+
+      window.addEventListener("edupeak-live-sessions-updated", (e) => {
+        if (e?.detail?.all && Array.isArray(e.detail.all)) {
+          renderLiveBannerAndSchedules(e.detail.all);
+        } else {
+          checkLiveBanner(false);
+        }
+      });
+
+      window.addEventListener("storage", (e) => {
+        if (e.key === "edupeak_schedules_db" || e.key === "edupeak_live_stream_config" || e.key === "edupeak_live_session_event") {
+          checkLiveBanner(false);
+        }
+      });
+
+      // Periodic heartbeat sync every 4s so student sees new schedules & live classes instantly without reloading
+      setInterval(() => {
+        if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.syncSchedules === "function") {
+          window.SUPABASE_HELPER.syncSchedules();
+        } else {
+          checkLiveBanner(true);
+        }
+      }, 4000);
 
       // 5. Start Live Exam Countdown Clock
       initExamCountdown(currentUser.examYear || "2027 A/L");
@@ -1078,29 +1120,114 @@
     });
 
     // --------------------------------------------------------------------------
-    // LIVE CLASS ALERT BANNER
+    // LIVE CLASS ALERT BANNER & REAL-TIME TIMETABLE ENGINE
     // --------------------------------------------------------------------------
-    async function checkLiveBanner() {
+    function renderLiveBannerAndSchedules(sessions) {
       const bannerEl = document.getElementById("studentLiveAlertBanner");
       const iconEl   = document.getElementById("studentLiveAlertIcon");
       const titleEl  = document.getElementById("studentLiveAlertTitle");
       const subEl    = document.getElementById("studentLiveAlertSub");
       const linkEl   = document.getElementById("studentLiveAlertLink");
-      if (!bannerEl) return;
 
-      // Collect all sessions from every available source
-      function getAllSessions() {
+      const deleted = (() => { try { return JSON.parse(localStorage.getItem("edupeak_deleted_schedules_db") || "[]"); } catch(e) { return []; } })();
+      const validSessions = (Array.isArray(sessions) ? sessions : [])
+        .filter(s => s && s.id && !deleted.includes(s.id) && s.topic && s.topic !== "No Live Broadcast Scheduled");
+
+      const liveSession      = validSessions.find(s => s.status === "live") || null;
+      const scheduledSession = validSessions.find(s => s.status === "scheduled") || null;
+      const cfg = liveSession || scheduledSession;
+
+      const isLive      = !!liveSession;
+      const isScheduled = !isLive && !!scheduledSession;
+
+      if (bannerEl) {
+        if (isLive) {
+          bannerEl.style.display = "block";
+          bannerEl.style.background = "linear-gradient(135deg,#7f1d1d 0%,#dc2626 50%,#ef4444 100%)";
+          if (iconEl)  iconEl.textContent  = "🔴";
+          if (titleEl) titleEl.textContent = `LIVE NOW: ${cfg.topic}`;
+          if (subEl)   subEl.textContent   = cfg.scheduleTime ? `${cfg.scheduleTime}  — Tap to join the live classroom` : "Tap to join the live classroom";
+          if (linkEl) {
+            linkEl.style.background = "linear-gradient(135deg,#7f1d1d 0%,#dc2626 50%,#ef4444 100%)";
+            linkEl.href = cfg.id ? `live-class.html?session=${encodeURIComponent(cfg.id)}` : "live-class.html";
+            const btnSpan = linkEl.querySelector("span:last-child");
+            if (btnSpan) btnSpan.textContent = "Join Now →";
+          }
+          bannerEl.style.animation = "";
+        } else if (isScheduled) {
+          bannerEl.style.display = "block";
+          bannerEl.style.background = "linear-gradient(135deg,#1e3a5f 0%,#1d4ed8 60%,#3b82f6 100%)";
+          if (iconEl)  iconEl.textContent  = "⏳";
+          if (titleEl) titleEl.textContent = `Upcoming Live: ${cfg.topic}`;
+          if (subEl)   subEl.textContent   = cfg.scheduleTime ? `Scheduled: ${cfg.scheduleTime}  — Tap to view details` : "Tap to view schedule details";
+          if (linkEl) {
+            linkEl.style.background = "linear-gradient(135deg,#1e3a5f 0%,#1d4ed8 60%,#3b82f6 100%)";
+            linkEl.style.boxShadow = "0 4px 24px rgba(29,78,216,0.22)";
+            linkEl.href = cfg.id ? `live-class.html?session=${encodeURIComponent(cfg.id)}` : "live-class.html";
+            const btnSpan = linkEl.querySelector("span:last-child");
+            if (btnSpan) btnSpan.textContent = "View Schedule →";
+          }
+          bannerEl.style.animation = "none";
+        } else {
+          bannerEl.style.display = "none";
+        }
+      }
+
+      // Render Schedule Timetable Card
+      const schedCard = document.getElementById("dashLiveSchedulesCard");
+      const schedList = document.getElementById("dashLiveSchedulesList");
+      if (schedCard && schedList) {
+        const activeOrUpcoming = validSessions.filter(s => s.status === "live" || s.status === "scheduled");
+        if (activeOrUpcoming.length > 0) {
+          schedCard.style.display = "block";
+          schedList.innerHTML = activeOrUpcoming.map(s => {
+            const isSessLive = s.status === "live";
+            const badgeBg = isSessLive ? "#fee2e2" : "#eff6ff";
+            const badgeColor = isSessLive ? "#dc2626" : "#2563eb";
+            const badgeText = isSessLive ? "🔴 LIVE NOW" : "⏳ SCHEDULED";
+            const borderCol = isSessLive ? "#fca5a5" : "#bfdbfe";
+            const btnBg = isSessLive ? "#dc2626" : "#2563eb";
+            const btnText = isSessLive ? "Join Class Now →" : "View Live Hub →";
+            const sessUrl = `live-class.html?session=${encodeURIComponent(s.id)}`;
+
+            return `
+              <div style="background: #ffffff; border: 1px solid ${borderCol}; border-radius: 12px; padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.45rem; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 0.7rem; font-weight: 800; background: ${badgeBg}; color: ${badgeColor}; padding: 0.2rem 0.55rem; border-radius: 6px; letter-spacing: 0.03em;">
+                    ${badgeText}
+                  </span>
+                  <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">
+                    <i class="fa-regular fa-clock"></i> ${s.scheduleTime || 'Upcoming'}
+                  </span>
+                </div>
+                <div style="font-weight: 700; font-size: 0.925rem; color: #0f172a; line-height: 1.35;">
+                  ${s.topic || 'Live Masterclass'}
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+                  <span><i class="fa-solid fa-chalkboard-user" style="color: #227aff;"></i> ${s.teacherName || 'Amalsha Wanniarachchi'}</span>
+                  <a href="${sessUrl}" class="btn btn-sm" style="background: ${btnBg}; color: #ffffff; padding: 0.3rem 0.8rem; font-size: 0.75rem; font-weight: 700; border-radius: 6px; text-decoration: none;">
+                    ${btnText}
+                  </a>
+                </div>
+              </div>
+            `;
+          }).join("");
+        } else {
+          schedCard.style.display = "none";
+        }
+      }
+    }
+
+    async function checkLiveBanner(fetchRemote = true) {
+      function getLocalSessions() {
         let sessions = [];
-        // 1. Shared memory (cross-tab)
         if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
           const s = window.SUPABASE_HELPER.getSharedData("edupeak_schedules_db");
           if (Array.isArray(s) && s.length) sessions = s;
         }
-        // 2. localStorage (correct key)
         if (!sessions.length) {
           try { sessions = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]"); } catch(e) {}
         }
-        // 3. Legacy single-config key
         if (!sessions.length) {
           let cfg = null;
           if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function")
@@ -1111,47 +1238,23 @@
         return Array.isArray(sessions) ? sessions : [];
       }
 
-      const deleted = (() => { try { return JSON.parse(localStorage.getItem("edupeak_deleted_schedules_db") || "[]"); } catch(e) { return []; } })();
-      let sessions = getAllSessions().filter(s => !deleted.includes(s.id) && s.topic && s.topic !== "No Live Broadcast Scheduled");
+      // Step 1: Render instantly from local storage / cache (0ms latency)
+      const cached = getLocalSessions();
+      renderLiveBannerAndSchedules(cached);
 
-      // If nothing found (fresh load / cache cleared) — fetch from Supabase then re-render
-      if (!sessions.length && window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getLiveSessions === "function") {
+      // Step 2: Fetch fresh data from Supabase Cloud in parallel without blocking UI
+      if (fetchRemote && window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getLiveSessions === "function") {
         try {
-          sessions = (await window.SUPABASE_HELPER.getLiveSessions()) || [];
-          sessions = sessions.filter(s => !deleted.includes(s.id) && s.topic && s.topic !== "No Live Broadcast Scheduled");
+          const fresh = await window.SUPABASE_HELPER.getLiveSessions();
+          if (Array.isArray(fresh)) {
+            renderLiveBannerAndSchedules(fresh);
+          }
         } catch(e) {}
       }
-
-      const liveSession      = sessions.find(s => s.status === "live") || null;
-      const scheduledSession = sessions.find(s => s.status === "scheduled") || null;
-      const cfg = liveSession || scheduledSession;
-
-      const isLive      = !!liveSession;
-      const isScheduled = !isLive && !!scheduledSession;
-
-      if (isLive) {
-        bannerEl.style.display = "block";
-        bannerEl.style.background = "linear-gradient(135deg,#7f1d1d 0%,#dc2626 50%,#ef4444 100%)";
-        if (iconEl)  iconEl.textContent  = "🔴";
-        if (titleEl) titleEl.textContent = `LIVE NOW: ${cfg.topic}`;
-        if (subEl)   subEl.textContent   = cfg.scheduleTime ? `${cfg.scheduleTime}  — Tap to join the live classroom` : "Tap to join the live classroom";
-        if (linkEl)  linkEl.style.background = "linear-gradient(135deg,#7f1d1d 0%,#dc2626 50%,#ef4444 100%)";
-        bannerEl.style.animation = "";
-      } else if (isScheduled) {
-        bannerEl.style.display = "block";
-        bannerEl.style.background = "linear-gradient(135deg,#1e3a5f 0%,#1d4ed8 60%,#3b82f6 100%)";
-        if (iconEl)  iconEl.textContent  = "⏳";
-        if (titleEl) titleEl.textContent = `Upcoming Live: ${cfg.topic}`;
-        if (subEl)   subEl.textContent   = cfg.scheduleTime ? `Scheduled: ${cfg.scheduleTime}  — Tap to view details` : "Tap to view schedule details";
-        if (linkEl)  linkEl.style.background = "linear-gradient(135deg,#1e3a5f 0%,#1d4ed8 60%,#3b82f6 100%)";
-        bannerEl.style.boxShadow = "0 4px 24px rgba(29,78,216,0.22)";
-        bannerEl.style.animation = "none";
-        const btnSpan = linkEl && linkEl.querySelector("span:last-child");
-        if (btnSpan) btnSpan.textContent = "View Schedule →";
-      } else {
-        bannerEl.style.display = "none";
-      }
     }
+
+    // Global reference for Supabase helper callback
+    window.checkLiveBanner = checkLiveBanner;
 
     // --------------------------------------------------------------------------
     // TAB SWITCHER: DASHBOARD <-> COURSES (INSIDE STUDENT PORTAL)
