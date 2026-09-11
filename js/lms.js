@@ -79,6 +79,9 @@ function syncLiveStreamWithTeacher() {
         try { cfg = JSON.parse(saved); } catch (e) {}
       }
     }
+    if (cfg && window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.isTestSchedule === "function" && window.SUPABASE_HELPER.isTestSchedule(cfg)) {
+      cfg = null;
+    }
     const topicEl = document.getElementById("lmsLiveTopicTitle");
     const statusTextEl = document.getElementById("lmsLiveStatusText");
     const badgeEl = document.getElementById("lmsLiveBadgePill");

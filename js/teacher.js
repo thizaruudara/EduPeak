@@ -1997,24 +1997,74 @@ const TEACHER_CONTROLLER = {
       }
     }
     if (schedules !== null && Array.isArray(schedules)) {
-      return schedules.filter(s => s && s.id && !deletedIds.includes(s.id) && !s.id.startsWith("sched-continuous-") && !s.id.startsWith("sched-early-test-"));
+      return schedules.filter(s => {
+        if (!s || !s.id || deletedIds.includes(s.id)) return false;
+        if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.isTestSchedule === "function") {
+          return !window.SUPABASE_HELPER.isTestSchedule(s);
+        }
+        const id = String(s.id || "").toLowerCase();
+        const topic = String(s.topic || "").toLowerCase();
+        return (
+          !id.startsWith("sched-continuous-") &&
+          !id.startsWith("sched-early-test-") &&
+          !id.startsWith("sched-stream-test-") &&
+          !id.startsWith("sched-video-test-") &&
+          !id.startsWith("sched-play-") &&
+          !id.startsWith("sched-test-") &&
+          !id.startsWith("chat-sync-") &&
+          s.status !== "chat_sync" &&
+          !topic.includes("auto-end test") &&
+          !topic.includes("live ending test") &&
+          !topic.includes("continuous playback") &&
+          !topic.includes("broadcast auto-end")
+        );
+      });
     }
     return [];
   },
 
   saveScheduledBroadcasts(list) {
     try {
-      localStorage.setItem(this.storageKeys.schedulesDb, JSON.stringify(list));
+      const cleanList = Array.isArray(list) ? list.filter(s => {
+        if (!s || !s.id) return false;
+        if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.isTestSchedule === "function") {
+          return !window.SUPABASE_HELPER.isTestSchedule(s);
+        }
+        const id = String(s.id || "").toLowerCase();
+        const topic = String(s.topic || "").toLowerCase();
+        return (
+          !id.startsWith("sched-continuous-") &&
+          !id.startsWith("sched-early-test-") &&
+          !id.startsWith("sched-stream-test-") &&
+          !id.startsWith("sched-video-test-") &&
+          !id.startsWith("sched-play-") &&
+          !id.startsWith("sched-test-") &&
+          !id.startsWith("chat-sync-") &&
+          s.status !== "chat_sync" &&
+          !topic.includes("auto-end test") &&
+          !topic.includes("live ending test") &&
+          !topic.includes("continuous playback") &&
+          !topic.includes("broadcast auto-end")
+        );
+      }) : [];
+
+      localStorage.setItem(this.storageKeys.schedulesDb, JSON.stringify(cleanList));
       if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
-        window.SUPABASE_HELPER.setSharedData(this.storageKeys.schedulesDb || "edupeak_schedules_db", list);
+        window.SUPABASE_HELPER.setSharedData(this.storageKeys.schedulesDb || "edupeak_schedules_db", cleanList);
+      }
+      // Also persist each valid schedule directly to Supabase Cloud PostgreSQL broadcast_schedules table
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.saveLiveSession === "function") {
+        cleanList.forEach(item => {
+          window.SUPABASE_HELPER.saveLiveSession(item).catch(() => {});
+        });
       }
       try {
-        window.dispatchEvent(new CustomEvent("edupeak-live-sessions-updated", { detail: { all: list } }));
+        window.dispatchEvent(new CustomEvent("edupeak-live-sessions-updated", { detail: { all: cleanList } }));
       } catch(e) {}
       if (typeof BroadcastChannel !== "undefined") {
         try {
           const ch = new BroadcastChannel("edupeak_live_sessions_channel");
-          ch.postMessage({ type: "LIVE_SESSION_UPDATED", all: list });
+          ch.postMessage({ type: "LIVE_SESSION_UPDATED", all: cleanList });
           ch.close();
         } catch(e) {}
       }
@@ -2452,6 +2502,9 @@ const TEACHER_CONTROLLER = {
         try { saved = JSON.parse(raw); } catch (e) {}
       }
     }
+    if (saved && window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.isTestSchedule === "function" && window.SUPABASE_HELPER.isTestSchedule(saved)) {
+      saved = null;
+    }
 
     // If no URL in saved config, fall back to edupeak_schedules_db (sessions created via edit form)
     if (!saved || (!saved.rawUrl && !saved.embedUrl)) {
@@ -2462,9 +2515,16 @@ const TEACHER_CONTROLLER = {
           if (Array.isArray(s) && s.length) sessions = s;
         }
         if (!sessions.length) sessions = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
+        const validSessions = sessions.filter(s => {
+          if (!s || !s.id) return false;
+          if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.isTestSchedule === "function") {
+            return !window.SUPABASE_HELPER.isTestSchedule(s);
+          }
+          return true;
+        });
         // Pick the live session first, then most-recently-updated non-ended session
-        const candidate = sessions.find(s => s.status === "live")
-          || sessions.filter(s => s.status !== "ended").sort((a,b) => new Date(b.updatedAt||0) - new Date(a.updatedAt||0))[0]
+        const candidate = validSessions.find(s => s.status === "live")
+          || validSessions.filter(s => s.status !== "ended").sort((a,b) => new Date(b.updatedAt||0) - new Date(a.updatedAt||0))[0]
           || null;
         if (candidate && (candidate.rawUrl || candidate.rawurl || candidate.embedUrl)) {
           saved = { ...candidate, rawUrl: candidate.rawUrl || candidate.rawurl || candidate.embedUrl };

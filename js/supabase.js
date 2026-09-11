@@ -53,27 +53,39 @@ const SUPABASE_HELPER = {
         window.__EDUPEAK_SUPABASE_CLIENT__ = this.client;
         this.testConnection();
 
-        // Self-heal: purge any leftover test broadcast schedules from storage
+        // Self-heal: purge any leftover test broadcast schedules from storage & shared cookies
         try {
-          const testPrefixes = ["sched-continuous-", "sched-early-test-"];
           const storedScheds = localStorage.getItem("edupeak_schedules_db");
           if (storedScheds) {
             let parsed = JSON.parse(storedScheds);
             if (Array.isArray(parsed)) {
-              const cleaned = parsed.filter(s => s && s.id && !testPrefixes.some(p => s.id.startsWith(p)));
+              const cleaned = parsed.filter(s => s && s.id && !this.isTestSchedule(s));
               if (cleaned.length !== parsed.length) {
                 localStorage.setItem("edupeak_schedules_db", JSON.stringify(cleaned));
                 this.setSharedData("edupeak_schedules_db", cleaned);
               }
             }
           }
+          const sharedScheds = this.getSharedData("edupeak_schedules_db");
+          if (Array.isArray(sharedScheds)) {
+            const cleanedShared = sharedScheds.filter(s => s && s.id && !this.isTestSchedule(s));
+            if (cleanedShared.length !== sharedScheds.length) {
+              this.setSharedData("edupeak_schedules_db", cleanedShared);
+              try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(cleanedShared)); } catch(e) {}
+            }
+          }
           const activeStream = localStorage.getItem("edupeak_live_stream_config");
           if (activeStream) {
             const parsed = JSON.parse(activeStream);
-            if (parsed && testPrefixes.some(p => (parsed.id || "").startsWith(p) || (parsed.scheduleId || "").startsWith(p))) {
+            if (parsed && this.isTestSchedule(parsed)) {
               localStorage.removeItem("edupeak_live_stream_config");
               this.setSharedData("edupeak_live_stream_config", null);
             }
+          }
+          const sharedActive = this.getSharedData("edupeak_live_stream_config");
+          if (sharedActive && this.isTestSchedule(sharedActive)) {
+            this.setSharedData("edupeak_live_stream_config", null);
+            try { localStorage.removeItem("edupeak_live_stream_config"); } catch(e) {}
           }
         } catch(e) {}
 
@@ -219,6 +231,26 @@ const SUPABASE_HELPER = {
       } catch(e) {}
       this.setSharedData("edupeak_deleted_schedules_db", deleted);
     }
+  },
+
+  isTestSchedule(s) {
+    if (!s) return false;
+    const id = String(s.id || s.scheduleId || "").toLowerCase();
+    const topic = String(s.topic || "").toLowerCase();
+    return (
+      id.startsWith("sched-continuous-") ||
+      id.startsWith("sched-early-test-") ||
+      id.startsWith("sched-stream-test-") ||
+      id.startsWith("sched-video-test-") ||
+      id.startsWith("sched-play-") ||
+      id.startsWith("sched-test-") ||
+      id.startsWith("chat-sync-") ||
+      s.status === "chat_sync" ||
+      topic.includes("auto-end test") ||
+      topic.includes("live ending test") ||
+      topic.includes("continuous playback") ||
+      topic.includes("broadcast auto-end")
+    );
   },
 
   async syncCourses() {
@@ -389,7 +421,7 @@ const SUPABASE_HELPER = {
       if (!error && Array.isArray(data)) {
         const filtered = data
           .map(s => this.normalizeLiveSession(s))
-          .filter(s => s && s.id && !deletedIds.includes(s.id) && !s.id.startsWith("sched-continuous-") && !s.id.startsWith("sched-early-test-"));
+          .filter(s => s && s.id && !deletedIds.includes(s.id) && !this.isTestSchedule(s));
         this.setSharedData("edupeak_schedules_db", filtered);
         try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(filtered)); } catch (e) {}
 
@@ -1703,7 +1735,7 @@ const SUPABASE_HELPER = {
         if (Array.isArray(parsed)) {
           localSchedules = parsed
             .map(s => this.normalizeLiveSession(s))
-            .filter(s => s && s.id && !deletedIds.includes(s.id) && !s.id.startsWith("sched-continuous-") && !s.id.startsWith("sched-early-test-") && !s.id.startsWith("chat-sync-") && s.status !== "chat_sync");
+            .filter(s => s && s.id && !deletedIds.includes(s.id) && !this.isTestSchedule(s));
         }
       }
     } catch (e) {}
@@ -1712,7 +1744,7 @@ const SUPABASE_HELPER = {
     if (Array.isArray(shared) && shared.length > 0) {
       shared.forEach(s => {
         const norm = this.normalizeLiveSession(s);
-        if (!norm || !norm.id || deletedIds.includes(norm.id) || norm.id.startsWith("sched-continuous-") || norm.id.startsWith("sched-early-test-") || norm.id.startsWith("chat-sync-") || norm.status === "chat_sync") return;
+        if (!norm || !norm.id || deletedIds.includes(norm.id) || this.isTestSchedule(norm)) return;
         const idx = localSchedules.findIndex(l => l.id === norm.id);
         if (idx === -1) {
           localSchedules.push(norm);
@@ -1732,7 +1764,7 @@ const SUPABASE_HELPER = {
         if (!error && Array.isArray(data)) {
           const remoteNormalized = data
             .map(s => this.normalizeLiveSession(s))
-            .filter(s => s && s.id && !deletedIds.includes(s.id) && !s.id.startsWith("sched-continuous-") && !s.id.startsWith("sched-early-test-") && !s.id.startsWith("chat-sync-") && s.status !== "chat_sync");
+            .filter(s => s && s.id && !deletedIds.includes(s.id) && !this.isTestSchedule(s));
           // Merge remote with local schedules so newly created or locally modified schedules are NEVER lost
           const merged = [...remoteNormalized];
           localSchedules.forEach(local => {
@@ -1747,7 +1779,7 @@ const SUPABASE_HELPER = {
               }
             }
           });
-          const finalMerged = merged.filter(s => s && s.id && !deletedIds.includes(s.id));
+          const finalMerged = merged.filter(s => s && s.id && !deletedIds.includes(s.id) && !this.isTestSchedule(s));
           this.setSharedData("edupeak_schedules_db", finalMerged);
           try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(finalMerged)); } catch (e) {}
           return finalMerged;
@@ -1758,7 +1790,7 @@ const SUPABASE_HELPER = {
     }
 
     if (localSchedules.length > 0) {
-      const finalLocal = localSchedules.filter(s => s && s.id && !deletedIds.includes(s.id));
+      const finalLocal = localSchedules.filter(s => s && s.id && !deletedIds.includes(s.id) && !this.isTestSchedule(s));
       this.setSharedData("edupeak_schedules_db", finalLocal);
       try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(finalLocal)); } catch (e) {}
       return finalLocal;
@@ -1773,7 +1805,7 @@ const SUPABASE_HELPER = {
 
   async saveLiveSession(schedData) {
     if (!schedData || !schedData.id) return null;
-    if (schedData.id.startsWith("sched-continuous-") || schedData.id.startsWith("sched-early-test-")) {
+    if (this.isTestSchedule(schedData)) {
       return null;
     }
     const normalized = this.normalizeLiveSession(schedData);
@@ -1881,7 +1913,7 @@ const SUPABASE_HELPER = {
   async updateLiveSessionStatus(sessionId, newStatus, extraData = {}) {
     if (!sessionId) return null;
     const deletedIds = this.getDeletedSchedules();
-    if (deletedIds.includes(sessionId) || sessionId.startsWith("sched-continuous-") || sessionId.startsWith("sched-early-test-")) {
+    if (deletedIds.includes(sessionId) || this.isTestSchedule({ id: sessionId })) {
       return null;
     }
     let schedules = await this.getLiveSessions();
