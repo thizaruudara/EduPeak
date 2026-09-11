@@ -4,7 +4,7 @@
   <script>
     (function() {
       try {
-        var stored = localStorage.getItem("edupeak_auth_session");
+        var stored = localStorage.getItem("edupeak_active_session") || localStorage.getItem("edupeak_auth_session");
         var user = stored ? JSON.parse(stored) : null;
         if (!user) {
           window.location.replace("login.html?redirect=profile.html");

@@ -128,6 +128,7 @@ const AUTH_SYSTEM = {
           curUser.enrolledCourses = [];
         }
         localStorage.setItem(this.storageKeys.session, JSON.stringify(curUser));
+        localStorage.setItem("edupeak_auth_session", JSON.stringify(curUser));
       }
     } else if (!localStorage.getItem(this.storageKeys.users)) {
       localStorage.setItem(this.storageKeys.users, JSON.stringify(this.defaultUsers));
@@ -203,7 +204,7 @@ const AUTH_SYSTEM = {
 
   getCurrentUser() {
     try {
-      const session = localStorage.getItem(this.storageKeys.session);
+      const session = localStorage.getItem(this.storageKeys.session) || localStorage.getItem("edupeak_auth_session");
       return session ? JSON.parse(session) : null;
     } catch (e) {
       console.error("Error reading session:", e);
@@ -735,6 +736,7 @@ const AUTH_SYSTEM = {
     };
 
     localStorage.setItem(this.storageKeys.session, JSON.stringify(sessionData));
+    localStorage.setItem("edupeak_auth_session", JSON.stringify(sessionData));
     this.updateUIForAuthState();
   },
 
@@ -766,6 +768,7 @@ const AUTH_SYSTEM = {
     if (currentSession) {
       const mergedSession = { ...currentSession, ...updatedData };
       localStorage.setItem(this.storageKeys.session, JSON.stringify(mergedSession));
+      localStorage.setItem("edupeak_auth_session", JSON.stringify(mergedSession));
     }
 
     // 3. Sync to Supabase Cloud Database
@@ -783,6 +786,7 @@ const AUTH_SYSTEM = {
 
   logout() {
     localStorage.removeItem(this.storageKeys.session);
+    localStorage.removeItem("edupeak_auth_session");
 
     // 1. Close LMS Portal & stop players
     if (window.closeLMSPortal) {
@@ -1435,6 +1439,7 @@ window.handleLogout = function() {
     window.AUTH_SYSTEM.logout();
   } else {
     localStorage.removeItem("edupeak_active_session");
+    localStorage.removeItem("edupeak_auth_session");
     window.location.href = "index.html";
   }
 };
