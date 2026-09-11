@@ -941,10 +941,9 @@ function openLMSPortal(tabName = "video-classroom", courseId = null) {
   
   if (!currentUser) {
     closeLMSPortal();
-    // Clean query param silently without displaying any restricted area message
-    if (window.location.search.includes("openLms") || window.location.search.includes("lms") || window.location.search.includes("course") || window.location.hash === "#lms") {
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
+    const courseParam = courseId ? `&course=${encodeURIComponent(courseId)}` : '';
+    const redirectUrl = `index.html?openLms=${encodeURIComponent(tabName)}${courseParam}`;
+    window.location.href = `login.html?redirect=${encodeURIComponent(redirectUrl)}`;
     return;
   }
 

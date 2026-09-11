@@ -32,7 +32,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (openTab || window.location.hash === "#lms") {
     if (!currentUser) {
-      history.replaceState(null, document.title, window.location.pathname);
+      const courseParam = targetCourse ? `&course=${encodeURIComponent(targetCourse)}` : '';
+      const redirectTarget = `index.html?openLms=${encodeURIComponent(openTab || "video-classroom")}${courseParam}`;
+      window.location.replace(`login.html?redirect=${encodeURIComponent(redirectTarget)}`);
+      return;
     } else {
       setTimeout(() => {
         if (window.openLMSPortal) window.openLMSPortal(openTab || "video-classroom", targetCourse);
@@ -113,7 +116,7 @@ function handleSmartLMSButtonClick(e) {
       }
     }
   } else {
-    window.location.href = "register.html";
+    window.location.href = "login.html?redirect=student-dashboard.html";
   }
 }
 window.handleSmartLMSButtonClick = handleSmartLMSButtonClick;
