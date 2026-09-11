@@ -37,14 +37,17 @@
       --live-text-muted: #94a3b8;
     }
 
-    body {
-      background-color: var(--live-bg);
-      color: var(--live-text-main);
+    html, body {
+      background: #070a13 !important;
+      background-color: #070a13 !important;
+      background-image: none !important;
+      color: var(--live-text-main) !important;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       margin: 0;
       padding: 0;
       min-height: 100vh;
       overflow-x: hidden;
+      width: 100%;
     }
 
     /* Top Navigation Bar */
@@ -956,39 +959,152 @@
       user-select: none !important;
     }
 
+    /* Ambient Glow Neutralizer (prevents light-mode radial gradient smears from style.css) */
+    .ambient-glow {
+      display: none !important;
+    }
+
     /* Mobile Responsive Live Hub Layout Overrides */
     @media (max-width: 992px) {
       .live-topbar {
-        padding: 0.6rem 0.85rem;
+        padding: max(0.65rem, env(safe-area-inset-top, 0.65rem)) 1rem 0.65rem;
+        gap: 0.6rem;
       }
       .live-topbar #liveClockDisplay {
         display: none !important; /* Hide cluttered timestamp on small screens */
       }
+      /* Hide secondary desktop navigation links on mobile/tablet */
+      .live-nav-links a:not(.live-nav-home) {
+        display: none !important;
+      }
       .live-main-container {
         display: flex;
         flex-direction: column;
-        padding: 0.5rem 0.65rem 2rem;
+        padding: 0.75rem 0.85rem 3rem;
+        box-sizing: border-box;
       }
-      /* Video Theater Stage ALWAYS at the top on mobile! */
+      /* Video Theater Stage ALWAYS at the top on mobile */
       .live-theater-grid {
         order: 1 !important;
         margin-bottom: 1.25rem !important;
         grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+      }
+      .live-chat-card {
+        height: 440px !important;
+        max-height: 55vh !important;
+        border-radius: 14px;
       }
       .multi-live-hub-header {
         order: 2 !important;
         margin-top: 1rem;
         margin-bottom: 0.75rem;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
       }
       .multi-live-hub-header h2 {
-        font-size: 1.1rem !important;
+        font-size: 1.15rem !important;
       }
       .live-streams-grid {
         order: 3 !important;
+        grid-template-columns: 1fr !important;
+        gap: 0.75rem !important;
       }
-      .chat-wrapper {
-        min-height: 380px !important;
-        max-height: 480px !important;
+    }
+
+    @media (max-width: 640px) {
+      .live-topbar {
+        padding: max(0.6rem, env(safe-area-inset-top, 0.6rem)) 0.75rem 0.6rem;
+        gap: 0.5rem;
+      }
+      .live-brand {
+        gap: 0.5rem;
+        flex-shrink: 0;
+      }
+      .live-brand-logo {
+        width: 32px;
+        height: 32px;
+        font-size: 0.95rem;
+        border-radius: 8px;
+      }
+      .live-brand-text h1 {
+        font-size: 1.05rem;
+      }
+      .live-brand-text span {
+        display: none !important; /* Hide long subtitle on mobile so header breathes */
+      }
+      .live-pulse-badge {
+        padding: 0.22rem 0.55rem;
+        font-size: 0.7rem;
+        white-space: nowrap !important;
+        flex-shrink: 0;
+        gap: 0.35rem;
+      }
+      .live-pulse-badge #topLiveStatusText {
+        font-size: 0.7rem;
+        white-space: nowrap !important;
+      }
+      .live-nav-links {
+        gap: 0.35rem;
+        flex-shrink: 0;
+      }
+      .live-nav-btn {
+        padding: 0.35rem 0.65rem;
+        font-size: 0.78rem;
+        border-radius: 6px;
+      }
+      /* Compact User Avatar Badge in header on small mobile screens */
+      #userAuthBadgeBox .chat-role-badge,
+      #userAuthBadgeBox span {
+        display: none !important;
+      }
+      #userAuthBadgeBox > div {
+        padding: 0.2rem !important;
+        background: transparent !important;
+        border: none !important;
+      }
+      /* Broadcast Info Card tuning on small screens */
+      .broadcast-info-card {
+        padding: 1rem;
+        border-radius: 12px;
+        gap: 0.75rem;
+      }
+      .broadcast-main-topic {
+        font-size: 1.15rem;
+        line-height: 1.35;
+      }
+      .broadcast-si-topic {
+        font-size: 0.82rem;
+      }
+      .broadcast-lecturer-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+      }
+      .broadcast-stats-chips {
+        gap: 0.4rem;
+      }
+      .stat-chip {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.55rem;
+      }
+      /* Filter Pills scroll horizontally on mobile */
+      .live-filter-pills {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .live-filter-pills::-webkit-scrollbar {
+        display: none;
+      }
+      .live-filter-btn {
+        padding: 0.35rem 0.65rem;
+        font-size: 0.76rem;
+        flex-shrink: 0;
       }
     }
   </style>
@@ -1009,7 +1125,7 @@
     <div style="display: flex; align-items: center; gap: 0.75rem;">
       <div class="live-pulse-badge" id="topLiveStatusBadge">
         <span class="live-pulse-dot"></span>
-        <span id="topLiveStatusText">1 BROADCAST LIVE</span>
+        <span id="topLiveStatusText">1 LIVE</span>
       </div>
       <div style="font-size: 0.78rem; color: #94a3b8; font-weight: 600;" id="liveClockDisplay">
         Thu • Sep 10 • 05:00:00 PM
@@ -1017,13 +1133,13 @@
     </div>
 
     <nav class="live-nav-links">
-      <a href="index.html" class="live-nav-btn"><i class="fa-solid fa-house"></i> Home</a>
+      <a href="index.html" class="live-nav-btn live-nav-home"><i class="fa-solid fa-house"></i> <span>Home</span></a>
       <a href="courses.html" class="live-nav-btn"><i class="fa-solid fa-graduation-cap"></i> Courses</a>
       <a href="student-dashboard.html" class="live-nav-btn"><i class="fa-solid fa-chart-pie"></i> Student LMS</a>
       <a href="teacher-portal.html" class="live-nav-btn" id="navTeacherStudioBtn"><i class="fa-solid fa-chalkboard-user"></i> Teacher Studio</a>
       <a href="admin.html" class="live-nav-btn" id="navAdminConsoleBtn"><i class="fa-solid fa-shield-halved"></i> Admin</a>
       
-      <div id="userAuthBadgeBox" style="margin-left: 0.5rem;">
+      <div id="userAuthBadgeBox" style="margin-left: 0.25rem;">
         <!-- Injected dynamically -->
       </div>
     </nav>
@@ -1044,9 +1160,9 @@
         <!-- Filter Tabs -->
         <div class="live-filter-pills">
           <button class="live-filter-btn active" onclick="LIVE_APP.setFilter('all', this)"><i class="fa-solid fa-layer-group"></i> All</button>
-          <button class="live-filter-btn" onclick="LIVE_APP.setFilter('live', this)"><i class="fa-solid fa-circle" style="color: #ef4444; font-size: 0.6rem;"></i> 🔴 Live Now</button>
-          <button class="live-filter-btn" onclick="LIVE_APP.setFilter('scheduled', this)"><i class="fa-solid fa-clock" style="color: #f59e0b;"></i> ⏳ Scheduled</button>
-          <button class="live-filter-btn" onclick="LIVE_APP.setFilter('ended', this)"><i class="fa-solid fa-circle-check" style="color: #94a3b8;"></i> 🏁 Concluded</button>
+          <button class="live-filter-btn" onclick="LIVE_APP.setFilter('live', this)"><span class="live-pulse-dot" style="width: 7px; height: 7px;"></span> Live Now</button>
+          <button class="live-filter-btn" onclick="LIVE_APP.setFilter('scheduled', this)"><i class="fa-solid fa-clock" style="color: #f59e0b;"></i> Scheduled</button>
+          <button class="live-filter-btn" onclick="LIVE_APP.setFilter('ended', this)"><i class="fa-solid fa-flag-checkered" style="color: #94a3b8;"></i> Concluded</button>
         </div>
 
         <!-- Schedule New Broadcast (Authorized Teacher/Admin Only) -->
@@ -1874,7 +1990,10 @@
         if (viewersChip) viewersChip.style.display = isStaff ? "inline-flex" : "none";
 
         if (topicEl) topicEl.textContent = "EduPeak Live Studio Hub";
-        if (topicSiEl) topicSiEl.textContent = "සජීවී විකාශන මැදිරිය";
+        if (topicSiEl) {
+          topicSiEl.textContent = "සජීවී විකාශන මැදිරිය";
+          topicSiEl.style.display = "block";
+        }
         if (batchBadge) batchBadge.textContent = "All Batches";
         if (subjectBadge) subjectBadge.innerHTML = `<i class="fa-solid fa-tower-broadcast" style="color: #227aff;"></i> Live Studio`;
         if (dateEl) dateEl.textContent = "No Scheduled Classes";
@@ -1926,7 +2045,12 @@
 
         const liveCount = allSchedules.filter(s => s.status === "live").length;
         if (topBadgeText) {
-          topBadgeText.textContent = `${liveCount} BROADCAST${liveCount === 1 ? '' : 'S'} LIVE`;
+          const isMobile = window.innerWidth <= 640;
+          if (isMobile) {
+            topBadgeText.textContent = liveCount > 0 ? `${liveCount} Live` : "Offline";
+          } else {
+            topBadgeText.textContent = `${liveCount} BROADCAST${liveCount === 1 ? '' : 'S'} LIVE`;
+          }
         }
         if (totalCounter) {
           totalCounter.textContent = `${allSchedules.length} Stream${allSchedules.length === 1 ? '' : 's'} Available`;
@@ -2156,8 +2280,20 @@
         }
 
         // 2. Update Broadcast Info Headers
-        document.getElementById("infoTopicTitle").textContent = session.topic;
-        document.getElementById("infoTopicTitleSi").textContent = session.topic_si || session.topic;
+        const topicEl = document.getElementById("infoTopicTitle");
+        const topicSiEl = document.getElementById("infoTopicTitleSi");
+        if (topicEl) topicEl.textContent = session.topic || "EduPeak Live Masterclass";
+        if (topicSiEl) {
+          const rawSi = (session.topic_si || "").trim();
+          const rawTopic = (session.topic || "").trim();
+          if (rawSi && rawSi !== rawTopic) {
+            topicSiEl.textContent = rawSi;
+            topicSiEl.style.display = "block";
+          } else {
+            topicSiEl.textContent = "";
+            topicSiEl.style.display = "none";
+          }
+        }
         document.getElementById("infoBatchBadge").textContent = session.examYear || "2027 A/L";
         document.getElementById("infoSubjectBadge").innerHTML = `<i class="fa-solid fa-atom" style="color: #227aff;"></i> ${session.subject || 'Physics'}`;
         document.getElementById("infoScheduleDate").textContent = session.scheduleDate || "Today";
