@@ -1382,16 +1382,11 @@ button, input, select, textarea {
   }
 }
 
-.ticker-line-1 .ticker-track {
-  animation: marqueeRight 36s linear infinite;
-}
-
-.ticker-line-2 .ticker-track {
-  animation: marqueeLeft 28s linear infinite;
-}
-
-.ticker-line-3 .ticker-track {
-  animation: marqueeRight 32s linear infinite;
+.ticker-track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  white-space: nowrap;
 }
 
 @media (max-width: 768px) {
@@ -1413,15 +1408,6 @@ button, input, select, textarea {
   }
   .ticker-track .text-outline {
     -webkit-text-stroke: 1px #38bdf8;
-  }
-  .ticker-line-1 .ticker-track {
-    animation-duration: 26s;
-  }
-  .ticker-line-2 .ticker-track {
-    animation-duration: 20s;
-  }
-  .ticker-line-3 .ticker-track {
-    animation-duration: 23s;
   }
 }
 

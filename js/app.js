@@ -1029,38 +1029,96 @@ function initGoatsPreloader() {
 }
 
 // --------------------------------------------------------------------------
-// 11. MOTION SCROLL TEXT LINES CONTROLLER (Continuous Autonomous Kinetic Marquee)
+// 11. MOTION SCROLL TEXT LINES CONTROLLER (Kinetic Scroll-Driven Marquee)
 // --------------------------------------------------------------------------
 function initScrollTextLines() {
   const section = document.getElementById("scrollTextLinesSection");
   if (!section) return;
 
-  const tracks = section.querySelectorAll(".ticker-track");
-  if (!tracks.length) return;
+  const lines = section.querySelectorAll(".ticker-line");
+  if (!lines.length) return;
 
-  // Clear any legacy inline transforms so pure CSS continuous GPU marquee runs seamlessly
-  tracks.forEach((track) => {
-    track.style.transform = "";
+  const lineData = Array.from(lines).map((line) => {
+    const track = line.querySelector(".ticker-track");
+    const speed = parseFloat(line.getAttribute("data-speed")) || 0.6;
+    const direction = parseFloat(line.getAttribute("data-direction")) || 1;
+    return {
+      track,
+      speed,
+      direction,
+      currentOffset: 0,
+      targetOffset: 0
+    };
   });
 
-  // Performance optimization: run animation when in or near viewport, pause when far away
-  if ("IntersectionObserver" in window) {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          tracks.forEach((track) => {
-            track.style.animationPlayState = entry.isIntersecting ? "running" : "paused";
-          });
-        });
-      },
-      { rootMargin: "250px 0px" }
-    );
-    observer.observe(section);
-  } else {
-    tracks.forEach((track) => {
-      track.style.animationPlayState = "running";
-    });
+  function getGroupWidth(item) {
+    const groups = item.track.querySelectorAll(".ticker-group");
+    if (groups.length > 0 && groups[0].offsetWidth > 0) {
+      return groups[0].offsetWidth;
+    }
+    return item.track.scrollWidth / (groups.length || 3);
   }
+
+  function getTrackX(offset, groupWidth) {
+    if (!groupWidth || groupWidth <= 0) return 0;
+    const norm = ((offset % groupWidth) + groupWidth) % groupWidth;
+    return norm - groupWidth;
+  }
+
+  let isTicking = false;
+
+  function onScroll() {
+    const scrollY = window.scrollY || window.pageYOffset;
+    const rect = section.getBoundingClientRect();
+    const windowH = window.innerHeight;
+
+    // Only compute when section is near or in viewport
+    if (rect.bottom > -300 && rect.top < windowH + 300) {
+      const scrollProgress = scrollY - (section.offsetTop - windowH);
+
+      lineData.forEach((item) => {
+        item.targetOffset = scrollProgress * item.speed * item.direction;
+      });
+
+      if (!isTicking) {
+        isTicking = true;
+        requestAnimationFrame(update);
+      }
+    }
+  }
+
+  function update() {
+    let stillMoving = false;
+
+    lineData.forEach((item) => {
+      if (!item.track) return;
+      const groupWidth = getGroupWidth(item);
+
+      // Smooth kinetic momentum
+      const diff = item.targetOffset - item.currentOffset;
+      if (Math.abs(diff) > 0.1) {
+        item.currentOffset += diff * 0.18;
+        stillMoving = true;
+      } else {
+        item.currentOffset = item.targetOffset;
+      }
+
+      const x = getTrackX(item.currentOffset, groupWidth);
+      item.track.style.transform = `translate3d(${x}px, 0, 0)`;
+    });
+
+    if (stillMoving) {
+      requestAnimationFrame(update);
+    } else {
+      isTicking = false;
+    }
+  }
+
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll, { passive: true });
+
+  // Initial calculation so all lines are populated and visible edge-to-edge
+  onScroll();
 }
 
 // --------------------------------------------------------------------------
