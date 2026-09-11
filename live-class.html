@@ -1549,9 +1549,14 @@
               } else {
                 this.renderStreamsList();
               }
-              if (this.activeSessionId && (data.sessionId === this.activeSessionId || !data.sessionId)) {
-                const isStatusChange = !this.activeSession || this.activeSession.status !== data.status;
-                if (data.status === "live" && isStatusChange) {
+              if (this.activeSessionId) {
+                let targetStatus = data.status;
+                if (!targetStatus && data.all && Array.isArray(data.all)) {
+                  const s = data.all.find(item => item.id === this.activeSessionId);
+                  if (s) targetStatus = s.status;
+                }
+                const isStatusChange = targetStatus && (!this.activeSession || this.activeSession.status !== targetStatus);
+                if (targetStatus === "live" && isStatusChange) {
                   if (this.countdownTimer) {
                     clearInterval(this.countdownTimer);
                     this.countdownTimer = null;
@@ -1564,7 +1569,11 @@
                     window.showToast("🔴 Broadcaster is NOW LIVE! Connecting you to the stream...", "success");
                   }
                   await this.loadSession(this.activeSessionId, false);
-                } else if (data.status === "ended" && isStatusChange) {
+                } else if (targetStatus === "ended" && isStatusChange) {
+                  if (this.activeSession) this.activeSession.status = "ended";
+                  if (window.EDUPEAK_LIVE_PLAYER && typeof window.EDUPEAK_LIVE_PLAYER.triggerLiveEnded === "function") {
+                    try { window.EDUPEAK_LIVE_PLAYER.triggerLiveEnded(); } catch(e) {}
+                  }
                   await this.loadSession(this.activeSessionId, false);
                 }
               }
@@ -1603,6 +1612,10 @@
                   }
                   await this.loadSession(this.activeSessionId, false);
                 } else if (active.status === "ended" && isStatusChange) {
+                  if (this.activeSession) this.activeSession.status = "ended";
+                  if (window.EDUPEAK_LIVE_PLAYER && typeof window.EDUPEAK_LIVE_PLAYER.triggerLiveEnded === "function") {
+                    try { window.EDUPEAK_LIVE_PLAYER.triggerLiveEnded(); } catch(e) {}
+                  }
                   await this.loadSession(this.activeSessionId, false);
                 }
               }
@@ -2077,7 +2090,12 @@
 
           if (standbyScreen) standbyScreen.style.display = "none";
           if (endedScreen) endedScreen.style.display = "none";
+          this.startLiveStatusWatch(session.id);
         } else if (session.status === "scheduled") {
+          if (this.liveStatusWatchTimer) {
+            clearInterval(this.liveStatusWatchTimer);
+            this.liveStatusWatchTimer = null;
+          }
           if (customPlayer) customPlayer.style.display = "none";
           if (iframe) {
             iframe.style.display = "none";
@@ -2095,6 +2113,10 @@
           this.startStandbyStatusWatch(session.id);
         } else {
           // ended
+          if (this.liveStatusWatchTimer) {
+            clearInterval(this.liveStatusWatchTimer);
+            this.liveStatusWatchTimer = null;
+          }
           if (this.countdownTimer) {
             clearInterval(this.countdownTimer);
             this.countdownTimer = null;
@@ -2102,6 +2124,9 @@
           if (this.standbyWatchTimer) {
             clearInterval(this.standbyWatchTimer);
             this.standbyWatchTimer = null;
+          }
+          if (window.EDUPEAK_LIVE_PLAYER && typeof window.EDUPEAK_LIVE_PLAYER.triggerLiveEnded === "function") {
+            try { window.EDUPEAK_LIVE_PLAYER.triggerLiveEnded(); } catch(e) {}
           }
           if (customPlayer) customPlayer.style.display = "none";
           if (session.recordingUrl) {
@@ -2324,6 +2349,40 @@
         }, 2000);
       },
 
+      startLiveStatusWatch(sessionId) {
+        if (this.liveStatusWatchTimer) clearInterval(this.liveStatusWatchTimer);
+        this.liveStatusWatchTimer = setInterval(async () => {
+          if (!this.activeSessionId || this.activeSessionId !== sessionId) {
+            clearInterval(this.liveStatusWatchTimer);
+            this.liveStatusWatchTimer = null;
+            return;
+          }
+          if (this.activeSession && this.activeSession.status === "ended") {
+            clearInterval(this.liveStatusWatchTimer);
+            this.liveStatusWatchTimer = null;
+            return;
+          }
+          let all = [];
+          if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getLiveSessions === "function") {
+            all = await window.SUPABASE_HELPER.getLiveSessions();
+          } else {
+            try { all = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]"); } catch(e) {}
+          }
+          const current = all.find(s => s.id === sessionId);
+          if (current && current.status === "ended") {
+            if (this.liveStatusWatchTimer) {
+              clearInterval(this.liveStatusWatchTimer);
+              this.liveStatusWatchTimer = null;
+            }
+            if (this.activeSession) this.activeSession.status = "ended";
+            if (window.EDUPEAK_LIVE_PLAYER && typeof window.EDUPEAK_LIVE_PLAYER.triggerLiveEnded === "function") {
+              try { window.EDUPEAK_LIVE_PLAYER.triggerLiveEnded(); } catch(e) {}
+            }
+            await this.handleAutoEndStream(sessionId);
+          }
+        }, 2500);
+      },
+
       initCountdown(session) {
         if (this.countdownTimer) clearInterval(this.countdownTimer);
         const hoursEl = document.getElementById("cdHours");
@@ -2528,25 +2587,10 @@
       async handleEndStream(sessionId) {
         if (!sessionId) return;
         if (confirm("Are you sure you want to conclude and end this live broadcast?")) {
-          const nowIso = new Date().toISOString();
-          if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
-            await window.SUPABASE_HELPER.updateLiveSessionStatus(sessionId, "ended", { endedAt: nowIso });
-          } else {
-            try {
-              let scheds = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
-              const s = scheds.find(item => item.id === sessionId);
-              if (s) {
-                s.status = "ended";
-                s.endedAt = nowIso;
-                s.updatedAt = nowIso;
-                localStorage.setItem("edupeak_schedules_db", JSON.stringify(scheds));
-              }
-            } catch (e) {}
+          if (window.EDUPEAK_LIVE_PLAYER && typeof window.EDUPEAK_LIVE_PLAYER.triggerLiveEnded === "function") {
+            try { window.EDUPEAK_LIVE_PLAYER.triggerLiveEnded(); } catch(e) {}
           }
-          if (window.showToast) {
-            window.showToast("⏹️ Live broadcast concluded and saved to archives.", "info");
-          }
-          await this.loadSession(sessionId);
+          await this.handleAutoEndStream(sessionId);
         }
       },
 

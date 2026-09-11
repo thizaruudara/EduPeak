@@ -859,11 +859,18 @@ const EDUPEAK_LIVE_PLAYER = (function() {
           } catch(e) {}
         }
 
+        const playerState = typeof liveYtPlayer.getPlayerState === "function" ? liveYtPlayer.getPlayerState() : -1;
+        if (playerState === 0) {
+          triggerLiveEnded();
+          return;
+        }
+
         const vidDuration = typeof liveYtPlayer.getDuration === "function" ? liveYtPlayer.getDuration() : 0;
         const isLiveType = typeof liveYtPlayer.getVideoData === "function" && liveYtPlayer.getVideoData()?.isLive;
         if (!isLiveType && vidDuration > 0) {
-          if (curTime >= vidDuration - 0.5 && curTime > 0) {
+          if ((curTime >= vidDuration - 1.2 || curTime >= vidDuration) && curTime > 0) {
             triggerLiveEnded();
+            return;
           }
         }
       } catch(e) {}
@@ -880,6 +887,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   function createLiveYTPlayer(videoId, startOffset = null) {
     const container = document.getElementById("edupeakLiveYTPlayerMount");
     if (!container) return;
+    isSessionEnded = false;
 
     if (!videoId && activeSessionData) {
       const u = activeSessionData.rawUrl || activeSessionData.rawurl || activeSessionData.raw_url || activeSessionData.embedUrl || activeSessionData.embedurl || activeSessionData.embed_url || "";
@@ -1013,12 +1021,20 @@ const EDUPEAK_LIVE_PLAYER = (function() {
             } else if (event.data === PAUSED) {
               if (isSessionEnded) return; // don't try to resume an ended session
               isLivePlaying = false;
+              // Check if paused because the video reached the end
+              const curTime = typeof liveYtPlayer.getCurrentTime === "function" ? liveYtPlayer.getCurrentTime() : 0;
+              const vidDuration = typeof liveYtPlayer.getDuration === "function" ? liveYtPlayer.getDuration() : 0;
+              const isLiveType = typeof liveYtPlayer.getVideoData === "function" && liveYtPlayer.getVideoData()?.isLive;
+              if (!isLiveType && vidDuration > 0 && curTime >= vidDuration - 2) {
+                triggerLiveEnded();
+                return;
+              }
               if (!_hasUserUnmuted) {
                 try { liveYtPlayer.mute(); liveYtPlayer.playVideo(); } catch(e) {}
                 _showUnmutePrompt();
               }
             } else if (event.data === ENDED) {
-              if (!isSessionEnded) triggerLiveEnded();
+              triggerLiveEnded();
             }
           },
           'onError': (event) => {
@@ -1033,6 +1049,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   }
 
   function loadLiveStream(url, sessionData = null) {
+    isSessionEnded = false;
     if (sessionData) {
       activeSessionData = sessionData;
       if (sessionData.id && sessionData.startedAt) {

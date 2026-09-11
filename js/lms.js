@@ -215,10 +215,29 @@ function syncLiveStreamWithTeacher() {
   }
 }
 
-// Re-synchronize LMS stream state when a live video ends automatically
+// Cross-tab BroadcastChannel listener for live stream status updates on LMS dashboard
+if (typeof BroadcastChannel !== "undefined") {
+  try {
+    const lmsLiveCh = new BroadcastChannel("edupeak_live_sessions_channel");
+    lmsLiveCh.onmessage = () => {
+      syncLiveStreamWithTeacher();
+    };
+  } catch(e) {}
+}
+
+// Re-synchronize LMS stream state when a live video ends automatically or on storage event
 window.addEventListener("edupeak-live-ended", () => {
   syncLiveStreamWithTeacher();
 });
+
+window.addEventListener("storage", (e) => {
+  if (e.key === "edupeak_live_session_event" || e.key === "edupeak_live_stream_config" || e.key === "edupeak_schedules_db") {
+    syncLiveStreamWithTeacher();
+  }
+});
+
+// Periodic background sync every 4s while on LMS dashboard
+setInterval(syncLiveStreamWithTeacher, 4000);
 
 // Load data from LocalStorage
 function loadSavedLMSData() {

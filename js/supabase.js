@@ -1813,12 +1813,13 @@ const SUPABASE_HELPER = {
     try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(schedules)); } catch (e) {}
 
     // Also update legacy single-live config for backward compatibility
-    if (normalized.status === "live" || !localStorage.getItem("edupeak_live_stream_config")) {
-      try {
+    try {
+      const curSingle = JSON.parse(localStorage.getItem("edupeak_live_stream_config") || "null");
+      if (normalized.status === "live" || (curSingle && (curSingle.id === normalized.id || curSingle.scheduleId === normalized.id)) || !curSingle) {
         localStorage.setItem("edupeak_live_stream_config", JSON.stringify(normalized));
         this.setSharedData("edupeak_live_stream_config", normalized);
-      } catch (e) {}
-    }
+      }
+    } catch (e) {}
 
     // 2. Instantly dispatch multi-channel reactive broadcast events (same-window, BroadcastChannel, and localStorage storage event)
     try {

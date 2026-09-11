@@ -2142,7 +2142,23 @@ const TEACHER_CONTROLLER = {
 
   endLiveBroadcast(scheduleId) {
     const schedules = this.getAllScheduledBroadcasts();
-    const s = schedules.find(item => item.id === scheduleId);
+    let s = schedules.find(item => item.id === scheduleId);
+    if (!s) {
+      try {
+        const stored = JSON.parse(localStorage.getItem(this.storageKeys.schedulesDb) || "[]");
+        s = stored.find(item => item.id === scheduleId);
+        if (s) schedules.push(s);
+      } catch (e) {}
+    }
+    if (!s) {
+      try {
+        const liveCfg = JSON.parse(localStorage.getItem(this.storageKeys.liveStream) || "null");
+        if (liveCfg && (liveCfg.id === scheduleId || liveCfg.scheduleId === scheduleId)) {
+          s = liveCfg;
+          schedules.push(s);
+        }
+      } catch(e) {}
+    }
     if (!s) return;
 
     const nowIso = new Date().toISOString();
@@ -2159,6 +2175,14 @@ const TEACHER_CONTROLLER = {
       if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
         window.SUPABASE_HELPER.updateLiveSessionStatus(scheduleId, "ended", { endedAt: nowIso });
       }
+      if (typeof BroadcastChannel !== "undefined") {
+        const ch = new BroadcastChannel("edupeak_live_sessions_channel");
+        ch.postMessage({ type: "LIVE_SESSION_UPDATED", sessionId: scheduleId, status: "ended", session: s, all: schedules });
+        ch.close();
+      }
+      localStorage.setItem("edupeak_live_session_event", JSON.stringify({
+        type: "LIVE_SESSION_UPDATED", sessionId: scheduleId, status: "ended", timestamp: Date.now()
+      }));
     } catch (e) {}
 
     if (window.showToast) {
@@ -2239,6 +2263,14 @@ const TEACHER_CONTROLLER = {
       if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
         window.SUPABASE_HELPER.updateLiveSessionStatus(scheduleId, status, { startedAt, endedAt });
       }
+      if (typeof BroadcastChannel !== "undefined") {
+        const ch = new BroadcastChannel("edupeak_live_sessions_channel");
+        ch.postMessage({ type: "LIVE_SESSION_UPDATED", sessionId: scheduleId, status: status, session: streamConfig, all: schedules });
+        ch.close();
+      }
+      localStorage.setItem("edupeak_live_session_event", JSON.stringify({
+        type: "LIVE_SESSION_UPDATED", sessionId: scheduleId, status: status, timestamp: Date.now()
+      }));
     } catch (e) {}
 
     if (existingIdx >= 0) {
