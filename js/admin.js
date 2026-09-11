@@ -68,8 +68,16 @@ const ADMIN_CONTROLLER = {
       history.replaceState(null, document.title, window.location.pathname);
       sessionStorage.removeItem("edupeak_admin_open");
       if (typeof this.close === "function") this.close();
-      if (window.location.pathname.toLowerCase().includes("admin.html")) {
-        window.location.replace("index.html");
+      const h = window.location.hostname.toLowerCase();
+      if (h === 'edupeak.lk' || h === 'www.edupeak.lk') {
+        if (window.location.pathname.toLowerCase().includes("admin.html")) {
+          window.location.replace("index.html");
+        }
+      } else {
+        const gate = document.getElementById("adminLoginGate");
+        if (gate) gate.style.display = "flex";
+        const wrapper = document.getElementById("adminModalWrapper");
+        if (wrapper) wrapper.style.display = "none";
       }
       return;
     }

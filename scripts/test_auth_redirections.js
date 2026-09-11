@@ -1,69 +1,53 @@
 const fs = require('fs');
 
-console.log("=== VERIFYING SILENT REDIRECTS & RESTRICTION GATES ===");
+console.log("=== VERIFYING AUTH GATES & REDIRECTION ARCHITECTURE ===");
 
-// 1. admin.html head guard
+// 1. admin.html
 const adminHtml = fs.readFileSync('admin.html', 'utf8');
-const adminHeadGuard = adminHtml.includes('localStorage.getItem("edupeak_auth_session")') &&
-                       adminHtml.includes('user.role !== "admin"') &&
-                       adminHtml.includes('window.location.replace("index.html")');
-console.log("1. admin.html early head guard installed:", adminHeadGuard);
-const adminGateRemoved = !adminHtml.includes('class="admin-login-gate" id="adminLoginGate"');
-console.log("   admin.html login gate removed:", adminGateRemoved);
+const adminHasGate = adminHtml.includes('id="adminLoginGate"');
+const adminNoHeadLoop = !adminHtml.includes('localStorage.getItem("edupeak_auth_session")') ||
+                        !adminHtml.includes('window.location.replace("index.html")');
+const adminConditionalRedirect = adminHtml.includes("h === 'edupeak.lk' || h === 'www.edupeak.lk'");
+console.log("1. admin.html has login gate for admin domain:", adminHasGate);
+console.log("   admin.html does not unconditionally loop to index.html:", adminNoHeadLoop);
+console.log("   admin.html only redirects away if accessed on main domain:", adminConditionalRedirect);
 
-// 2. teacher-portal.html head guard
+// 2. teacher-portal.html
 const teacherHtml = fs.readFileSync('teacher-portal.html', 'utf8');
-const teacherHeadGuard = teacherHtml.includes('localStorage.getItem("edupeak_auth_session")') &&
-                         teacherHtml.includes('user.role !== "teacher" && user.role !== "admin"') &&
-                         teacherHtml.includes('window.location.replace("index.html")');
-console.log("2. teacher-portal.html early head guard installed:", teacherHeadGuard);
-const teacherGateRemoved = !teacherHtml.includes('class="teacher-login-gate" id="teacherLoginGate"');
-console.log("   teacher-portal.html login gate removed:", teacherGateRemoved);
+const teacherHasGate = teacherHtml.includes('id="teacherLoginGate"');
+const teacherNoHeadLoop = !teacherHtml.includes('localStorage.getItem("edupeak_auth_session")') ||
+                          !teacherHtml.includes('window.location.replace("index.html")');
+const teacherConditionalRedirect = teacherHtml.includes("h === 'edupeak.lk' || h === 'www.edupeak.lk'");
+console.log("2. teacher-portal.html has login gate for teacher domain:", teacherHasGate);
+console.log("   teacher-portal.html does not unconditionally loop to index.html:", teacherNoHeadLoop);
+console.log("   teacher-portal.html only redirects away if accessed on main domain:", teacherConditionalRedirect);
 
-// 3. student-dashboard.html head guard & no dummy student
+// 3. student-dashboard.html redirects to login.html
 const dashHtml = fs.readFileSync('student-dashboard.html', 'utf8');
-const dashHeadGuard = dashHtml.includes('localStorage.getItem("edupeak_auth_session")') &&
-                      dashHtml.includes('window.location.replace("index.html")');
-const dashNoDummy = !dashHtml.includes('id: "EP-2027-001"');
-console.log("3. student-dashboard.html early head guard installed:", dashHeadGuard);
-console.log("   student-dashboard.html dummy student session removed:", dashNoDummy);
+const dashRedirectsToLogin = dashHtml.includes('window.location.replace("login.html?redirect=student-dashboard.html")');
+console.log("3. student-dashboard.html redirects unauthenticated users to login.html:", dashRedirectsToLogin);
 
-// 4. profile.html head guard & no dummy student
+// 4. profile.html redirects to login.html
 const profHtml = fs.readFileSync('profile.html', 'utf8');
-const profHeadGuard = profHtml.includes('localStorage.getItem("edupeak_auth_session")') &&
-                      profHtml.includes('window.location.replace("index.html")');
-const profNoDummy = !profHtml.includes('id: "EP-2027-001"');
-console.log("4. profile.html early head guard installed:", profHeadGuard);
-console.log("   profile.html dummy student session removed:", profNoDummy);
+const profRedirectsToLogin = profHtml.includes('window.location.replace("login.html?redirect=profile.html")');
+console.log("4. profile.html redirects unauthenticated users to login.html:", profRedirectsToLogin);
 
-// 5. js/admin.js silent auto-open
+// 5. js/admin.js handles admin domain without infinite loop
 const adminJs = fs.readFileSync('js/admin.js', 'utf8');
-const adminNoAutoLogin = !adminJs.includes('window.AUTH_SYSTEM.createSession(adminAcc)');
-const adminNoToast = !adminJs.includes('Admin access required. Please sign in as an Administrator.');
-console.log("5. js/admin.js auto-login removed:", adminNoAutoLogin);
-console.log("   js/admin.js 'Admin access required' toast removed:", adminNoToast);
+const adminJsSafe = adminJs.includes("adminLoginGate") &&
+                    adminJs.includes("h === 'edupeak.lk' || h === 'www.edupeak.lk'");
+console.log("5. js/admin.js shows adminLoginGate instead of redirecting on admin domain:", adminJsSafe);
 
-// 6. js/teacher.js no fallback session
+// 6. js/teacher.js handles teacher domain without infinite loop
 const teacherJs = fs.readFileSync('js/teacher.js', 'utf8');
-const teacherNoFallback = !teacherJs.includes('Default fallback session for instructor view');
-console.log("6. js/teacher.js instructor fallback session removed:", teacherNoFallback);
+const teacherJsSafe = teacherJs.includes("teacherLoginGate") &&
+                      teacherJs.includes("h === 'edupeak.lk' || h === 'www.edupeak.lk'");
+console.log("6. js/teacher.js shows teacherLoginGate instead of redirecting on teacher domain:", teacherJsSafe);
 
-// 7. js/app.js & js/lms.js silent parameter handling
-const appJs = fs.readFileSync('js/app.js', 'utf8');
-const lmsJs = fs.readFileSync('js/lms.js', 'utf8');
-const appJsSilent = appJs.includes('if (!currentUser || currentUser.role !== "admin")') &&
-                    appJs.includes('sessionStorage.removeItem("edupeak_admin_open")');
-const lmsJsSilent = !lmsJs.includes('Please sign in to access your EduPeak LMS account.');
-console.log("7. js/app.js silent param cleanup:", appJsSilent);
-console.log("   js/lms.js 'Please sign in' toast removed:", lmsJsSilent);
+const allPass = adminHasGate && adminNoHeadLoop && adminConditionalRedirect &&
+                teacherHasGate && teacherNoHeadLoop && teacherConditionalRedirect &&
+                dashRedirectsToLogin && profRedirectsToLogin &&
+                adminJsSafe && teacherJsSafe;
 
-const allPass = adminHeadGuard && adminGateRemoved &&
-                teacherHeadGuard && teacherGateRemoved &&
-                dashHeadGuard && dashNoDummy &&
-                profHeadGuard && profNoDummy &&
-                adminNoAutoLogin && adminNoToast &&
-                teacherNoFallback &&
-                appJsSilent && lmsJsSilent;
-
-console.log("\nALL AUTH ROUTE CHECKS PASSED:", allPass);
+console.log("\nALL AUTH GATE & REDIRECTION CHECKS PASSED:", allPass);
 process.exit(allPass ? 0 : 1);

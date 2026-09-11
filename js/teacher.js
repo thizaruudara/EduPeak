@@ -30,10 +30,17 @@ const TEACHER_CONTROLLER = {
 
   checkAuth() {
     const user = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
+    const gate = document.getElementById("teacherLoginGate");
     if (user && (user.role === "teacher" || user.role === "admin")) {
       this.teacher = user;
+      if (gate) gate.style.display = "none";
     } else {
-      window.location.replace("index.html");
+      const h = window.location.hostname.toLowerCase();
+      if (h === 'edupeak.lk' || h === 'www.edupeak.lk') {
+        window.location.replace("index.html");
+        return;
+      }
+      if (gate) gate.style.display = "flex";
       return;
     }
 

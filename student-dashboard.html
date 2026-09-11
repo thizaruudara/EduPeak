@@ -7,11 +7,11 @@
         var stored = localStorage.getItem("edupeak_auth_session");
         var user = stored ? JSON.parse(stored) : null;
         if (!user) {
-          window.location.replace("index.html");
+          window.location.replace("login.html?redirect=student-dashboard.html");
           return;
         }
       } catch (e) {
-        window.location.replace("index.html");
+        window.location.replace("login.html?redirect=student-dashboard.html");
         return;
       }
     })();
@@ -1004,7 +1004,7 @@
       }
 
       if (!currentUser) {
-        window.location.replace("index.html");
+        window.location.replace("login.html?redirect=student-dashboard.html");
         return;
       }
 

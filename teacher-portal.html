@@ -3,22 +3,13 @@
 <head>
   <script>
     (function() {
-      try {
-        var stored = localStorage.getItem("edupeak_auth_session");
-        var user = stored ? JSON.parse(stored) : null;
-        if (!user || (user.role !== "teacher" && user.role !== "admin")) {
-          window.location.replace("index.html");
-          return;
-        }
-      } catch (e) {
-        window.location.replace("index.html");
-        return;
-      }
       var h = window.location.hostname.toLowerCase();
       if (h === 'edupeak.lk' || h === 'www.edupeak.lk') {
         window.location.replace('/index.html');
+        return;
       } else if (h === 'admin.edupeak.lk' || (h.startsWith('admin.') && !h.includes('teacher'))) {
         window.location.replace('/admin.html');
+        return;
       }
     })();
   </script>
@@ -153,10 +144,42 @@
 </head>
 <body class="teacher-body">
 
-  <!-- Teacher & Faculty Studio (Only rendered for authorized teachers/admins) -->
+  <!-- =========================================================================
+       FACULTY STUDIO LOGIN GATE (Displayed when unauthenticated on teacher domain)
+       ========================================================================= -->
+  <div class="teacher-login-gate" id="teacherLoginGate" style="display: flex;">
+    <div class="teacher-login-card">
+      <div class="teacher-gate-logo">
+        <i class="fa-solid fa-chalkboard-user"></i>
+      </div>
+      <div class="teacher-gate-badge">
+        <i class="fa-solid fa-lock"></i> Faculty Login • teacher.edupeak.lk
+      </div>
+      <h1 class="teacher-gate-title">Faculty Studio</h1>
+      <p class="teacher-gate-subtitle">Sign in with authorized faculty lecturer credentials to manage courses, video lessons, and MCQ exams.</p>
+
+      <form class="teacher-gate-form" id="teacherGateForm" onsubmit="handleTeacherGateLogin(event)">
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label class="form-label" for="teacherGateEmail" style="font-size: 0.82rem; font-weight: 600; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Faculty Email</label>
+          <input type="email" class="teacher-gate-input" id="teacherGateEmail" placeholder="teacher@edupeak.lk" value="teacher@edupeak.lk" required autocomplete="username">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label class="form-label" for="teacherGatePassword" style="font-size: 0.82rem; font-weight: 600; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Security Key</label>
+          <input type="password" class="teacher-gate-input" id="teacherGatePassword" placeholder="••••••••" value="teacher123" required autocomplete="current-password">
+        </div>
+
+        <div id="teacherGateError" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; font-size: 0.82rem; padding: 0.6rem; border-radius: 8px; margin-bottom: 1rem;"></div>
+
+        <button type="submit" class="teacher-gate-btn" id="teacherGateSubmitBtn">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In to Faculty Studio
+        </button>
+      </form>
+    </div>
+  </div>
 
   <!-- Teacher Top Navigation Header -->
-  <header class="teacher-header">
+  <header class="teacher-header" style="display: none;">
     <div class="container teacher-header-inner">
       <div class="brand-logo">
         <img src="assets/img/edupeak_logo.png" alt="EduPeak Logo" class="site-brand-img">
@@ -183,7 +206,7 @@
   </header>
 
   <!-- Hero Banner -->
-  <section class="teacher-hero-banner">
+  <section class="teacher-hero-banner" style="display: none;">
     <div class="container teacher-hero-grid">
       <div>
         <div style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.75rem; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 9999px; font-size: 0.75rem; font-weight: 700; color: #93c5fd; margin-bottom: 0.75rem;">
@@ -209,7 +232,7 @@
   </section>
 
   <!-- Main Content Container -->
-  <main class="container" style="flex: 1; padding-bottom: 3rem;">
+  <main class="container" style="flex: 1; padding-bottom: 3rem; display: none;">
     
     <!-- Metrics Row -->
     <div class="teacher-stats-row">
@@ -1359,13 +1382,30 @@
   <script>
     function checkTeacherAuth() {
       const user = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
+      const gate = document.getElementById("teacherLoginGate");
+      const header = document.querySelector(".teacher-header");
+      const hero = document.querySelector(".teacher-hero-banner");
+      const main = document.querySelector("main.container");
+
       if (user && (user.role === "teacher" || user.role === "admin")) {
+        if (gate) gate.style.display = "none";
+        if (header) header.style.display = "";
+        if (hero) hero.style.display = "";
+        if (main) main.style.display = "";
         if (window.TEACHER_CONTROLLER) {
           window.TEACHER_CONTROLLER.teacher = user;
           window.TEACHER_CONTROLLER.init();
         }
       } else {
-        window.location.replace("index.html");
+        const h = window.location.hostname.toLowerCase();
+        if (h === 'edupeak.lk' || h === 'www.edupeak.lk') {
+          window.location.replace("index.html");
+          return;
+        }
+        if (gate) gate.style.display = "flex";
+        if (header) header.style.display = "none";
+        if (hero) hero.style.display = "none";
+        if (main) main.style.display = "none";
       }
     }
 
