@@ -1001,6 +1001,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
               updateLiveWatermark();
               startDurationWatchdog();
               triggerStartupMask();
+              scheduleLiveControlsFade();
 
               const targetPos = Math.floor(getPlaybackResumeSeconds(videoId));
               const curTime = typeof liveYtPlayer.getCurrentTime === "function" ? liveYtPlayer.getCurrentTime() : 0;
@@ -1021,6 +1022,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
             } else if (event.data === PAUSED) {
               if (isSessionEnded) return; // don't try to resume an ended session
               isLivePlaying = false;
+              showLiveControls();
               // Check if paused because the video reached the end
               const curTime = typeof liveYtPlayer.getCurrentTime === "function" ? liveYtPlayer.getCurrentTime() : 0;
               const vidDuration = typeof liveYtPlayer.getDuration === "function" ? liveYtPlayer.getDuration() : 0;
@@ -1151,6 +1153,45 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     }
   }
 
+  let liveControlsTimeout = null;
+
+  function showLiveControls() {
+    const controls = document.getElementById("livePlayerControlsOverlay");
+    const topBar = document.getElementById("livePlayerTopBar");
+    const wrapper = document.getElementById("edupeakLivePlayerWrapper");
+    if (controls) {
+      controls.classList.remove("fade-out");
+      controls.style.opacity = "";
+    }
+    if (topBar) topBar.classList.remove("fade-out");
+    if (wrapper) wrapper.classList.remove("hide-cursor");
+  }
+
+  function hideLiveControls() {
+    if (!isLivePlaying) return;
+    const controls = document.getElementById("livePlayerControlsOverlay");
+    const topBar = document.getElementById("livePlayerTopBar");
+    const topMask = document.getElementById("livePlayerTopMask");
+    const wrapper = document.getElementById("edupeakLivePlayerWrapper");
+    if (controls) {
+      controls.classList.add("fade-out");
+      controls.style.opacity = "";
+    }
+    if (topBar) topBar.classList.add("fade-out");
+    if (topMask) topMask.classList.add("mask-faded");
+    if (wrapper) wrapper.classList.add("hide-cursor");
+  }
+
+  function scheduleLiveControlsFade() {
+    clearTimeout(liveControlsTimeout);
+    showLiveControls();
+    if (isLivePlaying) {
+      liveControlsTimeout = setTimeout(() => {
+        hideLiveControls();
+      }, 3000);
+    }
+  }
+
   function _unmute() {
     _hasUserUnmuted = true;
     _hideUnmutePrompt();
@@ -1170,6 +1211,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       const bigPlayBtn = document.getElementById("livePlayerBigPlayBtn");
       if (bigPlayBtn) bigPlayBtn.classList.add("hidden");
     } catch(e) {}
+    scheduleLiveControlsFade();
   }
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -1187,6 +1229,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     isLivePlaying = true;
     const bigPlayBtn = document.getElementById("livePlayerBigPlayBtn");
     if (bigPlayBtn) bigPlayBtn.classList.add("hidden");
+    scheduleLiveControlsFade();
   }
 
   let shieldClickAttempts = 0;
@@ -1214,15 +1257,8 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       _unmute();
       return;
     }
-    // If stream is active and unmuted, pulse controls overlay briefly for volume/quality adjustment without pausing.
-    const overlay = document.getElementById("livePlayerControlsOverlay");
-    if (overlay) {
-      overlay.style.opacity = "1";
-      clearTimeout(overlay._hideTimeout);
-      overlay._hideTimeout = setTimeout(() => {
-        overlay.style.opacity = "";
-      }, 3000);
-    }
+    // If stream is active and unmuted, show controls and top bar, auto-fading after 3s
+    scheduleLiveControlsFade();
   }
 
   function togglePlayPause() {
@@ -1244,6 +1280,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     isLivePlaying = false;
     const bigPlayBtn = document.getElementById("livePlayerBigPlayBtn");
     if (bigPlayBtn) bigPlayBtn.classList.remove("hidden");
+    showLiveControls();
   }
 
   function setVolume(val) {
@@ -1398,6 +1435,19 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   }
 
   function setupLivePlayerEvents() {
+    const liveWrapper = document.getElementById("edupeakLivePlayerWrapper");
+    if (liveWrapper) {
+      liveWrapper.addEventListener("mousemove", () => {
+        scheduleLiveControlsFade();
+      });
+      liveWrapper.addEventListener("mouseleave", () => {
+        if (isLivePlaying) hideLiveControls();
+      });
+      liveWrapper.addEventListener("touchstart", () => {
+        scheduleLiveControlsFade();
+      }, { passive: true });
+    }
+
     document.addEventListener("click", (e) => {
       const liveQWrapper = document.querySelector("#edupeakLivePlayerWrapper .quality-selector-wrapper");
       const liveQMenu = document.getElementById("livePlayerQualityMenu");
@@ -1455,7 +1505,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     clearTimeout(startupMaskTimer);
     startupMaskTimer = setTimeout(() => {
       if (topMask) topMask.classList.add("mask-faded");
-    }, 5500); // Fades away once YouTube has auto-hidden its native overlay!
+    }, 3200); // Fades away once YouTube has auto-hidden its native overlay!
   }
 
   function retryPlayback() {
@@ -1500,6 +1550,9 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     toggleFullscreen: toggleFullscreen,
     setWatermarkEnabled: setWatermarkEnabled,
     updateLiveWatermark: updateLiveWatermark,
+    showControls: showLiveControls,
+    hideControls: hideLiveControls,
+    scheduleControlsFade: scheduleLiveControlsFade,
     onStreamEnded: function(cb) { if (typeof cb === "function") streamEndCallbacks.push(cb); },
     getElapsedSeconds: getElapsedSeconds,
     setSessionData: function(s) { activeSessionData = s; },

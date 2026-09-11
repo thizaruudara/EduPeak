@@ -26,17 +26,10 @@
   background: #000000;
 }
 
-/* Bottom Right Corner Mask (Blocks YouTube watermark logo without cropping video) */
+/* Bottom Right Corner Mask (Disabled: replaced by clean frame cropper scale to prevent static dark patch) */
 .edupeak-player-viewport::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 140px;
-  height: 52px;
-  background: linear-gradient(135deg, transparent 0%, rgba(0, 0, 0, 0.75) 45%, rgba(0, 0, 0, 0.95) 100%);
-  pointer-events: none;
-  z-index: 10;
+  content: none !important;
+  display: none !important;
 }
 
 /* 100% Clean YouTube Brand-Free Cropper (Eliminates YouTube titles, avatar, logo, and captions) */
@@ -57,7 +50,7 @@
   position: absolute !important;
   top: 50% !important;
   left: 50% !important;
-  transform: translate(-50%, -50%) scale(1.0) !important;
+  transform: translate(-50%, -48%) scale(1.10) !important;
   transform-origin: center center !important;
   width: 100% !important;
   height: 100% !important;
@@ -66,7 +59,7 @@
   display: block !important;
 }
 
-/* Startup / Reload Watermark Mask (Hides initial YouTube title & avatar for ~5.5s until YouTube auto-hides them) */
+/* Startup / Reload Watermark Mask (Hides initial YouTube title & avatar for ~3.5s until YouTube auto-hides them) */
 .edupeak-startup-mask {
   position: absolute;
   left: 0;
@@ -75,12 +68,15 @@
   pointer-events: none;
   opacity: 1;
   visibility: visible;
-  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s;
+  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.6s, transform 0.6s;
 }
 
-.edupeak-startup-mask.mask-faded {
+.edupeak-startup-mask.mask-faded,
+.edupeak-startup-mask.fade-out {
   opacity: 0 !important;
   visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateY(-14px);
 }
 
 .edupeak-startup-mask.top-mask {
@@ -115,34 +111,35 @@
   font-weight: 600;
 }
 
-/* Live Broadcast Solid Opaque Footer Bar (100% physically blocks YouTube bottom bar, "More videos", and YouTube logo with ZERO duplicate text) */
+/* Live Broadcast Dynamic Controls Bar (Glassmorphic, auto-hiding with inactivity) */
 .live-player-wrapper .edupeak-player-controls-overlay {
   position: absolute !important;
   bottom: 0 !important;
   left: 0 !important;
   right: 0 !important;
-  height: 52px !important;
-  min-height: 52px !important;
-  max-height: 52px !important;
-  background: #080c16 !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.85) !important;
+  height: 56px !important;
+  min-height: 56px !important;
+  max-height: 56px !important;
+  background: linear-gradient(0deg, rgba(8, 12, 22, 0.96) 0%, rgba(8, 12, 22, 0.72) 60%, transparent 100%) !important;
+  border-top: none !important;
+  box-shadow: none !important;
   padding: 0 1.25rem !important;
   z-index: 25 !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: center !important;
-  opacity: 1 !important;
-  transform: none !important;
-  pointer-events: auto !important;
-  visibility: visible !important;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  visibility: visible;
+  transition: opacity 0.35s ease, transform 0.35s ease, visibility 0.35s ease !important;
 }
 
 .live-player-wrapper .edupeak-player-controls-overlay.fade-out {
-  opacity: 1 !important;
-  transform: none !important;
-  pointer-events: auto !important;
-  visibility: visible !important;
+  opacity: 0 !important;
+  transform: translateY(14px) !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
 }
 
 /* Cross-Platform Fullscreen / iOS Safari Viewport Breakout */
@@ -192,17 +189,23 @@
   right: 0;
   height: 56px;
   padding: 0.75rem 1.25rem;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0.85) 60%, rgba(0, 0, 0, 0) 100%);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.7) 60%, rgba(0, 0, 0, 0) 100%);
   display: flex;
   justify-content: space-between;
   align-items: center;
   z-index: 15;
   pointer-events: none;
-  transition: opacity 0.3s ease;
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  transition: opacity 0.35s ease, transform 0.35s ease, visibility 0.35s ease;
 }
 
 .edupeak-player-top-bar.fade-out {
-  opacity: 0.85; /* Keep subtle top gradient mask active to mask YouTube title */
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateY(-14px) !important;
 }
 
 .edupeak-player-brand {
@@ -342,6 +345,7 @@
   opacity: 0;
   transform: translateY(10px);
   pointer-events: none;
+  visibility: hidden;
 }
 
 /* Progress Bar Container */
