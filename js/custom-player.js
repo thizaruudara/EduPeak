@@ -1436,26 +1436,29 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     const topic = (activeSessionData && (activeSessionData.topic || activeSessionData.title || activeSessionData.subject || "")) || "";
     const teacher = (activeSessionData && (activeSessionData.teacherName || activeSessionData.teacher_name || activeSessionData.teacher || "")) || "";
 
-    // Update top bar lesson title
+    // Update top bar lesson title + teacher name
     const topLesson = document.getElementById("liveTopLessonTitle");
     if (topLesson && topic) topLesson.textContent = topic;
-
-    // Update top bar teacher name
     const topTeacher = document.getElementById("liveTopTeacherName");
     if (topTeacher && teacher) topTeacher.textContent = teacher;
 
-    // Update bottom bar lesson title
-    const btmLesson = document.getElementById("liveBottomLessonTitle");
-    if (btmLesson && topic) btmLesson.textContent = topic;
-
-    // Update bottom bar teacher name
-    const btmTeacher = document.getElementById("liveBottomTeacherName");
-    if (btmTeacher && teacher) btmTeacher.textContent = teacher;
-
-    // Also update the startup veil if present
+    // Update the startup veil if present
     const veilTopic = document.getElementById("veilTopicTitle");
     if (veilTopic && topic) veilTopic.textContent = topic;
+
+    // Update the always-visible scrolling ticker (both copies for seamless loop)
+    const tickerText = topic || "Physics \u2014 Live Broadcast";
+    const tickerTeacher = teacher || "Amalsha Wanniarachchi";
+    ["liveTickerTitle1", "liveTickerTitle2"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = tickerText;
+    });
+    ["liveTickerTeacher1", "liveTickerTeacher2"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = tickerTeacher;
+    });
   }
+
 
 
   function startLiveWatermarkMovement() {

@@ -110,29 +110,26 @@
   font-weight: 600;
 }
 
-/* Live Broadcast Dynamic Controls Bar — tall enough to fully cover YouTube bottom UI */
+/* Live Broadcast Dynamic Controls Bar — fades on inactivity, sits above the ticker */
 .live-player-wrapper .edupeak-player-controls-overlay {
   position: absolute !important;
-  bottom: 0 !important;
+  bottom: 32px !important; /* sits above the ticker */
   left: 0 !important;
   right: 0 !important;
-  height: 108px !important;
-  min-height: 108px !important;
-  max-height: 108px !important;
-  /* Fully solid black at bottom (covers YouTube logo, More Videos, controls), fades up */
+  height: 52px !important;
+  min-height: 52px !important;
+  max-height: 52px !important;
   background: linear-gradient(0deg,
-    #000000 0%,
-    rgba(5, 8, 18, 0.98) 40%,
-    rgba(5, 8, 18, 0.85) 68%,
+    rgba(5, 8, 18, 0.92) 0%,
+    rgba(5, 8, 18, 0.65) 60%,
     transparent 100%) !important;
   border-top: none !important;
   box-shadow: none !important;
   padding: 0 1.1rem !important;
-  padding-bottom: 10px !important;
   z-index: 25 !important;
   display: flex !important;
   flex-direction: column !important;
-  justify-content: flex-end !important;
+  justify-content: center !important;
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
@@ -142,9 +139,97 @@
 
 .live-player-wrapper .edupeak-player-controls-overlay.fade-out {
   opacity: 0 !important;
-  transform: translateY(16px) !important;
+  transform: translateY(8px) !important;
   pointer-events: none !important;
   visibility: hidden !important;
+}
+
+/* ============================================================
+   ALWAYS-VISIBLE SCROLLING TICKER — covers YouTube watermark.
+   Like a TV ad ticker: scrolls right-to-left, always on,
+   never tied to mouse events. z-index above everything.
+   ============================================================ */
+.edupeak-live-ticker {
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 30px !important;
+  background: rgba(3, 5, 14, 0.97) !important;
+  border-top: 1px solid rgba(239, 68, 68, 0.35) !important;
+  overflow: hidden !important;
+  z-index: 30 !important; /* above controls, always on top */
+  display: flex !important;
+  align-items: center !important;
+  pointer-events: none !important;
+}
+
+/* Left label badge — stays fixed */
+.edupeak-live-ticker .ticker-label {
+  flex-shrink: 0;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 900;
+  padding: 0 0.6rem;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-right: 1px solid rgba(239,68,68,0.5);
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.edupeak-live-ticker .ticker-label .ticker-pulse {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #fff;
+  animation: ticker-blink 1s ease infinite;
+}
+
+@keyframes ticker-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+
+/* Scrolling text track */
+.edupeak-live-ticker .ticker-track {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  /* Start fully off-screen right, end fully off-screen left */
+  animation: ticker-scroll 22s linear infinite;
+  will-change: transform;
+}
+
+@keyframes ticker-scroll {
+  0%   { transform: translateX(100vw); }
+  100% { transform: translateX(-100%); }
+}
+
+.edupeak-live-ticker .ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  padding: 0 2.5rem;
+}
+
+.edupeak-live-ticker .ticker-item .ticker-sep {
+  color: #ef4444;
+  margin: 0 0.35rem;
+  font-weight: 900;
+}
+
+.edupeak-live-ticker .ticker-item .ticker-teacher {
+  color: #94a3b8;
+  font-weight: 600;
 }
 
 /* Cross-Platform Fullscreen / iOS Safari Viewport Breakout */
