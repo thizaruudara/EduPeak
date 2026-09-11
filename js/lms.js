@@ -79,6 +79,23 @@ function syncLiveStreamWithTeacher() {
         try { cfg = JSON.parse(saved); } catch (e) {}
       }
     }
+    if (!cfg || cfg.status === "ended" || cfg.topic === "No Live Broadcast Scheduled") {
+      try {
+        let scheds = [];
+        if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+          scheds = window.SUPABASE_HELPER.getSharedData("edupeak_schedules_db") || [];
+        }
+        if (!Array.isArray(scheds) || scheds.length === 0) {
+          scheds = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
+        }
+        if (Array.isArray(scheds) && scheds.length > 0) {
+          const liveSched = scheds.find(s => s && s.status === "live");
+          const nextSched = scheds.find(s => s && s.status === "scheduled");
+          if (liveSched) cfg = liveSched;
+          else if (nextSched) cfg = nextSched;
+        }
+      } catch(e) {}
+    }
     if (cfg && window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.isTestSchedule === "function" && window.SUPABASE_HELPER.isTestSchedule(cfg)) {
       cfg = null;
     }

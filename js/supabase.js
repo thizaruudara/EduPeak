@@ -424,11 +424,75 @@ const SUPABASE_HELPER = {
     if (!this.isConnected || !this.client) return null;
     const deletedIds = this.getDeletedSchedules();
     try {
+      // 1. Gather current local schedules
+      let localSchedules = [];
+      try {
+        const stored = localStorage.getItem("edupeak_schedules_db");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            localSchedules = parsed
+              .map(s => this.normalizeLiveSession(s))
+              .filter(s => s && s.id && !deletedIds.includes(s.id) && !this.isTestSchedule(s));
+          }
+        }
+      } catch (e) {}
+
+      const shared = this.getSharedData("edupeak_schedules_db");
+      if (Array.isArray(shared) && shared.length > 0) {
+        shared.forEach(s => {
+          const norm = this.normalizeLiveSession(s);
+          if (!norm || !norm.id || deletedIds.includes(norm.id) || this.isTestSchedule(norm)) return;
+          const idx = localSchedules.findIndex(l => l.id === norm.id);
+          if (idx === -1) {
+            localSchedules.push(norm);
+          } else {
+            const localTime = new Date(localSchedules[idx].updatedAt || localSchedules[idx].updated_at || 0).getTime();
+            const sharedTime = new Date(norm.updatedAt || norm.updated_at || 0).getTime();
+            if (sharedTime > localTime) {
+              localSchedules[idx] = { ...localSchedules[idx], ...norm };
+            }
+          }
+        });
+      }
+
       const { data, error } = await this.client.from("broadcast_schedules").select("*").order("updated_at", { ascending: false });
       if (!error && Array.isArray(data)) {
-        const filtered = data
+        const remoteNormalized = data
           .map(s => this.normalizeLiveSession(s))
           .filter(s => s && s.id && !deletedIds.includes(s.id) && !this.isTestSchedule(s));
+
+        // Merge remote with local schedules so newly created or locally modified schedules are NEVER lost
+        const merged = [...remoteNormalized];
+        const unsyncedLocals = [];
+
+        localSchedules.forEach(local => {
+          const idx = merged.findIndex(m => m.id === local.id);
+          if (idx === -1) {
+            merged.push(local);
+            unsyncedLocals.push(local);
+          } else {
+            const remoteTime = new Date(merged[idx].updatedAt || merged[idx].updated_at || 0).getTime();
+            const localTime = new Date(local.updatedAt || local.updated_at || 0).getTime();
+            if (localTime >= remoteTime) {
+              merged[idx] = { ...merged[idx], ...local };
+            }
+          }
+        });
+
+        // Automatically push any unsynced local schedules to Supabase Cloud
+        if (unsyncedLocals.length > 0) {
+          unsyncedLocals.forEach(unsynced => {
+            const payload = this.formatSchedulePayload(unsynced);
+            if (payload) {
+              this.client.from("broadcast_schedules").upsert([payload]).then(({ error: upErr }) => {
+                if (upErr) console.warn("Auto-sync local schedule to Supabase cloud warning:", upErr);
+              }).catch(() => {});
+            }
+          });
+        }
+
+        const filtered = merged.filter(s => s && s.id && !deletedIds.includes(s.id) && !this.isTestSchedule(s));
         this.setSharedData("edupeak_schedules_db", filtered);
         try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(filtered)); } catch (e) {}
 
@@ -1598,13 +1662,72 @@ const SUPABASE_HELPER = {
   },
 
   // 8. BROADCAST SCHEDULES & MULTI-LIVE SESSIONS
+  formatSchedulePayload(session) {
+    if (!session || !session.id) return null;
+    const normalized = this.normalizeLiveSession(session);
+    if (!normalized || !normalized.id) return null;
+
+    const metaToPack = {
+      courseTitle: normalized.courseTitle || normalized.course_title || "",
+      subject: normalized.subject || "Physics",
+      subject_si: normalized.subject_si || "",
+      teacherId: normalized.teacherId || normalized.teacher_id || "tch-amalsha",
+      teacherName: normalized.teacherName || normalized.teacher_name || "Amalsha Wanniarachchi",
+      creatorId: normalized.creatorId || normalized.creator_id || normalized.teacherId || "tch-amalsha",
+      creatorName: normalized.creatorName || normalized.creator_name || normalized.teacherName || "Faculty Instructor",
+      creatorEmail: normalized.creatorEmail || normalized.creator_email || "",
+      creatorRole: normalized.creatorRole || normalized.creator_role || "teacher",
+      scheduleDate: normalized.scheduleDate || new Date().toISOString().split("T")[0],
+      scheduleStartTime: normalized.scheduleStartTime || "08:30",
+      scheduleEndTime: normalized.scheduleEndTime || "12:30",
+      chatEnabled: Boolean(normalized.chatEnabled),
+      description: normalized.description || "",
+      pinnedNotice: normalized.pinnedNotice || "",
+      zoomUrl: normalized.zoomUrl || normalized.zoomurl || "",
+      examYear: normalized.examYear || "2027 A/L",
+      startedAt: normalized.startedAt || null,
+      endedAt: normalized.endedAt || null,
+      topic_si: normalized.topic_si || ""
+    };
+
+    return {
+      id: String(normalized.id).trim(),
+      topic: normalized.topic || "Physics Live Masterclass",
+      course_id: normalized.courseId || normalized.course_id || null,
+      courseid: normalized.courseId || normalized.course_id || null,
+      coursetitle: JSON.stringify(metaToPack),
+      scheduletime: normalized.scheduleTime || `${metaToPack.scheduleDate} \u2022 ${metaToPack.scheduleStartTime} \u2013 ${metaToPack.scheduleEndTime}`,
+      provider: normalized.provider || "youtube",
+      rawurl: normalized.rawUrl || normalized.rawurl || null,
+      embedurl: normalized.embedUrl || normalized.embedurl || null,
+      status: normalized.status || "scheduled",
+      watermarkenabled: Boolean(normalized.watermarkEnabled),
+      updated_at: normalized.updatedAt || normalized.updated_at || new Date().toISOString()
+    };
+  },
+
   normalizeLiveSession(sched) {
     if (!sched || typeof sched !== "object") return sched;
     if (sched.id && (sched.id.startsWith("chat-sync-") || sched.id.startsWith("sched-continuous-") || sched.id.startsWith("sched-early-test-"))) return null;
     if (sched.status === "chat_sync" || sched.topic === "chat_sync") return null;
-    const provider = sched.provider || "youtube";
-    let embedUrl = sched.embedUrl || sched.embedurl || sched.embed_url || "";
-    const rawUrl = sched.rawUrl || sched.rawurl || sched.raw_url || "";
+
+    // Unpack rich metadata if coursetitle is a serialized JSON object
+    let unpackedMeta = {};
+    const rawCourseTitle = sched.coursetitle || sched.courseTitle || sched.course_title;
+    if (typeof rawCourseTitle === "string" && rawCourseTitle.trim().startsWith("{")) {
+      try {
+        unpackedMeta = JSON.parse(rawCourseTitle.trim());
+      } catch (e) {}
+    }
+
+    const merged = { ...unpackedMeta, ...sched };
+    const courseTitle = unpackedMeta.courseTitle || (typeof sched.courseTitle === "string" && !sched.courseTitle.trim().startsWith("{") ? sched.courseTitle : (unpackedMeta.topic || ""));
+    merged.courseTitle = courseTitle;
+    merged.coursetitle = courseTitle;
+
+    const provider = merged.provider || "youtube";
+    let embedUrl = merged.embedUrl || merged.embedurl || merged.embed_url || "";
+    const rawUrl = merged.rawUrl || merged.rawurl || merged.raw_url || "";
     
     // Auto-compute clean embed URL if not provided
     if (!embedUrl && rawUrl) {
@@ -1621,9 +1744,9 @@ const SUPABASE_HELPER = {
       }
     }
 
-    const status = (sched.status === "live" || sched.status === "ended") ? sched.status : "scheduled";
-    const examYear = sched.examYear || sched.exam_year || sched.batch || "2027 A/L";
-    const subject = sched.subject || "Physics";
+    const status = (merged.status === "live" || merged.status === "ended") ? merged.status : "scheduled";
+    const examYear = merged.examYear || merged.exam_year || merged.batch || "2027 A/L";
+    const subject = merged.subject || "Physics";
 
     // Helper: convert "7:30 AM" / "13:30" style strings to 24h "HH:MM"
     const _to24 = (t) => {
@@ -1639,13 +1762,12 @@ const SUPABASE_HELPER = {
     };
 
     // Resolve the combined scheduleTime string
-    // NOTE: Supabase returns column as lowercase "scheduletime" — must check all variants
-    const resolvedScheduleTime = sched.scheduleTime || sched.schedule_time || sched.scheduletime || "";
+    const resolvedScheduleTime = merged.scheduleTime || merged.schedule_time || merged.scheduletime || "";
 
     // Resolve start/end times:
-    // Priority: (1) explicit 24h field, (2) snake_case column, (3) parsed from scheduleTime string
-    let resolvedStart = sched.scheduleStartTime || sched.schedule_start_time || "";
-    let resolvedEnd   = sched.scheduleEndTime   || sched.schedule_end_time   || "";
+    // Priority: (1) explicit/unpacked field, (2) snake_case column, (3) parsed from scheduleTime string
+    let resolvedStart = merged.scheduleStartTime || merged.schedule_start_time || "";
+    let resolvedEnd   = merged.scheduleEndTime   || merged.schedule_end_time   || "";
     if ((!resolvedStart || !resolvedEnd) && resolvedScheduleTime) {
       const tokens = Array.from(resolvedScheduleTime.matchAll(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)/gi)).map(m => m[0]);
       if (tokens.length >= 2) {
@@ -1672,30 +1794,30 @@ const SUPABASE_HELPER = {
 
     // If scheduleTime was empty or missing, rebuild it from what we know
     const finalScheduleTime = resolvedScheduleTime ||
-      `${sched.scheduleDate || sched.schedule_date || "Today"} \u2022 ${_to12(resolvedStart)} \u2013 ${_to12(resolvedEnd)}`;
+      `${merged.scheduleDate || merged.schedule_date || "Today"} \u2022 ${_to12(resolvedStart)} \u2013 ${_to12(resolvedEnd)}`;
 
     return {
-      ...sched,
-      id: String(sched.id || ("sched-" + Date.now().toString(36))).trim(),
-      topic: sched.topic || "Physics Live Masterclass",
-      topic_si: sched.topic_si || sched.topicSi || sched.topic || "භෞතික විද්‍යාව සජීවී පන්තිය",
-      courseId: sched.courseId || sched.course_id || "",
-      course_id: sched.courseId || sched.course_id || "",
-      courseTitle: sched.courseTitle || sched.course_title || "",
+      ...merged,
+      id: String(merged.id || ("sched-" + Date.now().toString(36))).trim(),
+      topic: merged.topic || "Physics Live Masterclass",
+      topic_si: merged.topic_si || merged.topicSi || merged.topic || "භෞතික විද්‍යාව සජීවී පන්තිය",
+      courseId: merged.courseId || merged.course_id || "",
+      course_id: merged.courseId || merged.course_id || "",
+      courseTitle: courseTitle,
       subject: subject,
-      subject_si: sched.subject_si || sched.subjectSi || (subject === "Physics" ? "භෞතික විද්‍යාව" : subject),
+      subject_si: merged.subject_si || merged.subjectSi || (subject === "Physics" ? "භෞතික විද්‍යාව" : subject),
       examYear: examYear,
       exam_year: examYear,
-      teacherId: sched.teacherId || sched.teacher_id || "tch-amalsha",
-      teacher_id: sched.teacherId || sched.teacher_id || "tch-amalsha",
-      teacherName: sched.teacherName || sched.teacher_name || "Amalsha Wanniarachchi",
-      teacher_name: sched.teacherName || sched.teacher_name || "Amalsha Wanniarachchi",
-      creatorId: sched.creatorId || sched.creator_id || sched.teacherId || "tch-amalsha",
-      creator_id: sched.creatorId || sched.creator_id || sched.teacherId || "tch-amalsha",
-      creatorName: sched.creatorName || sched.creator_name || sched.teacherName || "Faculty Instructor",
-      creatorEmail: sched.creatorEmail || sched.creator_email || "",
-      creatorRole: sched.creatorRole || sched.creator_role || "teacher",
-      scheduleDate: sched.scheduleDate || sched.schedule_date || new Date().toISOString().split("T")[0],
+      teacherId: merged.teacherId || merged.teacher_id || "tch-amalsha",
+      teacher_id: merged.teacherId || merged.teacher_id || "tch-amalsha",
+      teacherName: merged.teacherName || merged.teacher_name || "Amalsha Wanniarachchi",
+      teacher_name: merged.teacherName || merged.teacher_name || "Amalsha Wanniarachchi",
+      creatorId: merged.creatorId || merged.creator_id || merged.teacherId || "tch-amalsha",
+      creator_id: merged.creatorId || merged.creator_id || merged.teacherId || "tch-amalsha",
+      creatorName: merged.creatorName || merged.creator_name || merged.teacherName || "Faculty Instructor",
+      creatorEmail: merged.creatorEmail || merged.creator_email || "",
+      creatorRole: merged.creatorRole || merged.creator_role || "teacher",
+      scheduleDate: merged.scheduleDate || merged.schedule_date || new Date().toISOString().split("T")[0],
       scheduleStartTime: resolvedStart,
       scheduleEndTime: resolvedEnd,
       scheduleTime: finalScheduleTime,
@@ -1706,29 +1828,29 @@ const SUPABASE_HELPER = {
       embedUrl: embedUrl,
       embedurl: embedUrl,
       embed_url: embedUrl,
-      zoomUrl: sched.zoomUrl || sched.zoomurl || sched.zoom_url || "",
-      zoom_url: sched.zoomUrl || sched.zoom_url || "",
+      zoomUrl: merged.zoomUrl || merged.zoomurl || "",
+      zoom_url: merged.zoomUrl || merged.zoomurl || "",
       status: status,
-      watermarkEnabled: sched.watermarkEnabled !== undefined ? Boolean(sched.watermarkEnabled) : (sched.watermarkenabled !== undefined ? Boolean(sched.watermarkenabled) : true),
-      watermarkenabled: sched.watermarkEnabled !== undefined ? Boolean(sched.watermarkEnabled) : (sched.watermarkenabled !== undefined ? Boolean(sched.watermarkenabled) : true),
-      chatEnabled: sched.chatEnabled !== undefined ? Boolean(sched.chatEnabled) : true,
-      description: sched.description || "",
-      pinnedNotice: sched.pinnedNotice || sched.pinned_notice || "",
-      recordingUrl: sched.recordingUrl || sched.recording_url || "",
-      viewersCount: Number(sched.viewersCount || sched.viewers_count || 0),
+      watermarkEnabled: merged.watermarkEnabled !== undefined ? Boolean(merged.watermarkEnabled) : (merged.watermarkenabled !== undefined ? Boolean(merged.watermarkenabled) : true),
+      watermarkenabled: merged.watermarkEnabled !== undefined ? Boolean(merged.watermarkEnabled) : (merged.watermarkenabled !== undefined ? Boolean(merged.watermarkenabled) : true),
+      chatEnabled: merged.chatEnabled !== undefined ? Boolean(merged.chatEnabled) : true,
+      description: merged.description || "",
+      pinnedNotice: merged.pinnedNotice || merged.pinned_notice || "",
+      recordingUrl: merged.recordingUrl || merged.recording_url || "",
+      viewersCount: Number(merged.viewersCount || merged.viewers_count || 0),
       startedAt: (function() {
-        let sAt = sched.startedAt || sched.started_at || null;
-        if (!sAt && sched.id) {
-          try { sAt = localStorage.getItem("edupeak_session_started_" + sched.id) || null; } catch(e) {}
+        let sAt = merged.startedAt || merged.started_at || null;
+        if (!sAt && merged.id) {
+          try { sAt = localStorage.getItem("edupeak_session_started_" + merged.id) || null; } catch(e) {}
         }
-        if (sAt && sched.id) {
-          try { localStorage.setItem("edupeak_session_started_" + sched.id, sAt); } catch(e) {}
+        if (sAt && merged.id) {
+          try { localStorage.setItem("edupeak_session_started_" + merged.id, sAt); } catch(e) {}
         }
         return sAt;
       })(),
-      endedAt: sched.endedAt || sched.ended_at || null,
-      createdAt: sched.createdAt || sched.created_at || new Date().toISOString(),
-      updatedAt: sched.updatedAt || sched.updated_at || new Date().toISOString()
+      endedAt: merged.endedAt || merged.ended_at || null,
+      createdAt: merged.createdAt || merged.created_at || new Date().toISOString(),
+      updatedAt: merged.updatedAt || merged.updated_at || new Date().toISOString()
     };
   },
 
@@ -1800,10 +1922,13 @@ const SUPABASE_HELPER = {
             .filter(s => s && s.id && !deletedIds.includes(s.id) && !this.isTestSchedule(s));
           // Merge remote with local schedules so newly created or locally modified schedules are NEVER lost
           const merged = [...remoteNormalized];
+          const unsyncedLocals = [];
+
           localSchedules.forEach(local => {
             const idx = merged.findIndex(m => m.id === local.id);
             if (idx === -1) {
               merged.push(local);
+              unsyncedLocals.push(local);
             } else {
               const remoteTime = new Date(merged[idx].updatedAt || merged[idx].updated_at || 0).getTime();
               const localTime = new Date(local.updatedAt || local.updated_at || 0).getTime();
@@ -1812,6 +1937,19 @@ const SUPABASE_HELPER = {
               }
             }
           });
+
+          // Auto-push any locally unsynced schedules to Supabase Cloud
+          if (unsyncedLocals.length > 0) {
+            unsyncedLocals.forEach(unsynced => {
+              const payload = this.formatSchedulePayload(unsynced);
+              if (payload) {
+                this.client.from("broadcast_schedules").upsert([payload]).then(({ error: upErr }) => {
+                  if (upErr) console.warn("Auto-sync local schedule warning:", upErr);
+                }).catch(() => {});
+              }
+            });
+          }
+
           const finalMerged = merged.filter(s => s && s.id && !deletedIds.includes(s.id) && !this.isTestSchedule(s));
           this.setSharedData("edupeak_schedules_db", finalMerged);
           try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(finalMerged)); } catch (e) {}
@@ -1917,35 +2055,12 @@ const SUPABASE_HELPER = {
     // 3. Persist to Supabase Cloud with sanitized column payload matching PostgreSQL schema
     if (this.isConnected && this.client) {
       try {
-        const payload = {
-          id: normalized.id,
-          topic: normalized.topic,
-          topic_si: normalized.topic_si || normalized.topicSi || null,
-          course_id: normalized.courseId || normalized.course_id || null,
-          courseid: normalized.courseId || normalized.course_id || null,
-          coursetitle: normalized.courseTitle || normalized.course_title || null,
-          subject: normalized.subject || null,
-          teacherid: normalized.teacherId || normalized.teacher_id || null,
-          teachername: normalized.teacherName || normalized.teacher_name || null,
-          scheduledate: normalized.scheduleDate || null,
-          schedulestarttime: normalized.scheduleStartTime || null,
-          scheduleendtime: normalized.scheduleEndTime || null,
-          scheduletime: normalized.scheduleTime || normalized.scheduletime || null,
-          scheduleTime: normalized.scheduleTime || normalized.scheduletime || null,
-          provider: normalized.provider || "youtube",
-          rawurl: normalized.rawUrl || normalized.rawurl || null,
-          embedurl: normalized.embedUrl || normalized.embedurl || null,
-          zoomurl: normalized.zoomUrl || normalized.zoomurl || null,
-          status: normalized.status,
-          watermarkenabled: Boolean(normalized.watermarkEnabled),
-          chatenabled: Boolean(normalized.chatEnabled),
-          started_at: normalized.startedAt || null,
-          ended_at: normalized.endedAt || null,
-          updated_at: new Date().toISOString()
-        };
-        const { data, error } = await this.client.from("broadcast_schedules").upsert([payload]).select();
-        if (error) {
-          console.warn("Supabase upsert broadcast_schedule warning:", error);
+        const payload = this.formatSchedulePayload(normalized);
+        if (payload) {
+          const { data, error } = await this.client.from("broadcast_schedules").upsert([payload]).select();
+          if (error) {
+            console.warn("Supabase upsert broadcast_schedule warning:", error);
+          }
         }
       } catch (e) {
         console.warn("Supabase upsert broadcast_schedule error:", e);
@@ -2640,7 +2755,12 @@ const SUPABASE_HELPER = {
       }
       // Sync schedules
       if (schedules.length > 0) {
-        await this.client.from("broadcast_schedules").upsert(schedules);
+        const formattedSchedules = schedules
+          .map(s => this.formatSchedulePayload(s))
+          .filter(Boolean);
+        if (formattedSchedules.length > 0) {
+          await this.client.from("broadcast_schedules").upsert(formattedSchedules);
+        }
       }
 
       return { success: true, message: `Synced ${teachers.length} teachers, ${courses.length} courses, ${users.length} profiles, ${papers.length} papers, ${institutes.length} campuses, ${lessons.length} lessons, ${quizzes.length} quizzes, and ${schedules.length} live broadcast schedules to Supabase Cloud!` };

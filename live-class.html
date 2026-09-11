@@ -2952,9 +2952,18 @@
         document.getElementById("formSubject").value = "Physics";
         document.getElementById("formTopic").value = "";
         document.getElementById("formTopicSi").value = "";
-        document.getElementById("formDate").value = new Date().toISOString().split("T")[0];
-        document.getElementById("formStartTime").value = "08:30";
-        document.getElementById("formEndTime").value = "12:30";
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const dd = String(now.getDate()).padStart(2, "0");
+        const todayStr = `${yyyy}-${mm}-${dd}`;
+        const startH = (now.getHours() + 1) % 24;
+        const endH = (startH + 2) % 24;
+        const defStart = `${String(startH).padStart(2, "0")}:00`;
+        const defEnd = `${String(endH).padStart(2, "0")}:00`;
+        document.getElementById("formDate").value = todayStr;
+        document.getElementById("formStartTime").value = defStart;
+        document.getElementById("formEndTime").value = defEnd;
         document.getElementById("formProvider").value = "youtube";
         document.getElementById("formStatus").value = "scheduled";
         document.getElementById("formStreamUrl").value = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
@@ -3039,8 +3048,8 @@
             parsedStart = parsedStart || to24(timeTokens[0]);
           }
         }
-        document.getElementById("formStartTime").value = parsedStart || "08:30";
-        document.getElementById("formEndTime").value   = parsedEnd   || "12:30";
+        document.getElementById("formStartTime").value = s.scheduleStartTime || parsedStart || "08:30";
+        document.getElementById("formEndTime").value   = s.scheduleEndTime   || parsedEnd   || "12:30";
         document.getElementById("formProvider").value = s.provider || "youtube";
         document.getElementById("formStatus").value = s.status || "scheduled";
         document.getElementById("formStreamUrl").value = s.rawUrl || s.rawurl || s.raw_url || s.embedUrl || s.embedurl || s.embed_url || "";
@@ -3108,6 +3117,8 @@
           topic_si,
           examYear,
           subject,
+          courseTitle: topic,
+          courseId: `crs-${examYear.toLowerCase().replace(/[^a-z0-9]/g, "")}-${subject.toLowerCase()}`,
           teacherId,
           teacherName,
           creatorId: this.currentUser?.id || teacherId,
