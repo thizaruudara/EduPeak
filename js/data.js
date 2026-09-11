@@ -45,6 +45,12 @@ const EDUPEAK_DATA = {
       badge_si: "වෛද්‍ය විද්‍යාර්ථී හා ප්‍රධාන දේශක",
       bio: "Amalsha Wanniarachchi is a medical scholar (MBBS UG, University of Sri Jayewardenepura) and leading Advanced Level Physics master educator at Victory Embilipitiya, renowned for analytical concept breakdown, speed MCQ problem-solving methods, and structured paper discussions.",
       bio_si: "අමල්ෂ වන්නිආරච්චි යනු ශ්‍රී ජයවර්ධනපුර විශ්වවිද්‍යාලයේ වෛද්‍ය විද්‍යාර්ථියෙකු (MBBS UG) වන අතර වික්ටරි ඇඹිලිපිටිය ප්‍රධාන භෞතික විද්‍යා දේශකවරයාය.",
+      socials: {
+        youtube: "https://www.youtube.com/@amalshawanniarachchi",
+        facebook: "https://www.facebook.com/amalshanethsara.nethsara",
+        tiktok: "https://www.tiktok.com/@amalsha.wanniarachchi8",
+        whatsapp: "https://wa.me/94760687578"
+      },
       schedule: "Every Saturday 7:30 AM - 1:30 PM (Theory) | Every Monday 7:00 PM (Paper Class)",
       previewLesson: {
         title: "Rotational Dynamics & Hydrodynamics Masterclass",
