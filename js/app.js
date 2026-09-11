@@ -1022,60 +1022,38 @@ function initGoatsPreloader() {
 }
 
 // --------------------------------------------------------------------------
-// 11. MOTION.DEV SCROLL TEXT LINES CONTROLLER (Multi-Speed Kinetic Editorial Marquee)
+// 11. MOTION SCROLL TEXT LINES CONTROLLER (Continuous Autonomous Kinetic Marquee)
 // --------------------------------------------------------------------------
 function initScrollTextLines() {
   const section = document.getElementById("scrollTextLinesSection");
   if (!section) return;
 
-  const lines = section.querySelectorAll(".ticker-line");
-  if (!lines.length) return;
+  const tracks = section.querySelectorAll(".ticker-track");
+  if (!tracks.length) return;
 
-  const lineData = Array.from(lines).map((line) => {
-    const track = line.querySelector(".ticker-track");
-    const speed = parseFloat(line.getAttribute("data-speed")) || 0.5;
-    const direction = parseFloat(line.getAttribute("data-direction")) || 1;
-    return { track, speed, direction };
+  // Clear any legacy inline transforms so pure CSS continuous GPU marquee runs seamlessly
+  tracks.forEach((track) => {
+    track.style.transform = "";
   });
 
-  let ticking = false;
-
-  function update() {
-    const scrollY = window.scrollY || window.pageYOffset;
-    const rect = section.getBoundingClientRect();
-    const windowH = window.innerHeight;
-
-    // Only compute when section is near or in viewport
-    if (rect.bottom > -250 && rect.top < windowH + 250) {
-      const scrollProgress = scrollY - (section.offsetTop - windowH);
-
-      lineData.forEach((item) => {
-        if (!item.track) return;
-        // Motion.dev scroll text offset calculation with infinite wrapping
-        const offset = scrollProgress * item.speed * item.direction;
-        const trackHalfWidth = item.track.scrollWidth / 2 || 1200;
-        const normalizedX = (offset % trackHalfWidth);
-
-        item.track.style.transform = `translate3d(${normalizedX}px, 0, 0)`;
-      });
-    }
-
-    ticking = false;
+  // Performance optimization: run animation when in or near viewport, pause when far away
+  if ("IntersectionObserver" in window) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          tracks.forEach((track) => {
+            track.style.animationPlayState = entry.isIntersecting ? "running" : "paused";
+          });
+        });
+      },
+      { rootMargin: "250px 0px" }
+    );
+    observer.observe(section);
+  } else {
+    tracks.forEach((track) => {
+      track.style.animationPlayState = "running";
+    });
   }
-
-  window.addEventListener("scroll", () => {
-    if (!ticking) {
-      requestAnimationFrame(update);
-      ticking = true;
-    }
-  }, { passive: true });
-
-  window.addEventListener("resize", () => {
-    update();
-  }, { passive: true });
-
-  // Initial calculation
-  update();
 }
 
 // --------------------------------------------------------------------------
