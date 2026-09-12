@@ -434,9 +434,9 @@ const AUTH_SYSTEM = {
   },
 
   // --------------------------------------------------------------------------
-  // OTP DISPATCH & VERIFICATION ENGINE (With Supabase Cloud Duplicate Check)
+  // DIRECT REGISTRATION ENGINE (Instant Registration - No OTP Verification Needed)
   // --------------------------------------------------------------------------
-  async sendRegistrationOtp(formData) {
+  async registerDirect(formData) {
     const cleanEmail = formData.email ? formData.email.trim().toLowerCase() : "";
     const cleanPhone = formData.phone ? formData.phone.trim() : "";
 
@@ -502,7 +502,7 @@ const AUTH_SYSTEM = {
       return { success: false, code: "NIC_EXISTS", message: `⚠️ An account with NIC '${cleanNic}' already exists. Please Sign In.` };
     }
 
-    // Trigger Supabase Cloud Auth Sign Up (Sends real verification email if configured)
+    // Trigger Supabase Cloud Auth Sign Up (if configured)
     if (window.SUPABASE_HELPER && window.SUPABASE_HELPER.client) {
       try {
         await window.SUPABASE_HELPER.client.auth.signUp({
@@ -524,47 +524,20 @@ const AUTH_SYSTEM = {
       }
     }
 
-    // Generate 6-digit OTP code
-    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    this.pendingRegistration = {
+    // Commit student profile directly to local database & Supabase cloud (instant access)
+    const result = await this.commitRegistration({
       ...formData,
       email: cleanEmail,
       phone: cleanPhone,
-      nic: cleanNic,
-      otpCode: generatedOtp,
-      otpTimestamp: Date.now()
-    };
+      nic: cleanNic
+    });
 
-    // Update Email OTP Modal UI
-    const targetEmailEl = document.getElementById("otpTargetEmail");
-    if (targetEmailEl) targetEmailEl.textContent = cleanEmail;
+    return result;
+  },
 
-    const devCodeEl = document.getElementById("otpDevCode");
-    if (devCodeEl) devCodeEl.textContent = generatedOtp;
-
-    // Reset OTP input boxes
-    document.querySelectorAll(".otp-digit").forEach(input => input.value = "");
-
-    // Start 60s countdown timer
-    this.startOtpCountdown(59);
-
-    // Close Register Modal and open OTP Modal
-    if (window.closeModal) window.closeModal("registerModal");
-    if (window.openModal) window.openModal("emailOtpModal");
-
-    // Auto-focus first digit
-    setTimeout(() => {
-      const firstDigit = document.querySelector('.otp-digit[data-index="0"]');
-      if (firstDigit && typeof firstDigit.focus === 'function') firstDigit.focus();
-    }, 300);
-
-    // Show notification toast
-    if (window.showToast) {
-      window.showToast(`📩 OTP Code dispatched to ${cleanEmail}: ${generatedOtp}`, "info");
-    }
-
-    return { success: true, otp: generatedOtp };
+  async sendRegistrationOtp(formData) {
+    // Direct registration without OTP modal
+    return await this.registerDirect(formData);
   },
 
   startOtpCountdown(seconds) {
@@ -1067,11 +1040,11 @@ async function handleRegistrationSubmit(e) {
   // Show loading spinner
   if (submitBtn) {
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking Account & Sending OTP...';
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Registering Student Account...';
   }
 
   try {
-    const result = await AUTH_SYSTEM.sendRegistrationOtp({
+    const result = await AUTH_SYSTEM.registerDirect({
       name,
       email,
       phone,
@@ -1084,21 +1057,49 @@ async function handleRegistrationSubmit(e) {
       authProvider: "email"
     });
 
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Proceed to Email Verification (Get OTP)';
-    }
-
     if (!result.success) {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Complete Student Registration';
+      }
       showError(result.message);
       return;
     }
 
     if (errorAlert) errorAlert.style.display = "none";
+    if (successAlert) {
+      successAlert.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${result.message || 'Registration successful! Directing to dashboard...'}`;
+      successAlert.style.display = "block";
+    }
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Registration Successful!';
+    }
+
+    if (window.showToast) {
+      window.showToast(`🎉 Registration Successful! Welcome to EduPeak, ${result.user.name}.`, "success");
+    }
+
+    // Direct redirect to student dashboard or target redirect URL
+    setTimeout(() => {
+      if (window.closeModal) {
+        window.closeModal("registerModal");
+        window.closeModal("emailOtpModal");
+      }
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectParam = urlParams.get("redirect") || sessionStorage.getItem("edupeak_redirect_after_login");
+      if (redirectParam) {
+        sessionStorage.removeItem("edupeak_redirect_after_login");
+        window.location.href = redirectParam;
+      } else {
+        window.location.href = "student-dashboard.html";
+      }
+    }, 550);
   } catch (err) {
     if (submitBtn) {
       submitBtn.disabled = false;
-      submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Proceed to Email Verification (Get OTP)';
+      submitBtn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Complete Student Registration';
     }
     showError(`Registration error: ${err.message}`);
   }
