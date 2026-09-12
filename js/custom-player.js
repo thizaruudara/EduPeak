@@ -758,6 +758,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     const videoId = extractYouTubeId(videoUrl);
     createLiveYTPlayer(videoId);
     updateLiveWatermark();
+    triggerStartupBanners(10000);
     startLiveWatermarkMovement();
     setupLivePlayerEvents();
   }
@@ -1159,7 +1160,6 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   function showLiveControls() {
     const controls = document.getElementById("livePlayerControlsOverlay");
     const topBar = document.getElementById("livePlayerTopBar");
-    const topMask = document.getElementById("livePlayerTopMask");
     const wrapper = document.getElementById("edupeakLivePlayerWrapper");
     if (controls) {
       controls.classList.remove("fade-out");
@@ -1169,10 +1169,6 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       topBar.classList.remove("fade-out");
       topBar.style.opacity = "";
     }
-    if (topMask) {
-      topMask.classList.remove("mask-faded", "fade-out");
-      topMask.style.opacity = "";
-    }
     if (wrapper) wrapper.classList.remove("hide-cursor");
   }
 
@@ -1180,7 +1176,6 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     if (!isLivePlaying) return;
     const controls = document.getElementById("livePlayerControlsOverlay");
     const topBar = document.getElementById("livePlayerTopBar");
-    const topMask = document.getElementById("livePlayerTopMask");
     const wrapper = document.getElementById("edupeakLivePlayerWrapper");
     if (controls) {
       controls.classList.add("fade-out");
@@ -1189,10 +1184,6 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     if (topBar) {
       topBar.classList.add("fade-out");
       topBar.style.opacity = "";
-    }
-    if (topMask) {
-      topMask.classList.add("mask-faded", "fade-out");
-      topMask.style.opacity = "";
     }
     if (wrapper) wrapper.classList.add("hide-cursor");
   }
@@ -1226,6 +1217,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       const bigPlayBtn = document.getElementById("livePlayerBigPlayBtn");
       if (bigPlayBtn) bigPlayBtn.classList.add("hidden");
     } catch(e) {}
+    triggerStartupBanners(10000);
     scheduleLiveControlsFade();
   }
   // ─────────────────────────────────────────────────────────────────────────
@@ -1433,8 +1425,27 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     }
 
     // Pull lesson title and teacher name from activeSessionData
-    const topic = (activeSessionData && (activeSessionData.topic || activeSessionData.title || activeSessionData.subject || "")) || "";
-    const teacher = (activeSessionData && (activeSessionData.teacherName || activeSessionData.teacher_name || activeSessionData.teacher || "")) || "";
+    const topic = (activeSessionData && (activeSessionData.topic || activeSessionData.title || activeSessionData.subject || "")) || "Physics Live Masterclass";
+    const teacher = (activeSessionData && (activeSessionData.teacherName || activeSessionData.teacher_name || activeSessionData.teacher || "")) || "Amalsha Wanniarachchi";
+    const batch = (activeSessionData && (activeSessionData.examYear || activeSessionData.exam_year || activeSessionData.batch || "")) || "2027 A/L";
+
+    // Update 10-second top banner elements
+    const bannerTopic = document.getElementById("bannerTopicTitle");
+    if (bannerTopic && topic) bannerTopic.textContent = topic;
+    const bannerTeach = document.getElementById("bannerTeacherName");
+    if (bannerTeach && teacher) bannerTeach.textContent = teacher;
+    const bannerBatch = document.getElementById("bannerBatchBadge");
+    if (bannerBatch && batch) bannerBatch.textContent = batch;
+
+    // Update 10-second bottom banner ticker track elements
+    ["liveMarqueeTopic1", "liveMarqueeTopic2"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = topic;
+    });
+    ["liveMarqueeTeacher1", "liveMarqueeTeacher2"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = teacher;
+    });
 
     // Update top bar lesson title + teacher name
     const topLesson = document.getElementById("liveTopLessonTitle");
@@ -1442,20 +1453,14 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     const topTeacher = document.getElementById("liveTopTeacherName");
     if (topTeacher && teacher) topTeacher.textContent = teacher;
 
-    // Update the startup veil if present
-    const veilTopic = document.getElementById("veilTopicTitle");
-    if (veilTopic && topic) veilTopic.textContent = topic;
-
-    // Update the always-visible scrolling ticker (both copies for seamless loop)
-    const tickerText = topic || "Physics \u2014 Live Broadcast";
-    const tickerTeacher = teacher || "Amalsha Wanniarachchi";
+    // Update legacy ticker elements if present
     ["liveTickerTitle1", "liveTickerTitle2"].forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.textContent = tickerText;
+      if (el) el.textContent = topic;
     });
     ["liveTickerTeacher1", "liveTickerTeacher2"].forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.textContent = tickerTeacher;
+      if (el) el.textContent = teacher;
     });
   }
 
@@ -1581,20 +1586,54 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     if (shield) shield.style.pointerEvents = "none";
   }
 
-  let startupMaskTimer = null;
-  function triggerStartupMask() {
-    const topMask = document.getElementById("livePlayerTopMask");
-    if (topMask) topMask.classList.remove("mask-faded");
+  let startupBannerTimer = null;
+  let startupBannerHideTimer = null;
 
-    const topicEl = document.getElementById("veilTopicTitle");
-    if (topicEl && activeSessionData && activeSessionData.topic) {
-      topicEl.textContent = activeSessionData.topic;
+  function triggerStartupBanners(durationMs = 10000) {
+    const topBanner = document.getElementById("liveStartupTopBanner") || document.getElementById("livePlayerTopMask");
+    const bottomBanner = document.getElementById("liveStartupBottomBanner");
+
+    clearTimeout(startupBannerTimer);
+    clearTimeout(startupBannerHideTimer);
+
+    updateLiveWatermark();
+
+    if (topBanner) {
+      topBanner.classList.remove("banner-fade-out", "mask-faded", "fade-out");
+      topBanner.style.display = "flex";
+      topBanner.style.opacity = "1";
+      topBanner.style.visibility = "visible";
+    }
+    if (bottomBanner) {
+      bottomBanner.classList.remove("banner-fade-out", "mask-faded", "fade-out");
+      bottomBanner.style.display = "flex";
+      bottomBanner.style.opacity = "1";
+      bottomBanner.style.visibility = "visible";
     }
 
-    clearTimeout(startupMaskTimer);
-    startupMaskTimer = setTimeout(() => {
-      if (topMask) topMask.classList.add("mask-faded");
-    }, 3200); // Fades away once YouTube has auto-hidden its native overlay!
+    // Keep fully visible for EXACTLY durationMs (10.0 seconds), then smoothly fade away
+    startupBannerTimer = setTimeout(() => {
+      if (topBanner) {
+        topBanner.classList.add("banner-fade-out");
+      }
+      if (bottomBanner) {
+        bottomBanner.classList.add("banner-fade-out");
+      }
+
+      // After 1000ms smooth CSS transition finishes, set hidden
+      startupBannerHideTimer = setTimeout(() => {
+        if (topBanner && topBanner.classList.contains("banner-fade-out")) {
+          topBanner.style.visibility = "hidden";
+        }
+        if (bottomBanner && bottomBanner.classList.contains("banner-fade-out")) {
+          bottomBanner.style.visibility = "hidden";
+        }
+      }, 1000);
+    }, durationMs);
+  }
+
+  function triggerStartupMask() {
+    triggerStartupBanners(10000);
   }
 
   function retryPlayback() {
@@ -1602,7 +1641,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     if (liveYtPlayer && typeof liveYtPlayer.playVideo === "function") {
       try { liveYtPlayer.playVideo(); } catch(e) {}
     }
-    triggerStartupMask();
+    triggerStartupBanners(10000);
   }
 
   try {
@@ -1649,6 +1688,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     dismissBotPrompt: dismissBotPrompt,
     showBotFallbackPrompt: showBotFallbackPrompt,
     triggerStartupMask: triggerStartupMask,
+    triggerStartupBanners: triggerStartupBanners,
     retryPlayback: retryPlayback
   };
 })();

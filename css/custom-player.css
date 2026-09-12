@@ -58,70 +58,270 @@
   display: block !important;
 }
 
-/* Startup / Reload Watermark Mask (Hides initial YouTube title & avatar for ~3.5s until YouTube auto-hides them) */
-.edupeak-startup-mask {
-  position: absolute;
-  left: 0;
-  right: 0;
-  z-index: 17;
-  pointer-events: none;
+/* ============================================================
+   10-SECOND STARTUP WATERMARK BANNERS (TOP 80px & BOTTOM 75px)
+   Completely covers YouTube title/avatar at the top and 
+   YouTube watermark/logo/more-videos at the bottom for the
+   first 10 seconds after stream start or reload, then smoothly fades out.
+   ============================================================ */
+.edupeak-startup-banner {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 38 !important;
+  pointer-events: none !important;
   opacity: 1;
   visibility: visible;
-  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.6s, transform 0.6s;
+  transition: opacity 0.9s cubic-bezier(0.4, 0, 0.2, 1), transform 0.9s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.9s !important;
 }
 
-.edupeak-startup-mask.mask-faded,
-.edupeak-startup-mask.fade-out {
+.edupeak-startup-banner.banner-fade-out {
   opacity: 0 !important;
-  visibility: hidden !important;
   pointer-events: none !important;
-  transform: translateY(-14px);
+  visibility: hidden !important;
 }
 
-.edupeak-startup-mask.top-mask {
-  top: 0;
-  height: 80px;
-  background: linear-gradient(180deg, #000000 0%, rgba(9, 13, 22, 0.97) 50%, transparent 100%);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 1.1rem;
-  color: #ffffff;
+/* TOP BANNER: 80px solid dark bar covering YouTube title, avatar & controls */
+.edupeak-startup-banner.top-banner {
+  top: 0 !important;
+  height: 80px !important;
+  min-height: 80px !important;
+  max-height: 80px !important;
+  background: #080c16 !important;
+  border-bottom: 2px solid rgba(59, 130, 246, 0.45) !important;
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.92) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 1.25rem !important;
+  color: #ffffff !important;
+  transform: translateY(0);
 }
 
-.edupeak-startup-mask.top-mask .veil-left {
+.edupeak-startup-banner.top-banner.banner-fade-out {
+  transform: translateY(-14px) !important;
+}
+
+.edupeak-startup-banner.top-banner .top-banner-left {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 700;
+  gap: 0.75rem;
   max-width: 65%;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.edupeak-startup-mask.top-mask .veil-right {
+.edupeak-startup-banner.top-banner .top-banner-right {
   display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+.edupeak-startup-banner.top-banner .banner-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.55);
+  color: #fca5a5;
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 0.3rem 0.65rem;
+  border-radius: 9999px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.edupeak-startup-banner.top-banner .banner-res-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(59, 130, 246, 0.18);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #93c5fd;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.edupeak-startup-banner.top-banner .banner-topic-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.edupeak-startup-banner.top-banner .banner-lecturer {
+  display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   font-size: 0.78rem;
+  font-weight: 700;
   color: #cbd5e1;
-  font-weight: 600;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Live Broadcast Dynamic Controls Bar — fades on inactivity, sits above the ticker */
+.edupeak-startup-banner.top-banner .banner-batch-badge {
+  background: #227aff;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+}
+
+/* BOTTOM BANNER: 75px solid dark bar covering YouTube watermark, logo & more videos */
+.edupeak-startup-banner.bottom-banner {
+  bottom: 0 !important;
+  height: 75px !important;
+  min-height: 75px !important;
+  max-height: 75px !important;
+  background: #060913 !important;
+  border-top: 2px solid rgba(239, 68, 68, 0.48) !important;
+  box-shadow: 0 -6px 25px rgba(0, 0, 0, 0.92) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  padding: 0 !important;
+  transform: translateY(0);
+  overflow: hidden !important;
+}
+
+.edupeak-startup-banner.bottom-banner.banner-fade-out {
+  transform: translateY(14px) !important;
+}
+
+/* Top row inside bottom banner: TV News Ticker */
+.bottom-banner .ticker-row {
+  display: flex;
+  align-items: center;
+  height: 42px;
+  background: rgba(8, 12, 22, 0.98);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+  position: relative;
+}
+
+.bottom-banner .ticker-badge {
+  flex-shrink: 0;
+  height: 100%;
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 900;
+  padding: 0 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  z-index: 2;
+  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+.bottom-banner .ticker-badge .pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffffff;
+  animation: banner-ticker-blink 1s ease infinite;
+}
+
+@keyframes banner-ticker-blink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.25; transform: scale(0.85); }
+}
+
+/* Continuous smooth scrolling track without initial lag */
+.bottom-banner .ticker-marquee {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  animation: banner-ticker-slide 20s linear infinite;
+  will-change: transform;
+}
+
+@keyframes banner-ticker-slide {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.bottom-banner .marquee-chunk {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-right: 2rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.bottom-banner .marquee-chunk .sep {
+  color: #ef4444;
+  margin: 0 0.25rem;
+  font-size: 0.65rem;
+}
+
+.bottom-banner .marquee-chunk .lecturer-hl {
+  color: #38bdf8;
+  font-weight: 800;
+}
+
+.bottom-banner .marquee-chunk .drm-hl {
+  color: #34d399;
+  font-weight: 800;
+}
+
+/* Bottom info strip inside bottom banner */
+.bottom-banner .sub-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 33px;
+  padding: 0 1rem;
+  font-size: 0.68rem;
+  color: #94a3b8;
+  font-weight: 600;
+  background: #04060c;
+}
+
+.bottom-banner .sub-info-row .sub-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #cbd5e1;
+}
+
+.bottom-banner .sub-info-row .sub-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #64748b;
+}
+
+/* Controls Overlay Bar: volume, quality, fullscreen. Sits cleanly at bottom */
 .live-player-wrapper .edupeak-player-controls-overlay {
   position: absolute !important;
-  bottom: 32px !important; /* sits above the ticker */
+  bottom: 0 !important;
   left: 0 !important;
   right: 0 !important;
   height: 52px !important;
   min-height: 52px !important;
   max-height: 52px !important;
   background: linear-gradient(0deg,
-    rgba(5, 8, 18, 0.92) 0%,
-    rgba(5, 8, 18, 0.65) 60%,
+    rgba(5, 8, 18, 0.95) 0%,
+    rgba(5, 8, 18, 0.7) 60%,
     transparent 100%) !important;
   border-top: none !important;
   box-shadow: none !important;
@@ -142,94 +342,6 @@
   transform: translateY(8px) !important;
   pointer-events: none !important;
   visibility: hidden !important;
-}
-
-/* ============================================================
-   ALWAYS-VISIBLE SCROLLING TICKER — covers YouTube watermark.
-   Like a TV ad ticker: scrolls right-to-left, always on,
-   never tied to mouse events. z-index above everything.
-   ============================================================ */
-.edupeak-live-ticker {
-  position: absolute !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  height: 30px !important;
-  background: rgba(3, 5, 14, 0.97) !important;
-  border-top: 1px solid rgba(239, 68, 68, 0.35) !important;
-  overflow: hidden !important;
-  z-index: 30 !important; /* above controls, always on top */
-  display: flex !important;
-  align-items: center !important;
-  pointer-events: none !important;
-}
-
-/* Left label badge — stays fixed */
-.edupeak-live-ticker .ticker-label {
-  flex-shrink: 0;
-  background: #ef4444;
-  color: #fff;
-  font-size: 0.62rem;
-  font-weight: 900;
-  padding: 0 0.6rem;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  border-right: 1px solid rgba(239,68,68,0.5);
-  white-space: nowrap;
-  z-index: 1;
-}
-
-.edupeak-live-ticker .ticker-label .ticker-pulse {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #fff;
-  animation: ticker-blink 1s ease infinite;
-}
-
-@keyframes ticker-blink {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.2; }
-}
-
-/* Scrolling text track */
-.edupeak-live-ticker .ticker-track {
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-  /* Start fully off-screen right, end fully off-screen left */
-  animation: ticker-scroll 22s linear infinite;
-  will-change: transform;
-}
-
-@keyframes ticker-scroll {
-  0%   { transform: translateX(100vw); }
-  100% { transform: translateX(-100%); }
-}
-
-.edupeak-live-ticker .ticker-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #f1f5f9;
-  padding: 0 2.5rem;
-}
-
-.edupeak-live-ticker .ticker-item .ticker-sep {
-  color: #ef4444;
-  margin: 0 0.35rem;
-  font-weight: 900;
-}
-
-.edupeak-live-ticker .ticker-item .ticker-teacher {
-  color: #94a3b8;
-  font-weight: 600;
 }
 
 /* Cross-Platform Fullscreen / iOS Safari Viewport Breakout */

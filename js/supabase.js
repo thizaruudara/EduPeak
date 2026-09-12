@@ -256,7 +256,11 @@ const SUPABASE_HELPER = {
       topic.includes("auto-end test") ||
       topic.includes("live ending test") ||
       topic.includes("continuous playback") ||
-      topic.includes("broadcast auto-end")
+      topic.includes("broadcast auto-end") ||
+      topic.includes("mobile ui test") ||
+      topic.includes("mechanics & derivations") ||
+      topic.includes("sadasfdsgsdg") ||
+      id === "sched-uncropped-1"
     );
   },
 
@@ -462,37 +466,8 @@ const SUPABASE_HELPER = {
           .map(s => this.normalizeLiveSession(s))
           .filter(s => s && s.id && !deletedIds.includes(s.id) && !this.isTestSchedule(s));
 
-        // Merge remote with local schedules so newly created or locally modified schedules are NEVER lost
-        const merged = [...remoteNormalized];
-        const unsyncedLocals = [];
-
-        localSchedules.forEach(local => {
-          const idx = merged.findIndex(m => m.id === local.id);
-          if (idx === -1) {
-            merged.push(local);
-            unsyncedLocals.push(local);
-          } else {
-            const remoteTime = new Date(merged[idx].updatedAt || merged[idx].updated_at || 0).getTime();
-            const localTime = new Date(local.updatedAt || local.updated_at || 0).getTime();
-            if (localTime >= remoteTime) {
-              merged[idx] = { ...merged[idx], ...local };
-            }
-          }
-        });
-
-        // Automatically push any unsynced local schedules to Supabase Cloud
-        if (unsyncedLocals.length > 0) {
-          unsyncedLocals.forEach(unsynced => {
-            const payload = this.formatSchedulePayload(unsynced);
-            if (payload) {
-              this.client.from("broadcast_schedules").upsert([payload]).then(({ error: upErr }) => {
-                if (upErr) console.warn("Auto-sync local schedule to Supabase cloud warning:", upErr);
-              }).catch(() => {});
-            }
-          });
-        }
-
-        const filtered = merged.filter(s => s && s.id && !deletedIds.includes(s.id) && !this.isTestSchedule(s));
+        // Supabase Cloud is authoritative when connected — do NOT resurrect deleted/stale local sessions
+        const filtered = remoteNormalized;
         this.setSharedData("edupeak_schedules_db", filtered);
         try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(filtered)); } catch (e) {}
 
@@ -1920,37 +1895,9 @@ const SUPABASE_HELPER = {
           const remoteNormalized = data
             .map(s => this.normalizeLiveSession(s))
             .filter(s => s && s.id && !deletedIds.includes(s.id) && !this.isTestSchedule(s));
-          // Merge remote with local schedules so newly created or locally modified schedules are NEVER lost
-          const merged = [...remoteNormalized];
-          const unsyncedLocals = [];
 
-          localSchedules.forEach(local => {
-            const idx = merged.findIndex(m => m.id === local.id);
-            if (idx === -1) {
-              merged.push(local);
-              unsyncedLocals.push(local);
-            } else {
-              const remoteTime = new Date(merged[idx].updatedAt || merged[idx].updated_at || 0).getTime();
-              const localTime = new Date(local.updatedAt || local.updated_at || 0).getTime();
-              if (localTime >= remoteTime) {
-                merged[idx] = { ...merged[idx], ...local };
-              }
-            }
-          });
-
-          // Auto-push any locally unsynced schedules to Supabase Cloud
-          if (unsyncedLocals.length > 0) {
-            unsyncedLocals.forEach(unsynced => {
-              const payload = this.formatSchedulePayload(unsynced);
-              if (payload) {
-                this.client.from("broadcast_schedules").upsert([payload]).then(({ error: upErr }) => {
-                  if (upErr) console.warn("Auto-sync local schedule warning:", upErr);
-                }).catch(() => {});
-              }
-            });
-          }
-
-          const finalMerged = merged.filter(s => s && s.id && !deletedIds.includes(s.id) && !this.isTestSchedule(s));
+          // Supabase Cloud is authoritative when connected — do NOT resurrect deleted/stale local sessions
+          const finalMerged = remoteNormalized;
           this.setSharedData("edupeak_schedules_db", finalMerged);
           try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(finalMerged)); } catch (e) {}
           return finalMerged;

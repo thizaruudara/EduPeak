@@ -157,6 +157,9 @@ function syncLiveStreamWithTeacher() {
       if (window.EDUPEAK_LIVE_PLAYER) {
         window.EDUPEAK_LIVE_PLAYER.loadStream(liveStreamUrl, cfg);
         window.EDUPEAK_LIVE_PLAYER.setWatermarkEnabled(isWatermarkEnabled);
+        if (typeof window.EDUPEAK_LIVE_PLAYER.triggerStartupBanners === "function") {
+          window.EDUPEAK_LIVE_PLAYER.triggerStartupBanners(10000);
+        }
       }
 
       if (chatInput) {
