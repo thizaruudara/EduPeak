@@ -14,7 +14,7 @@ const AUTH_SYSTEM = {
   pendingRegistration: null,
   otpTimerInterval: null,
 
-  // Canonical accounts: 1 Student, 1 Teacher, 1 Admin
+  // Canonical accounts: 1 Student, 1 Administrator
   defaultUsers: [
     {
       id: "EP-2027-001",
@@ -39,63 +39,36 @@ const AUTH_SYSTEM = {
       joinedDate: "2025-01-10"
     },
     {
-      id: "tch-amalsha",
-      name: "Amalsha Wanniarachchi",
-      name_si: "අමල්ෂ වන්නිආරච්චි",
-      email: "amalsha@edupeak.lk",
-      phone: "0718059089",
-      password: "teacher123",
-      role: "teacher",
-      subject: "G.C.E. Advanced Level Physics",
-      subject_si: "උසස් පෙළ භෞතික විද්‍යාව",
-      degree: "MBBS (UG / University of Sri Jayewardenepura)",
-      institute: "Victory Embilipitiya",
-      branch: "Victory Embilipitiya",
-      email_verified: true,
-      avatar: "assets/img/hero_lecturer.png",
-      avatarLetter: "A",
-      joinedDate: "2024-01-15"
-    },
-    {
-      id: "TCH-PHYSICS",
-      name: "Prof. K. M. Liyanage",
-      name_si: "මහාචාර්ය කේ. එම්. ලියනගේ",
-      email: "teacher@edupeak.lk",
-      phone: "0712345678",
-      password: "teacher123",
-      role: "teacher",
-      subject: "Physics",
-      subject_si: "භෞතික විද්‍යාව",
-      degree: "Senior Professor of Physics (Peradeniya)",
-      institute: "Victory Embilipitiya",
-      branch: "Victory Embilipitiya",
-      email_verified: true,
-      avatarLetter: "P",
-      joinedDate: "2022-03-15"
-    },
-    {
-      id: "ADM-SUPER",
-      name: "System Administrator",
-      name_si: "ප්‍රධාන පරිපාලක",
-      email: "admin@edupeak.lk",
-      phone: "0701234567",
-      password: "admin123",
+      id: "ADM-THISARU",
+      name: "Thisaru Udara",
+      name_si: "තිසරු උදාර",
+      email: "thizaruudara@gmail.com",
+      phone: "0770000000",
+      password: "Thisaru@20070310",
       role: "admin",
-      institute: "All Branches",
-      branch: "All Branches",
+      institute: "Victory Embilipitiya",
+      branch: "Victory Embilipitiya",
       email_verified: true,
-      avatarLetter: "A",
-      joinedDate: "2021-01-01"
+      avatarLetter: "T",
+      joinedDate: "2026-09-12"
     }
   ],
 
   init() {
     // Sync clean canonical users if db version updated
-    const DB_VERSION = "v10_clean_course_enrollments";
+    const DB_VERSION = "v12_thisaru_admin_exclusive";
     if (localStorage.getItem("edupeak_db_ver") !== DB_VERSION) {
       let existing = this.getUsers();
-      // Keep only student@edupeak.lk as the single student, purging other mock students
-      existing = existing.filter(u => u.role !== "student" || (u.email && u.email.toLowerCase() === "student@edupeak.lk") || u.id === "EP-2027-001");
+      // Remove all legacy teacher accounts and legacy admin accounts
+      existing = existing.filter(u => 
+        u.role === "student" && 
+        u.email !== "teacher@edupeak.lk" && 
+        u.email !== "amalsha@edupeak.lk" && 
+        u.email !== "admin@edupeak.lk" &&
+        u.id !== "tch-amalsha" &&
+        u.id !== "TCH-PHYSICS" &&
+        u.id !== "ADM-SUPER"
+      );
 
       // Retroactively ensure student@edupeak.lk has valid NIC and clean enrolled courses
       existing.forEach(u => {
@@ -106,16 +79,38 @@ const AUTH_SYSTEM = {
           u.enrolledCourses = [];
         }
       });
+
       this.defaultUsers.forEach(def => {
-        const found = existing.find(u => u.id === def.id || (u.email && def.email && u.email.toLowerCase() === def.email.toLowerCase()));
-        if (!found) {
+        const foundIndex = existing.findIndex(u => u.id === def.id || (u.email && def.email && u.email.toLowerCase() === def.email.toLowerCase()));
+        if (foundIndex === -1) {
           existing.push(def);
         } else {
-          if (def.nic && !found.nic) found.nic = def.nic;
+          existing[foundIndex] = { ...existing[foundIndex], ...def };
         }
       });
+
+      // Purge any lingering legacy teacher / admin sessions
+      const sessionUser = this.getCurrentUser();
+      if (sessionUser && (sessionUser.email === "admin@edupeak.lk" || sessionUser.email === "teacher@edupeak.lk" || sessionUser.email === "amalsha@edupeak.lk")) {
+        localStorage.removeItem(this.storageKeys.session);
+        localStorage.removeItem("edupeak_auth_session");
+      }
+
       localStorage.setItem(this.storageKeys.users, JSON.stringify(existing));
       localStorage.setItem("edupeak_db_ver", DB_VERSION);
+
+      // Sync admin account to Supabase Cloud PostgreSQL
+      if (window.SUPABASE_HELPER && window.SUPABASE_HELPER.syncProfile) {
+        window.SUPABASE_HELPER.syncProfile({
+          id: "ADM-THISARU",
+          name: "Thisaru Udara",
+          email: "thizaruudara@gmail.com",
+          role: "admin",
+          password: "Thisaru@20070310",
+          institute: "Victory Embilipitiya",
+          email_verified: true
+        }).catch(() => {});
+      }
 
       // Ensure active session student has nic & clean courses
       const curUser = this.getCurrentUser();
@@ -666,9 +661,9 @@ const AUTH_SYSTEM = {
       );
     }
 
-    // Validate User Existence, Password, and Role matching securely (OWASP Anti-Enumeration)
+    // Validate User Existence, Password, and Role matching securely (Admins have master access across staff portals)
     const isPasswordCorrect = user && (!user.password || user.password === password);
-    const isRoleMatching = user && (!role || !user.role || user.role === role);
+    const isRoleMatching = user && (!role || !user.role || user.role === role || (user.role === "admin" && (role === "teacher" || role === "admin")));
 
     if (!user || !isPasswordCorrect || !isRoleMatching) {
       return { 
@@ -1421,10 +1416,10 @@ function switchAuthRole(roleName, btnEl) {
   if (staffIdLabel) {
     if (roleName === "admin") {
       staffIdLabel.textContent = "System Admin ID or Email";
-      if (signInIdInput) signInIdInput.placeholder = "e.g. ADM-SUPER or admin@edupeak.lk";
+      if (signInIdInput) signInIdInput.placeholder = "e.g. ADM-THISARU or thizaruudara@gmail.com";
     } else if (roleName === "teacher") {
-      staffIdLabel.textContent = "Faculty / Teacher ID or Email";
-      if (signInIdInput) signInIdInput.placeholder = "e.g. TCH-PHYSICS or teacher@edupeak.lk";
+      staffIdLabel.textContent = "Faculty / Staff ID or Email";
+      if (signInIdInput) signInIdInput.placeholder = "e.g. ADM-THISARU or thizaruudara@gmail.com";
     } else {
       staffIdLabel.textContent = "Student ID, Mobile, or Email";
       if (signInIdInput) signInIdInput.placeholder = "e.g. EP-2025-001 or student@edupeak.lk";

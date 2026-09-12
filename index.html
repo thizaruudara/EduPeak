@@ -1373,9 +1373,7 @@
                   <div class="top-bar-lesson">
                     <i class="fa-solid fa-book-open" style="color:#38bdf8;font-size:0.72rem;flex-shrink:0;"></i>
                     <span class="lesson-title-text" id="liveTopLessonTitle">Live Broadcast</span>
-                    <span style="color:#475569;margin:0 0.2rem;">•</span>
-                    <i class="fa-solid fa-graduation-cap" style="color:#a78bfa;font-size:0.7rem;flex-shrink:0;"></i>
-                    <span class="teacher-name-text" id="liveTopTeacherName">Amalsha Wanniarachchi</span>
+                    <span class="teacher-name-text" id="liveTopTeacherName" style="display:none;"></span>
                   </div>
                 </div>
 
@@ -1399,16 +1397,9 @@
                     </div>
                     <div class="controls-right">
                       <div class="quality-selector-wrapper">
-                        <button class="player-btn quality-btn-trigger" id="livePlayerQualityTriggerBtn" onclick="EDUPEAK_LIVE_PLAYER.toggleQualityMenu()" title="Stream Quality">
-                          <i class="fa-solid fa-gear" style="font-size: 0.85rem; margin-right: 0.25rem;"></i>
-                          <span id="livePlayerQualityLabel">Auto</span>
-                        </button>
-                        <div class="quality-dropdown-menu" id="livePlayerQualityMenu">
-                          <button onclick="EDUPEAK_LIVE_PLAYER.setPlaybackQuality('auto', this)" class="active"><span>Auto (1080p Max)</span></button>
-                          <button onclick="EDUPEAK_LIVE_PLAYER.setPlaybackQuality('hd1080', this)"><span>1080p HD</span></button>
-                          <button onclick="EDUPEAK_LIVE_PLAYER.setPlaybackQuality('hd720', this)"><span>720p HD</span></button>
-                          <button onclick="EDUPEAK_LIVE_PLAYER.setPlaybackQuality('large', this)"><span>480p</span></button>
-                          <button onclick="EDUPEAK_LIVE_PLAYER.setPlaybackQuality('medium', this)"><span>360p</span></button>
+                        <div class="player-btn quality-btn-trigger" id="livePlayerQualityTriggerBtn" style="cursor: default; background: rgba(255,255,255,0.08); border-color: rgba(56,189,248,0.25); color: #38bdf8; padding: 0.35rem 0.65rem;" title="Adaptive High-Definition Stream (Auto 1080p Max)">
+                          <i class="fa-solid fa-bolt" style="font-size: 0.8rem; margin-right: 0.25rem; color: #fbbf24;"></i>
+                          <span id="livePlayerQualityLabel">Auto (1080p Max)</span>
                         </div>
                       </div>
                       <button class="player-btn" onclick="EDUPEAK_LIVE_PLAYER.toggleFullscreen()" title="Fullscreen">
