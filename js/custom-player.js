@@ -208,6 +208,18 @@ const EDUPEAK_PLAYER = (function() {
       if (viewport) viewport.classList.remove("is-playing");
       showControls();
       stopProgressTracking();
+
+      // Record final watched time to EDUPEAK_WATCH_TRACKER
+      try {
+        if (window.EDUPEAK_WATCH_TRACKER && window.LMS_STATE && window.EDUPEAK_DATA && window.EDUPEAK_DATA.lmsLessons) {
+          const curLesson = window.EDUPEAK_DATA.lmsLessons[window.LMS_STATE.currentLessonIndex];
+          if (curLesson && curLesson.id) {
+            const curT = (ytPlayer && typeof ytPlayer.getCurrentTime === "function") ? ytPlayer.getCurrentTime() : currentTime;
+            const durT = (ytPlayer && typeof ytPlayer.getDuration === "function") ? ytPlayer.getDuration() : duration;
+            window.EDUPEAK_WATCH_TRACKER.recordWatch(curLesson.id, "lesson", curLesson.courseId, curT, durT);
+          }
+        }
+      } catch(e) {}
     } else if (event.data === BUFFERING) {
       showControls();
     }
@@ -433,6 +445,18 @@ const EDUPEAK_PLAYER = (function() {
           const loadedFraction = ytPlayer.getVideoLoadedFraction() || 0;
           const bufferBar = document.getElementById("playerBufferBar");
           if (bufferBar) bufferBar.style.width = `${loadedFraction * 100}%`;
+        }
+
+        // Periodic watch progress persistence
+        if (!isDraggingProgress && Math.floor(currentTime) % 5 === 0) {
+          try {
+            if (window.EDUPEAK_WATCH_TRACKER && window.LMS_STATE && window.EDUPEAK_DATA && window.EDUPEAK_DATA.lmsLessons) {
+              const curLesson = window.EDUPEAK_DATA.lmsLessons[window.LMS_STATE.currentLessonIndex];
+              if (curLesson && curLesson.id) {
+                window.EDUPEAK_WATCH_TRACKER.recordWatch(curLesson.id, "lesson", curLesson.courseId, currentTime, duration);
+              }
+            }
+          } catch(e) {}
         }
       } catch (e) {
         // ignore state polling error
@@ -874,6 +898,20 @@ const EDUPEAK_LIVE_PLAYER = (function() {
 
     if (window.LIVE_APP && typeof window.LIVE_APP.handleAutoEndStream === "function") {
       window.LIVE_APP.handleAutoEndStream(sessionId);
+    } else if (sessionId) {
+      const nowIso = new Date().toISOString();
+      try {
+        let scheds = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
+        const s = scheds.find(item => item.id === sessionId);
+        if (s) {
+          s.status = "ended";
+          s.endedAt = nowIso;
+          localStorage.setItem("edupeak_schedules_db", JSON.stringify(scheds));
+        }
+      } catch(e) {}
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
+        try { window.SUPABASE_HELPER.updateLiveSessionStatus(sessionId, "ended", { endedAt: nowIso }); } catch(e) {}
+      }
     }
   }
 

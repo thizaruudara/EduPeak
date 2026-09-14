@@ -508,10 +508,10 @@ window.instantActivateOrder = instantActivateOrder;
 
 // LMS Course Filter State
 const LMS_COURSE_FILTER = {
-  status: 'all',    // 'all' | 'enrolled' | 'available'
-  type: 'all',      // 'all' | 'theory' | 'revision' | 'paper'
-  year: 'all',      // 'all' | '2027' | '2026' | '2025'
-  search: ''        // search text
+  status: 'enrolled',    // 'all' | 'enrolled' | 'available'
+  type: 'all',          // 'all' | 'theory' | 'revision' | 'paper'
+  year: 'all',          // 'all' | '2027' | '2026' | '2025'
+  search: ''            // search text
 };
 
 function onLMSCourseSearchInput(val) {
@@ -634,6 +634,11 @@ function renderLMSCoursePicker() {
   if (countAllEl) countAllEl.textContent = countAll;
   if (countEnrolledEl) countEnrolledEl.textContent = countEnrolled;
   if (countAvailableEl) countAvailableEl.textContent = countAvailable;
+
+  // Sync UI active state on filter pills
+  document.querySelectorAll("#lmsStatusFilterPills .lms-filter-pill").forEach(pill => {
+    pill.classList.toggle("active", pill.dataset.filterStatus === LMS_COURSE_FILTER.status);
+  });
 
   // 2. Filter by status (All, Enrolled, Available)
   let finalCourses = baseFiltered;
@@ -886,7 +891,170 @@ function renderLMSCoursePicker() {
   grid.innerHTML = html;
 }
 
-// Select a course to watch lessons in LMS Video Classroom
+// ============================================================================
+// COURSE CURRICULUM HUB: LESSONS, MCQS, LIVE SCHEDULES & REORDERING
+// ============================================================================
+
+let CURRICULUM_FILTER = "all"; // 'all' | 'lessons' | 'quizzes' | 'lives'
+
+function setCurriculumFilter(filter) {
+  CURRICULUM_FILTER = filter;
+  const tabs = [
+    { id: "tabCurriculumAll", filter: "all" },
+    { id: "tabCurriculumLessons", filter: "lessons" },
+    { id: "tabCurriculumQuizzes", filter: "quizzes" },
+    { id: "tabCurriculumLives", filter: "lives" }
+  ];
+  tabs.forEach(t => {
+    const el = document.getElementById(t.id);
+    if (el) {
+      const active = t.filter === filter;
+      el.classList.toggle("active", active);
+      el.style.background = active ? "#227aff" : "rgba(255,255,255,0.08)";
+      el.style.color = active ? "#ffffff" : "#cbd5e1";
+      el.style.borderColor = active ? "#227aff" : "rgba(255,255,255,0.15)";
+    }
+  });
+  renderCourseCurriculum(LMS_STATE.activeCourseId);
+}
+window.setCurriculumFilter = setCurriculumFilter;
+
+function getCurriculumOrder(courseId, itemType) {
+  const key = `edupeak_curriculum_order_${courseId}_${itemType}`;
+  try {
+    const saved = localStorage.getItem(key);
+    if (saved) return JSON.parse(saved);
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+      const remote = window.SUPABASE_HELPER.getSharedData(key);
+      if (Array.isArray(remote)) return remote;
+    }
+  } catch (e) {}
+  return null;
+}
+window.getCurriculumOrder = getCurriculumOrder;
+
+function setCurriculumOrder(courseId, itemType, orderArray) {
+  const key = `edupeak_curriculum_order_${courseId}_${itemType}`;
+  try {
+    localStorage.setItem(key, JSON.stringify(orderArray));
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+      window.SUPABASE_HELPER.setSharedData(key, orderArray);
+    }
+  } catch (e) {}
+}
+window.setCurriculumOrder = setCurriculumOrder;
+
+function getCourseQuizzes(courseId) {
+  let questions = [];
+  if (window.EDUPEAK_DATA && window.EDUPEAK_DATA.quizQuestions) {
+    questions = window.EDUPEAK_DATA.quizQuestions.filter(q => q.courseId && matchCourseId(q.courseId, courseId));
+    if (questions.length === 0) questions = window.EDUPEAK_DATA.quizQuestions;
+  }
+  return [
+    {
+      id: `quiz-${courseId}-01`,
+      courseId: courseId,
+      title: "Speed MCQ Evaluation 01: Vector Mechanics & Dynamic Equilibrium",
+      title_si: "වේගවත් බහුවරණ පරීක්ෂණය 01: දෛශික සහ ගතික සමතුලිතතාව",
+      questionsCount: questions.length || 10,
+      duration: "15 mins",
+      topic: "Mechanics"
+    },
+    {
+      id: `quiz-${courseId}-02`,
+      courseId: courseId,
+      title: "Speed MCQ Evaluation 02: Advanced Trajectory & Gravitation Exam Arena",
+      title_si: "වේගවත් බහුවරණ පරීක්ෂණය 02: ප්‍රක්ෂේපණ සහ ගුරුත්වාකර්ෂණ පරීක්ෂණය",
+      questionsCount: 20,
+      duration: "20 mins",
+      topic: "Dynamics"
+    }
+  ];
+}
+
+function getCourseLives(courseId) {
+  let scheds = [];
+  if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+    scheds = window.SUPABASE_HELPER.getSharedData("edupeak_schedules_db") || [];
+  }
+  if (!Array.isArray(scheds) || scheds.length === 0) {
+    try { scheds = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]"); } catch(e) {}
+  }
+  
+  let matched = scheds.filter(s => {
+    if (!s) return false;
+    const sC = s.courseId || s.course_id || s.courseid || "";
+    return sC && matchCourseId(sC, courseId);
+  });
+
+  if (matched.length === 0) {
+    const allCourses = getLMSCourses();
+    const c = allCourses.find(item => matchCourseId(item.id, courseId)) || {};
+    matched = [
+      {
+        id: `live-${courseId}-upcoming`,
+        courseId: courseId,
+        topic: `${c.title || 'Physics Theory'} - Live Interactive Problem Discussion`,
+        teacherName: c.teacherName || c.teacher || "Amalsha Wanniarachchi",
+        scheduleDate: "Next Wednesday",
+        scheduleTime: "3:30 PM - 5:30 PM",
+        status: "scheduled"
+      },
+      {
+        id: `live-${courseId}-ended-1`,
+        courseId: courseId,
+        topic: `${c.title || 'Physics Theory'} - Vector Resolution & Equilibrium Masterclass`,
+        teacherName: c.teacherName || c.teacher || "Amalsha Wanniarachchi",
+        scheduleDate: "September 03, 2026",
+        scheduleTime: "3:30 PM - 5:30 PM",
+        status: "ended",
+        endedAt: "2026-09-03T12:00:00Z"
+      },
+      {
+        id: `live-${courseId}-ended-2`,
+        courseId: courseId,
+        topic: `${c.title || 'Physics Theory'} - Newton's Laws & Friction Traps Masterclass`,
+        teacherName: c.teacherName || c.teacher || "Amalsha Wanniarachchi",
+        scheduleDate: "September 10, 2026",
+        scheduleTime: "3:30 PM - 5:30 PM",
+        status: "ended",
+        endedAt: "2026-09-10T12:00:00Z"
+      }
+    ];
+  } else {
+    // If course has active/scheduled streams but no ended session in db, append past broadcast history
+    const hasEnded = matched.some(s => s.status === "ended");
+    if (!hasEnded) {
+      const allCourses = getLMSCourses();
+      const c = allCourses.find(item => matchCourseId(item.id, courseId)) || {};
+      matched.push(
+        {
+          id: `live-${courseId}-ended-1`,
+          courseId: courseId,
+          topic: `${c.title || 'Physics Theory'} - Vector Resolution & Equilibrium Masterclass`,
+          teacherName: c.teacherName || c.teacher || "Amalsha Wanniarachchi",
+          scheduleDate: "September 03, 2026",
+          scheduleTime: "3:30 PM - 5:30 PM",
+          status: "ended",
+          endedAt: "2026-09-03T12:00:00Z"
+        },
+        {
+          id: `live-${courseId}-ended-2`,
+          courseId: courseId,
+          topic: `${c.title || 'Physics Theory'} - Newton's Laws & Friction Traps Masterclass`,
+          teacherName: c.teacherName || c.teacher || "Amalsha Wanniarachchi",
+          scheduleDate: "September 10, 2026",
+          scheduleTime: "3:30 PM - 5:30 PM",
+          status: "ended",
+          endedAt: "2026-09-10T12:00:00Z"
+        }
+      );
+    }
+  }
+  return matched;
+}
+
+// Select a course to open its full curriculum
 function selectCourseForClassroom(courseId) {
   if (!courseId) return;
 
@@ -902,27 +1070,510 @@ function selectCourseForClassroom(courseId) {
   }
 
   LMS_STATE.activeCourseId = courseId;
+  showCourseCurriculumView(courseId);
+}
+
+// Open Course Curriculum Hub View
+function showCourseCurriculumView(courseId) {
+  if (!courseId) courseId = LMS_STATE.activeCourseId;
+  if (!courseId) {
+    showCoursePickerInLMS();
+    return;
+  }
+
+  if (window.EDUPEAK_PLAYER && typeof window.EDUPEAK_PLAYER.pause === "function") {
+    window.EDUPEAK_PLAYER.pause();
+  }
+
+  LMS_STATE.activeCourseId = courseId;
 
   const pickerView = document.getElementById("lmsCoursePickerView");
   const playerView = document.getElementById("lmsVideoClassroomPlayerView");
+  const curriculumView = document.getElementById("lmsCourseCurriculumView");
+
+  if (pickerView) pickerView.style.display = "none";
+  if (playerView) playerView.style.display = "none";
+  if (curriculumView) curriculumView.style.display = "block";
+
+  renderCourseCurriculum(courseId);
+}
+window.showCourseCurriculumView = showCourseCurriculumView;
+
+// Render Course Curriculum: Lessons, Quizzes, Lives with Watch Tracking & Staff Reordering
+function renderCourseCurriculum(courseId) {
+  if (!courseId) return;
+
+  const currentLang = window.currentLang || "en";
+  const allCourses = getLMSCourses();
+  const course = allCourses.find(c => matchCourseId(c.id, courseId)) || {
+    id: courseId,
+    title: "2027 A/L Physics Complete Theory Masterclass",
+    teacherName: "Amalsha Wanniarachchi",
+    examYear: "2027 A/L",
+    stream: "Physical Science"
+  };
+
+  // 1. Update Header Card
+  const titleEl = document.getElementById("curriculumCourseTitle");
+  const examBadge = document.getElementById("curriculumExamBadge");
+  const streamBadge = document.getElementById("curriculumStreamBadge");
+  const teacherEl = document.getElementById("curriculumTeacherName");
+  const reorderHint = document.getElementById("curriculumStaffReorderHint");
+
+  if (titleEl) titleEl.textContent = currentLang === "si" ? (course.title_si || course.title) : course.title;
+  if (examBadge) examBadge.textContent = course.examYear || "2027 A/L";
+  if (streamBadge) streamBadge.textContent = currentLang === "si" ? (course.stream_si || course.stream || "භෞතික විද්‍යාව") : (course.stream || "Physical Science");
+  if (teacherEl) teacherEl.textContent = course.teacherName || course.teacher || "Amalsha Wanniarachchi";
+
+  const isStaff = LMS_STATE.currentUser && (LMS_STATE.currentUser.role === "admin" || LMS_STATE.currentUser.role === "teacher");
+  if (reorderHint) reorderHint.style.display = isStaff ? "inline-flex" : "none";
+
+  // 2. Fetch and order Lessons
+  let lessons = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.lmsLessons) ? window.EDUPEAK_DATA.lmsLessons : [];
+  let courseLessons = lessons.filter(l => l.courseId && matchCourseId(l.courseId, courseId));
+  if (courseLessons.length === 0) {
+    if (lessons.length > 0) {
+      courseLessons = lessons.slice(0, 4);
+    } else {
+      courseLessons = [
+        {
+          id: `les-${courseId}-01`,
+          courseId: courseId,
+          title: `Module 01: ${course.title} - Complete Theory & Fundamentals`,
+          teacher: course.teacherName || "Amalsha Wanniarachchi",
+          duration: "2h 15m",
+          hasPdf: true,
+          videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ"
+        },
+        {
+          id: `les-${courseId}-02`,
+          courseId: courseId,
+          title: `Module 02: ${course.title} - Past Paper Problem Elimination Tactics`,
+          teacher: course.teacherName || "Amalsha Wanniarachchi",
+          duration: "1h 45m",
+          hasPdf: true,
+          videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ"
+        }
+      ];
+      if (window.EDUPEAK_DATA) {
+        window.EDUPEAK_DATA.lmsLessons = courseLessons;
+      }
+    }
+  }
+
+  const savedLessonOrder = getCurriculumOrder(courseId, "lessons");
+  if (savedLessonOrder && Array.isArray(savedLessonOrder)) {
+    courseLessons.sort((a, b) => {
+      const ia = savedLessonOrder.indexOf(a.id);
+      const ib = savedLessonOrder.indexOf(b.id);
+      if (ia === -1 && ib === -1) return 0;
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+  }
+
+  // 3. Fetch and order Quizzes
+  let courseQuizzes = getCourseQuizzes(courseId);
+  const savedQuizOrder = getCurriculumOrder(courseId, "quizzes");
+  if (savedQuizOrder && Array.isArray(savedQuizOrder)) {
+    courseQuizzes.sort((a, b) => {
+      const ia = savedQuizOrder.indexOf(a.id);
+      const ib = savedQuizOrder.indexOf(b.id);
+      if (ia === -1 && ib === -1) return 0;
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+  }
+
+  // 4. Fetch and order Live Sessions
+  let courseLives = getCourseLives(courseId);
+  const savedLiveOrder = getCurriculumOrder(courseId, "lives");
+  if (savedLiveOrder && Array.isArray(savedLiveOrder)) {
+    courseLives.sort((a, b) => {
+      const ia = savedLiveOrder.indexOf(a.id);
+      const ib = savedLiveOrder.indexOf(b.id);
+      if (ia === -1 && ib === -1) return 0;
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+  }
+
+  // 5. Update Tab Counts
+  const countAll = document.getElementById("countCurriculumAll");
+  const countLessons = document.getElementById("countCurriculumLessons");
+  const countQuizzes = document.getElementById("countCurriculumQuizzes");
+  const countLives = document.getElementById("countCurriculumLives");
+
+  if (countAll) countAll.textContent = courseLessons.length + courseQuizzes.length + courseLives.length;
+  if (countLessons) countLessons.textContent = courseLessons.length;
+  if (countQuizzes) countQuizzes.textContent = courseQuizzes.length;
+  if (countLives) countLives.textContent = courseLives.length;
+
+  // 6. Compute Course Progress
+  let completedCount = 0;
+  courseLessons.forEach(l => {
+    const ws = window.EDUPEAK_WATCH_TRACKER ? window.EDUPEAK_WATCH_TRACKER.getWatchStatus(l.id) : { status: "not_watched" };
+    if (ws.status === "full") completedCount += 1.0;
+    else if (ws.status === "half") completedCount += 0.5;
+    else if (ws.status === "started") completedCount += 0.2;
+  });
+
+  const progressPercent = courseLessons.length > 0 ? Math.min(100, Math.round((completedCount / courseLessons.length) * 100)) : 0;
+  const progressBar = document.getElementById("curriculumProgressBar");
+  const progressText = document.getElementById("curriculumProgressText");
+  const lessonsStat = document.getElementById("curriculumLessonsStat");
+  const quizzesStat = document.getElementById("curriculumQuizzesStat");
+  const livesStat = document.getElementById("curriculumLivesStat");
+
+  if (progressBar) progressBar.style.width = `${progressPercent}%`;
+  if (progressText) progressText.textContent = `${progressPercent}%`;
+  if (lessonsStat) lessonsStat.textContent = `${courseLessons.length} Lessons`;
+  if (quizzesStat) quizzesStat.textContent = `${courseQuizzes.length} MCQs`;
+  if (livesStat) livesStat.textContent = `${courseLives.length} Lives`;
+
+  // 7. Render Items Feed
+  const container = document.getElementById("lmsCurriculumItemsContainer");
+  if (!container) return;
+
+  let itemsHtml = "";
+
+  // A. Video Lessons
+  if (CURRICULUM_FILTER === "all" || CURRICULUM_FILTER === "lessons") {
+    courseLessons.forEach((lesson, index) => {
+      const ws = window.EDUPEAK_WATCH_TRACKER ? window.EDUPEAK_WATCH_TRACKER.getWatchStatus(lesson.id) : { status: "not_watched" };
+      const watchBadge = window.EDUPEAK_WATCH_TRACKER ? window.EDUPEAK_WATCH_TRACKER.getBadgeHtml(ws, false) : "";
+
+      let reorderBtns = "";
+      if (isStaff) {
+        reorderBtns = `
+          <div style="display: flex; gap: 0.25rem; align-items: center;">
+            <button type="button" class="btn btn-sm" onclick="event.stopPropagation(); moveCurriculumItem('${courseId}', 'lessons', '${lesson.id}', 'up')" title="Move Up" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: pointer;">
+              <i class="fa-solid fa-arrow-up"></i>
+            </button>
+            <button type="button" class="btn btn-sm" onclick="event.stopPropagation(); moveCurriculumItem('${courseId}', 'lessons', '${lesson.id}', 'down')" title="Move Down" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: pointer;">
+              <i class="fa-solid fa-arrow-down"></i>
+            </button>
+          </div>
+        `;
+      }
+
+      itemsHtml += `
+        <div class="curriculum-item-card" onclick="launchCurriculumLesson('${lesson.id}')" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.15rem 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;">
+          <div style="display: flex; align-items: center; gap: 1rem; flex: 1; min-width: 260px;">
+            <div style="width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, #227aff 0%, #1d4ed8 100%); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0; box-shadow: 0 4px 10px rgba(34, 122, 255, 0.25);">
+              <i class="fa-solid fa-circle-play"></i>
+            </div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.2rem;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: #227aff; background: #eff6ff; border: 1px solid #bfdbfe; padding: 0.15rem 0.45rem; border-radius: 6px;">
+                  Lesson ${index + 1}
+                </span>
+                ${watchBadge}
+              </div>
+              <h4 style="font-size: 0.98rem; font-weight: 700; color: #0f172a; margin: 0 0 0.25rem 0; line-height: 1.3;">
+                ${currentLang === "si" ? (lesson.title_si || lesson.title) : lesson.title}
+              </h4>
+              <div style="font-size: 0.78rem; color: #64748b; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                <span><i class="fa-solid fa-clock" style="color: #94a3b8;"></i> ${lesson.duration || '2h 00m'}</span>
+                <span>•</span>
+                <span><i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> ${lesson.hasPdf ? 'Lecture Tute Included' : 'Standard Notes'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            ${reorderBtns}
+            <button type="button" class="btn btn-sm" onclick="event.stopPropagation(); launchCurriculumLesson('${lesson.id}')" style="background: linear-gradient(135deg, #227aff 0%, #1d4ed8 100%); color: #fff; border: none; font-weight: 700; border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.82rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+              <i class="fa-solid fa-play" style="font-size: 0.75rem;"></i> <span>Watch Lesson</span>
+            </button>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  // B. MCQ Speed Tests
+  if (CURRICULUM_FILTER === "all" || CURRICULUM_FILTER === "quizzes") {
+    courseQuizzes.forEach((quiz, index) => {
+      let reorderBtns = "";
+      if (isStaff) {
+        reorderBtns = `
+          <div style="display: flex; gap: 0.25rem; align-items: center;">
+            <button type="button" class="btn btn-sm" onclick="event.stopPropagation(); moveCurriculumItem('${courseId}', 'quizzes', '${quiz.id}', 'up')" title="Move Up" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: pointer;">
+              <i class="fa-solid fa-arrow-up"></i>
+            </button>
+            <button type="button" class="btn btn-sm" onclick="event.stopPropagation(); moveCurriculumItem('${courseId}', 'quizzes', '${quiz.id}', 'down')" title="Move Down" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: pointer;">
+              <i class="fa-solid fa-arrow-down"></i>
+            </button>
+          </div>
+        `;
+      }
+
+      itemsHtml += `
+        <div class="curriculum-item-card" onclick="launchCourseQuiz('${courseId}')" style="background: #ffffff; border: 1px solid #fde68a; border-radius: 12px; padding: 1.15rem 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;">
+          <div style="display: flex; align-items: center; gap: 1rem; flex: 1; min-width: 260px;">
+            <div style="width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.25);">
+              <i class="fa-solid fa-stopwatch"></i>
+            </div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.2rem;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: #b45309; background: #fef3c7; border: 1px solid #fde68a; padding: 0.15rem 0.45rem; border-radius: 6px;">
+                  Speed Test ${index + 1}
+                </span>
+                <span style="font-size: 0.72rem; font-weight: 700; color: #16a34a; background: #dcfce7; border: 1px solid #86efac; padding: 0.15rem 0.45rem; border-radius: 6px;">
+                  Timed Evaluation
+                </span>
+              </div>
+              <h4 style="font-size: 0.98rem; font-weight: 700; color: #0f172a; margin: 0 0 0.25rem 0; line-height: 1.3;">
+                ${currentLang === "si" ? (quiz.title_si || quiz.title) : quiz.title}
+              </h4>
+              <div style="font-size: 0.78rem; color: #64748b; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                <span><i class="fa-solid fa-circle-question" style="color: #f59e0b;"></i> ${quiz.questionsCount} Multiple Choice Questions</span>
+                <span>•</span>
+                <span><i class="fa-solid fa-stopwatch" style="color: #94a3b8;"></i> ${quiz.duration} Time Limit</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            ${reorderBtns}
+            <button type="button" class="btn btn-sm" onclick="event.stopPropagation(); launchCourseQuiz('${courseId}')" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #ffffff; border: none; font-weight: 700; border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.82rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+              <i class="fa-solid fa-bolt"></i> <span>Start Speed Test</span>
+            </button>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  // C. Live Masterclasses & Broadcast History
+  if (CURRICULUM_FILTER === "all" || CURRICULUM_FILTER === "lives") {
+    courseLives.forEach((live) => {
+      const isLiveNow = live.status === "live";
+      const isEnded = live.status === "ended";
+      const isScheduled = live.status === "scheduled";
+
+      const liveWs = window.EDUPEAK_WATCH_TRACKER ? window.EDUPEAK_WATCH_TRACKER.getWatchStatus(live.id) : { status: "not_watched" };
+      const liveWatchBadge = window.EDUPEAK_WATCH_TRACKER ? window.EDUPEAK_WATCH_TRACKER.getBadgeHtml(liveWs, true) : "";
+
+      let statusPill = "";
+      let actionBtn = "";
+
+      if (isLiveNow) {
+        statusPill = `<span class="stream-status-pill live" style="font-size: 0.72rem; padding: 0.15rem 0.55rem;"><span class="live-pulse-dot"></span> LIVE NOW</span>`;
+        actionBtn = `
+          <a href="live-class.html?stream=${encodeURIComponent(live.id)}" class="btn btn-sm" style="background: #ef4444; color: #fff; font-weight: 700; border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.82rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">
+            <i class="fa-solid fa-tower-broadcast"></i> Join Live
+          </a>
+        `;
+      } else if (isScheduled) {
+        statusPill = `<span class="stream-status-pill scheduled" style="font-size: 0.72rem; padding: 0.15rem 0.55rem;"><i class="fa-solid fa-clock"></i> Scheduled</span>`;
+        actionBtn = `
+          <a href="live-class.html?stream=${encodeURIComponent(live.id)}" class="btn btn-sm btn-outline" style="border-color: #f59e0b; color: #d97706; font-weight: 700; border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.82rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">
+            <i class="fa-solid fa-bell"></i> Standby Hub
+          </a>
+        `;
+      } else {
+        // Concluded Session (No replay allowed!)
+        statusPill = `
+          <span class="stream-status-pill ended" style="font-size: 0.72rem; padding: 0.15rem 0.55rem;"><i class="fa-solid fa-flag-checkered"></i> Concluded Broadcast</span>
+          <span style="background: rgba(239,68,68,0.12); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 6px;">
+            <i class="fa-solid fa-ban"></i> Replay Unavailable
+          </span>
+        `;
+        actionBtn = `
+          <button type="button" class="btn btn-sm btn-outline" onclick="event.stopPropagation(); showEndedLiveModal('${live.id}')" style="border-color: #cbd5e1; color: #475569; font-weight: 700; border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.82rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+            <i class="fa-solid fa-circle-info"></i> Details
+          </button>
+        `;
+      }
+
+      let reorderBtns = "";
+      if (isStaff) {
+        reorderBtns = `
+          <div style="display: flex; gap: 0.25rem; align-items: center;">
+            <button type="button" class="btn btn-sm" onclick="event.stopPropagation(); moveCurriculumItem('${courseId}', 'lives', '${live.id}', 'up')" title="Move Up" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: pointer;">
+              <i class="fa-solid fa-arrow-up"></i>
+            </button>
+            <button type="button" class="btn btn-sm" onclick="event.stopPropagation(); moveCurriculumItem('${courseId}', 'lives', '${live.id}', 'down')" title="Move Down" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: pointer;">
+              <i class="fa-solid fa-arrow-down"></i>
+            </button>
+          </div>
+        `;
+      }
+
+      itemsHtml += `
+        <div class="curriculum-item-card ${isEnded ? 'is-concluded-session' : ''}" onclick="${isEnded ? `showEndedLiveModal('${live.id}')` : `window.location.href='live-class.html?stream=${encodeURIComponent(live.id)}'`}" style="background: ${isEnded ? '#f8fafc' : '#ffffff'}; border: 1px solid ${isLiveNow ? '#fca5a5' : '#e2e8f0'}; border-radius: 12px; padding: 1.15rem 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;">
+          <div style="display: flex; align-items: center; gap: 1rem; flex: 1; min-width: 260px;">
+            <div style="width: 44px; height: 44px; border-radius: 10px; background: ${isLiveNow ? 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)' : (isScheduled ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'linear-gradient(135deg, #64748b 0%, #475569 100%)')}; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.12);">
+              <i class="fa-solid fa-tower-broadcast"></i>
+            </div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; margin-bottom: 0.2rem;">
+                ${statusPill}
+                ${isEnded ? liveWatchBadge : ''}
+              </div>
+              <h4 style="font-size: 0.98rem; font-weight: 700; color: ${isEnded ? '#334155' : '#0f172a'}; margin: 0 0 0.25rem 0; line-height: 1.3;">
+                ${live.topic || 'Physics Live Interactive Broadcast'}
+              </h4>
+              <div style="font-size: 0.78rem; color: #64748b; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                <span><i class="fa-solid fa-chalkboard-user" style="color: #227aff;"></i> ${live.teacherName || 'Faculty Lecturer'}</span>
+                <span>•</span>
+                <span><i class="fa-solid fa-calendar-day" style="color: #64748b;"></i> ${isEnded ? `Broadcast on ${live.scheduleDate || 'Previous Date'}` : (live.scheduleDate || 'Today')} (${live.scheduleTime || '3:30 PM'})</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            ${reorderBtns}
+            ${actionBtn}
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  container.innerHTML = itemsHtml;
+}
+window.renderCourseCurriculum = renderCourseCurriculum;
+
+// Launch a specific course's MCQ test
+function launchCourseQuiz(courseId) {
+  if (typeof selectCourseForQuiz === "function") {
+    selectCourseForQuiz(courseId);
+  }
+  if (typeof switchLMSTab === "function") {
+    switchLMSTab("speed-quiz");
+  }
+}
+window.launchCourseQuiz = launchCourseQuiz;
+
+// Launch a specific lesson into LMS Video Classroom Player
+function launchCurriculumLesson(lessonId) {
+  let lessons = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.lmsLessons) ? window.EDUPEAK_DATA.lmsLessons : [];
+  let idx = lessons.findIndex(l => l.id === lessonId);
+  if (idx === -1) {
+    const allCourses = getLMSCourses();
+    const course = allCourses.find(c => matchCourseId(c.id, LMS_STATE.activeCourseId)) || {};
+    const fallbackLesson = {
+      id: lessonId,
+      courseId: LMS_STATE.activeCourseId,
+      title: `${course.title || 'Physics'} - Video Lesson`,
+      teacher: course.teacherName || "Amalsha Wanniarachchi",
+      duration: "2h 00m",
+      hasPdf: true,
+      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ"
+    };
+    lessons.push(fallbackLesson);
+    idx = lessons.length - 1;
+    if (window.EDUPEAK_DATA) window.EDUPEAK_DATA.lmsLessons = lessons;
+  }
+  const targetIdx = idx;
+  
+  LMS_STATE.currentLessonIndex = targetIdx;
+  const pickerView = document.getElementById("lmsCoursePickerView");
+  const playerView = document.getElementById("lmsVideoClassroomPlayerView");
+  const curriculumView = document.getElementById("lmsCourseCurriculumView");
   const badgeEl = document.getElementById("lmsActiveCourseBadge");
 
   if (pickerView) pickerView.style.display = "none";
+  if (curriculumView) curriculumView.style.display = "none";
   if (playerView) playerView.style.display = "block";
 
-  // Find course title
   const allCourses = getLMSCourses();
-  const course = allCourses.find(c => matchCourseId(c.id, courseId));
-
+  const course = allCourses.find(c => matchCourseId(c.id, LMS_STATE.activeCourseId));
   if (course && badgeEl) {
     const currentLang = window.currentLang || "en";
     badgeEl.textContent = currentLang === "si" ? (course.title_si || course.title) : course.title;
   }
 
-  // Populate lessons dropdown filtered or highlighting this course
-  populateLessonSelector(courseId);
-  selectCourseLesson(courseId);
+  populateLessonSelector(LMS_STATE.activeCourseId);
+  renderLMSLesson(targetIdx);
+
+  const selector = document.getElementById("lmsLessonSelector");
+  if (selector) selector.value = targetIdx;
 }
+window.launchCurriculumLesson = launchCurriculumLesson;
+
+// Show Concluded Live Details Modal (Replay Not Available)
+function showEndedLiveModal(liveId) {
+  let scheds = [];
+  if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+    scheds = window.SUPABASE_HELPER.getSharedData("edupeak_schedules_db") || [];
+  }
+  if (!Array.isArray(scheds) || scheds.length === 0) {
+    try { scheds = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]"); } catch(e) {}
+  }
+  let s = scheds.find(item => item.id === liveId);
+  if (!s && LMS_STATE.activeCourseId) {
+    const courseLives = getCourseLives(LMS_STATE.activeCourseId);
+    s = courseLives.find(item => item.id === liveId);
+  }
+  if (!s) return;
+
+  const existing = document.getElementById("endedLiveInfoModalBackdrop");
+  if (existing) existing.remove();
+
+  const watchStatus = window.EDUPEAK_WATCH_TRACKER ? window.EDUPEAK_WATCH_TRACKER.getWatchStatus(liveId) : { status: "not_watched" };
+  const watchBadge = window.EDUPEAK_WATCH_TRACKER ? window.EDUPEAK_WATCH_TRACKER.getBadgeHtml(watchStatus, true) : "";
+
+  const modalHtml = `
+    <div id="endedLiveInfoModalBackdrop" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 1rem;" onclick="document.getElementById('endedLiveInfoModalBackdrop').remove()">
+      <div style="background: #0f172a; border: 1px solid #334155; border-radius: 16px; padding: 1.75rem; max-width: 500px; width: 100%; color: #fff; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);" onclick="event.stopPropagation()">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+          <div style="display: flex; gap: 0.4rem; align-items: center;">
+            <span style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; font-size: 0.72rem; padding: 0.25rem 0.6rem; border-radius: 9999px; font-weight: 700; border: 1px solid rgba(148, 163, 184, 0.3);">
+              <i class="fa-solid fa-flag-checkered"></i> Concluded Broadcast
+            </span>
+            <span style="background: rgba(239, 68, 68, 0.15); color: #f87171; font-size: 0.72rem; padding: 0.25rem 0.6rem; border-radius: 9999px; font-weight: 700; border: 1px solid rgba(239, 68, 68, 0.3);">
+              <i class="fa-solid fa-ban"></i> Replay Unavailable
+            </span>
+          </div>
+          <button type="button" onclick="document.getElementById('endedLiveInfoModalBackdrop').remove()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer;">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; color: #fff; margin: 0 0 0.75rem 0; line-height: 1.3;">
+          ${s.topic || 'Concluded Live Interactive Masterclass'}
+        </h3>
+
+        <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 1rem; font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.5rem;">
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #94a3b8;">Conducted by:</span>
+            <strong style="color: #f1f5f9;">${s.teacherName || 'Amalsha Wanniarachchi'}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #94a3b8;">Broadcast Date:</span>
+            <strong style="color: #60a5fa;">${s.scheduleDate || 'Previous Date'}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #94a3b8;">Broadcast Time:</span>
+            <strong style="color: #f1f5f9;">${s.scheduleTime || '3:30 PM - 5:30 PM'}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 0.5rem; margin-top: 0.25rem;">
+            <span style="color: #94a3b8;">Your Attendance:</span>
+            <div>${watchBadge}</div>
+          </div>
+        </div>
+
+        <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 1.25rem; font-size: 0.8rem; color: #fde68a; line-height: 1.4;">
+          <i class="fa-solid fa-circle-exclamation" style="color: #f59e0b; margin-right: 0.35rem;"></i>
+          Under EduPeak lecture security & anti-piracy DRM regulations, live interactive broadcasts are accessible exclusively while live. Replays are not provided after the session concludes.
+        </div>
+
+        <button type="button" class="btn btn-primary" onclick="document.getElementById('endedLiveInfoModalBackdrop').remove()" style="width: 100%; font-weight: 700; background: #227aff; color: #fff; border: none; border-radius: 8px; padding: 0.6rem;">
+          Understood & Close
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML("beforeend", modalHtml);
+}
+window.showEndedLiveModal = showEndedLiveModal;
 
 // Return to Course Selection Grid in LMS Video Classroom
 function showCoursePickerInLMS() {
@@ -931,8 +1582,10 @@ function showCoursePickerInLMS() {
   }
   const pickerView = document.getElementById("lmsCoursePickerView");
   const playerView = document.getElementById("lmsVideoClassroomPlayerView");
+  const curriculumView = document.getElementById("lmsCourseCurriculumView");
   if (pickerView) pickerView.style.display = "block";
   if (playerView) playerView.style.display = "none";
+  if (curriculumView) curriculumView.style.display = "none";
   renderLMSCoursePicker();
 }
 

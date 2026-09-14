@@ -533,3 +533,148 @@ const EDUPEAK_DATA = {
 };
 
 window.EDUPEAK_DATA = EDUPEAK_DATA;
+
+// Central Student Watch & Attendance Tracker
+window.EDUPEAK_WATCH_TRACKER = {
+  getStudentId() {
+    try {
+      const user = (window.AUTH && typeof window.AUTH.getCurrentUser === "function" && window.AUTH.getCurrentUser())
+        || (window.LIVE_APP && window.LIVE_APP.currentUser)
+        || null;
+      if (user) return user.studentId || user.id || user.email || "student_user";
+      const cached = localStorage.getItem("edupeak_user");
+      if (cached) {
+        const u = JSON.parse(cached);
+        if (u) return u.studentId || u.id || u.email || "student_user";
+      }
+    } catch(e) {}
+    return "student_user";
+  },
+
+  formatDuration(seconds) {
+    const s = Math.max(0, Math.round(Number(seconds) || 0));
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m} mins`;
+    const h = Math.floor(m / 60);
+    const remM = m % 60;
+    return remM > 0 ? `${h}h ${remM}m` : `${h}h`;
+  },
+
+  recordWatch(itemId, type = "lesson", courseId = "", watchedSeconds = 0, totalSeconds = 0) {
+    if (!itemId) return null;
+    const studentId = this.getStudentId();
+    let history = {};
+    try {
+      history = JSON.parse(localStorage.getItem("edupeak_watch_history_" + studentId) || "{}");
+    } catch (e) {
+      history = {};
+    }
+
+    const prev = history[itemId] || { watchedSeconds: 0, totalSeconds: 0 };
+    const curWatched = Math.max(prev.watchedSeconds || 0, Number(watchedSeconds) || 0);
+    const dur = Math.max(prev.totalSeconds || 0, Number(totalSeconds) || 0);
+    
+    let pct = 0;
+    if (dur > 0) {
+      pct = Math.min(100, Math.round((curWatched / dur) * 100));
+    } else if (curWatched > 0) {
+      pct = 100;
+    }
+
+    let status = "not_watched";
+    if (pct >= 80) status = "full";
+    else if (pct >= 20) status = "half";
+    else if (pct > 0) status = "started";
+
+    const entry = {
+      itemId,
+      type, // 'lesson' | 'live'
+      courseId: courseId || prev.courseId || "",
+      watchedSeconds: curWatched,
+      totalSeconds: dur,
+      percentage: pct,
+      status, // 'full' | 'half' | 'started' | 'not_watched'
+      lastWatchedAt: new Date().toISOString()
+    };
+
+    history[itemId] = entry;
+
+    try {
+      localStorage.setItem("edupeak_watch_history_" + studentId, JSON.stringify(history));
+    } catch (e) {}
+
+    // Broadcast update across open tabs
+    try {
+      if (typeof BroadcastChannel !== "undefined") {
+        const bc = new BroadcastChannel("edupeak_watch_channel");
+        bc.postMessage({ type: "WATCH_UPDATED", studentId, entry });
+        bc.close();
+      }
+    } catch(e) {}
+
+    return entry;
+  },
+
+  getWatchStatus(itemId) {
+    if (!itemId) return { itemId: "", watchedSeconds: 0, totalSeconds: 0, percentage: 0, status: "not_watched" };
+    const studentId = this.getStudentId();
+    let history = {};
+    try {
+      history = JSON.parse(localStorage.getItem("edupeak_watch_history_" + studentId) || "{}");
+    } catch (e) {
+      history = {};
+    }
+
+    const rec = history[itemId];
+    if (rec) {
+      return {
+        ...rec,
+        formattedWatched: this.formatDuration(rec.watchedSeconds),
+        formattedTotal: this.formatDuration(rec.totalSeconds)
+      };
+    }
+
+    return {
+      itemId,
+      watchedSeconds: 0,
+      totalSeconds: 0,
+      percentage: 0,
+      status: "not_watched",
+      formattedWatched: "0m",
+      formattedTotal: "0m"
+    };
+  },
+
+  getBadgeHtml(watchStatus, isLive = false) {
+    const status = watchStatus.status || "not_watched";
+    const watchedText = this.formatDuration(watchStatus.watchedSeconds || 0);
+    const pct = watchStatus.percentage || 0;
+
+    if (status === "full") {
+      return `
+        <span class="edupeak-watch-pill full" title="Completed: ${pct}% (${watchedText})" style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 700; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 0.2rem 0.55rem; border-radius: 9999px;">
+          <i class="fa-solid fa-circle-check" style="color: #10b981;"></i> ${isLive ? 'Attended (Full)' : 'Watched (Full)'} <span style="font-weight: 600; opacity: 0.85;">• ${watchedText}</span>
+        </span>
+      `;
+    } else if (status === "half") {
+      return `
+        <span class="edupeak-watch-pill half" title="Partially Watched: ${pct}% (${watchedText})" style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 700; background: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 0.2rem 0.55rem; border-radius: 9999px;">
+          <i class="fa-solid fa-circle-half-stroke" style="color: #f59e0b;"></i> ${isLive ? 'Attended (Half)' : 'Watched (Half)'} <span style="font-weight: 600; opacity: 0.85;">• ${watchedText} (${pct}%)</span>
+        </span>
+      `;
+    } else if (status === "started") {
+      return `
+        <span class="edupeak-watch-pill started" title="Started: ${pct}% (${watchedText})" style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 700; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 0.2rem 0.55rem; border-radius: 9999px;">
+          <i class="fa-solid fa-play" style="font-size: 0.65rem;"></i> ${isLive ? 'Joined (< 20%)' : 'Started (< 20%)'} <span style="font-weight: 600; opacity: 0.85;">• ${watchedText}</span>
+        </span>
+      `;
+    } else {
+      return `
+        <span class="edupeak-watch-pill not-watched" style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 600; background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; padding: 0.2rem 0.55rem; border-radius: 9999px;">
+          <i class="fa-regular fa-circle" style="font-size: 0.65rem;"></i> ${isLive ? 'Not Attended' : 'Not Watched'}
+        </span>
+      `;
+    }
+  }
+};

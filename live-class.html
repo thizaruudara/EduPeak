@@ -1162,7 +1162,6 @@
           <button class="live-filter-btn active" onclick="LIVE_APP.setFilter('all', this)"><i class="fa-solid fa-layer-group"></i> All</button>
           <button class="live-filter-btn" onclick="LIVE_APP.setFilter('live', this)"><span class="live-pulse-dot" style="width: 7px; height: 7px;"></span> Live Now</button>
           <button class="live-filter-btn" onclick="LIVE_APP.setFilter('scheduled', this)"><i class="fa-solid fa-clock" style="color: #f59e0b;"></i> Scheduled</button>
-          <button class="live-filter-btn" onclick="LIVE_APP.setFilter('ended', this)"><i class="fa-solid fa-flag-checkered" style="color: #94a3b8;"></i> Concluded</button>
         </div>
 
         <!-- Schedule New Broadcast (Authorized Teacher/Admin Only) -->
@@ -1440,21 +1439,32 @@
           </div>
 
           <!-- Concluded Session Overlay (When status === 'ended') -->
-          <div class="live-standby-screen" id="liveEndedScreen" style="display: none;">
-            <span class="stream-status-pill ended" style="font-size: 0.8rem; padding: 0.35rem 0.85rem;">
-              <i class="fa-solid fa-flag-checkered"></i> BROADCAST CONCLUDED
-            </span>
+          <div class="live-standby-screen" id="liveEndedScreen" style="display: none; text-align: center; padding: 2rem;">
+            <div style="display: flex; gap: 0.5rem; justify-content: center; align-items: center; margin-bottom: 0.75rem;">
+              <span class="stream-status-pill ended" style="font-size: 0.8rem; padding: 0.35rem 0.85rem;">
+                <i class="fa-solid fa-flag-checkered"></i> BROADCAST CONCLUDED
+              </span>
+              <span class="stream-status-pill locked" style="background: rgba(239, 68, 68, 0.18); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); font-size: 0.75rem; padding: 0.3rem 0.7rem; font-weight: 700;">
+                <i class="fa-solid fa-ban"></i> Replay Not Available
+              </span>
+            </div>
 
-            <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 800; color: #fff; margin: 1rem 0 0.5rem;">
-              This Live Session Has Ended
+            <h2 id="endedSessionTopic" style="font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 800; color: #fff; margin: 0.5rem 0;">
+              This Live Masterclass Has Ended
             </h2>
-            <p style="color: #94a3b8; font-size: 0.9rem; max-width: 500px; margin: 0 0 1.25rem;">
-              Thank you for participating! The full recording, lecture notes, and discussion tute are being processed for the student LMS vault.
+            <div id="endedSessionMeta" style="color: #60a5fa; font-size: 0.88rem; font-weight: 600; margin-bottom: 1rem;">
+              <i class="fa-solid fa-calendar-check"></i> Concluded Broadcast
+            </div>
+            <p style="color: #94a3b8; font-size: 0.9rem; max-width: 540px; margin: 0 auto 1.5rem; line-height: 1.5;">
+              In accordance with class security & DRM policy, live interactive broadcasts cannot be replayed once ended. You can check your attendance history, class notes, and upcoming schedules in your course curriculum.
             </p>
-            <div style="display: flex; gap: 0.75rem;">
-              <a href="student-dashboard.html" class="live-nav-btn" style="background: var(--live-primary); color: #fff;">
-                <i class="fa-solid fa-book-open"></i> Go to Lesson Archive
+            <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+              <a href="index.html?view=enrolled" id="btnEndedGoToCourse" class="live-nav-btn" style="background: var(--live-primary); color: #fff; text-decoration: none;">
+                <i class="fa-solid fa-graduation-cap"></i> View Course Curriculum & History
               </a>
+              <button type="button" class="live-nav-btn" onclick="LIVE_APP.loadInitialStreams()" style="background: var(--live-surface-light); color: #e2e8f0; border: 1px solid var(--live-border); cursor: pointer;">
+                <i class="fa-solid fa-tower-broadcast"></i> Back to Live Streams
+              </button>
             </div>
           </div>
 
@@ -2064,9 +2074,11 @@
           }
         } catch(e) {}
 
-        this.renderStreamsList(schedules);
+        // Filter out ended streams strictly — Live Hub only displays active live and scheduled streams
+        const activeOrScheduled = schedules.filter(s => s && s.status !== "ended");
+        this.renderStreamsList(activeOrScheduled);
 
-        if (schedules.length === 0) {
+        if (activeOrScheduled.length === 0) {
           this.loadEmptyState();
           return;
         }
@@ -2074,18 +2086,18 @@
         // Pick preferred session, or last visited session, or first live stream, or first scheduled stream
         let target = null;
         if (preferredId) {
-          target = schedules.find(s => s.id === preferredId);
+          target = activeOrScheduled.find(s => s.id === preferredId);
         }
         if (!target) {
           try {
             const lastSavedId = localStorage.getItem("edupeak_last_active_stream");
             if (lastSavedId) {
-              target = schedules.find(s => s.id === lastSavedId);
+              target = activeOrScheduled.find(s => s.id === lastSavedId);
             }
           } catch(e) {}
         }
         if (!target) {
-          target = schedules.find(s => s.status === "live") || schedules[0];
+          target = activeOrScheduled.find(s => s.status === "live") || activeOrScheduled[0];
         }
 
         if (target) {
@@ -2208,6 +2220,9 @@
           }
         }
 
+        // Strictly filter out ended streams from the Live Hub — ended broadcast history belongs exclusively in the Course Curriculum
+        allSchedules = (allSchedules || []).filter(s => s && s.status !== "ended");
+
         const liveCount = allSchedules.filter(s => s.status === "live").length;
         if (topBadgeText) {
           const isMobile = window.innerWidth <= 640;
@@ -2300,6 +2315,14 @@
           }
         } catch (e) {}
 
+        let session = null;
+        try {
+          const preLocal = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
+          if (Array.isArray(preLocal)) {
+            session = preLocal.find(s => s && s.id === sessionId);
+          }
+        } catch(e) {}
+
         let schedules = [];
         if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getLiveSessions === "function") {
           schedules = await window.SUPABASE_HELPER.getLiveSessions();
@@ -2308,19 +2331,20 @@
         }
         if (!Array.isArray(schedules)) schedules = [];
 
-        let session = schedules.find(s => s.id === sessionId);
         if (!session) {
-          try {
-            const rawLocal = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
-            if (Array.isArray(rawLocal)) {
-              session = rawLocal.find(s => s.id === sessionId);
-              if (session && !schedules.some(s => s.id === session.id)) {
-                schedules.push(session);
-              }
-            }
-          } catch(e) {}
+          session = schedules.find(s => s && s.id === sessionId);
+        } else {
+          const remoteMatch = schedules.find(s => s && s.id === sessionId);
+          if (remoteMatch) {
+            session = { ...session, ...remoteMatch };
+          } else {
+            schedules.push(session);
+          }
         }
-        if (!session) session = this.activeSession;
+
+        if (!session && this.activeSession && this.activeSession.id === sessionId) {
+          session = this.activeSession;
+        }
 
         if (!session) {
           if (schedules.length === 0) {
@@ -2498,18 +2522,23 @@
             try { window.EDUPEAK_LIVE_PLAYER.triggerLiveEnded(); } catch(e) {}
           }
           if (customPlayer) customPlayer.style.display = "none";
-          if (session.recordingUrl) {
-            if (iframe) {
-              iframe.style.display = "block";
-              iframe.src = session.recordingUrl;
+          if (iframe) {
+            iframe.style.display = "none";
+            iframe.src = "about:blank";
+          }
+          if (endedScreen) {
+            endedScreen.style.display = "flex";
+            const topicEl = document.getElementById("endedSessionTopic");
+            if (topicEl) topicEl.textContent = session.topic || "This Live Masterclass Has Ended";
+            const metaEl = document.getElementById("endedSessionMeta");
+            if (metaEl) {
+              const dateStr = session.scheduleDate || session.scheduleTime || "Concluded Broadcast";
+              metaEl.innerHTML = `<i class="fa-solid fa-calendar-check"></i> Broadcast on <strong>${dateStr}</strong> • Conducted by <strong>${session.teacherName || 'Faculty Lecturer'}</strong>`;
             }
-            if (endedScreen) endedScreen.style.display = "none";
-          } else {
-            if (iframe) {
-              iframe.style.display = "none";
-              iframe.src = "about:blank";
+            const courseBtn = document.getElementById("btnEndedGoToCourse");
+            if (courseBtn && (session.courseId || session.course_id)) {
+              courseBtn.href = `index.html?view=enrolled&course=${encodeURIComponent(session.courseId || session.course_id)}`;
             }
-            if (endedScreen) endedScreen.style.display = "flex";
           }
           if (standbyScreen) standbyScreen.style.display = "none";
         }
