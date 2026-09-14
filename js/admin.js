@@ -16,6 +16,18 @@ const ADMIN_CONTROLLER = {
     window.addEventListener("hashchange", () => {
       this.checkAutoOpen();
     });
+
+    window.addEventListener("edupeak-order-updated", () => {
+      if (typeof this.renderPendingOrders === "function") this.renderPendingOrders();
+      if (typeof this.renderOverview === "function") this.renderOverview();
+      if (typeof this.renderStudents === "function") this.renderStudents();
+    });
+
+    window.addEventListener("edupeak-order-approved", () => {
+      if (typeof this.renderPendingOrders === "function") this.renderPendingOrders();
+      if (typeof this.renderOverview === "function") this.renderOverview();
+      if (typeof this.renderStudents === "function") this.renderStudents();
+    });
   },
 
   startLiveClock() {
@@ -373,7 +385,7 @@ const ADMIN_CONTROLLER = {
   // --------------------------------------------------------------------------
   // 2. STUDENTS MANAGEMENT & PENDING ORDERS
   // --------------------------------------------------------------------------
-  renderPendingOrders() {
+  async renderPendingOrders() {
     const tbody = document.getElementById("adminPendingOrdersTbody");
     const countBadge = document.getElementById("adminPendingOrdersCountBadge");
     const statPendingEl = document.getElementById("adminStatPendingOrders");
@@ -386,108 +398,124 @@ const ADMIN_CONTROLLER = {
       orders = [];
     }
 
-    const pendingOnly = orders.filter(o => o.status === "Pending Approval");
+    const renderTable = (ordersList) => {
+      const pendingOnly = (ordersList || []).filter(o => o.status === "Pending Approval" || o.status === "order_pending");
 
-    if (statPendingEl) {
-      statPendingEl.textContent = `${pendingOnly.length} Pending`;
-    }
-
-    this.updatePendingBadges(pendingOnly.length);
-
-    if (countBadge) {
-      countBadge.textContent = `${pendingOnly.length} Pending Order${pendingOnly.length === 1 ? '' : 's'}`;
-      if (pendingOnly.length > 0) {
-        countBadge.style.background = "#fef3c7";
-        countBadge.style.color = "#92400e";
-        countBadge.style.borderColor = "#fde68a";
-      } else {
-        countBadge.style.background = "#ecfdf5";
-        countBadge.style.color = "#059669";
-        countBadge.style.borderColor = "#a7f3d0";
+      if (statPendingEl) {
+        statPendingEl.textContent = `${pendingOnly.length} Pending`;
       }
+
+      this.updatePendingBadges(pendingOnly.length);
+
+      if (countBadge) {
+        countBadge.textContent = `${pendingOnly.length} Pending Order${pendingOnly.length === 1 ? '' : 's'}`;
+        if (pendingOnly.length > 0) {
+          countBadge.style.background = "#fef3c7";
+          countBadge.style.color = "#92400e";
+          countBadge.style.borderColor = "#fde68a";
+        } else {
+          countBadge.style.background = "#ecfdf5";
+          countBadge.style.color = "#059669";
+          countBadge.style.borderColor = "#a7f3d0";
+        }
+      }
+
+      if (pendingOnly.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align: center; color: #64748b; padding: 2.5rem;">
+              <i class="fa-solid fa-circle-check" style="font-size: 1.85rem; color: #10b981; margin-bottom: 0.35rem; display: block;"></i>
+              No pending enrollment orders awaiting approval. All student requests are verified!
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = pendingOnly.map(order => {
+        const d = order.timestamp ? new Date(order.timestamp) : new Date();
+        const dateFormatted = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const phoneClean = (order.studentPhone || "").replace(/[^0-9]/g, '');
+        const waLink = phoneClean ? `https://wa.me/${phoneClean.startsWith('0') ? '94' + phoneClean.slice(1) : phoneClean}` : '';
+
+        return `
+          <tr>
+            <td>
+              <strong style="font-family: monospace; color: #92400e; background: #fef3c7; padding: 0.2rem 0.5rem; border-radius: 4px; border: 1px solid #fde68a; font-size: 0.85rem;">
+                ${order.orderId}
+              </strong>
+            </td>
+            <td>
+              <div style="font-weight: 700; color: #0f172a; font-size: 0.9rem;">${order.studentName}</div>
+              <div style="font-size: 0.75rem; color: #64748b;">ID: <strong style="color: #227aff;">${order.studentId}</strong></div>
+              <div style="font-size: 0.75rem; color: #475569;">
+                <i class="fa-solid fa-phone" style="font-size: 0.7rem;"></i> ${order.studentPhone}
+                ${waLink ? `<a href="${waLink}" target="_blank" rel="noopener noreferrer" style="color: #16a34a; font-weight: 700; margin-left: 0.35rem; text-decoration: none;"><i class="fa-brands fa-whatsapp"></i> Chat</a>` : ''}
+              </div>
+              <div style="font-size: 0.72rem; color: #64748b; max-width: 220px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${order.district || ''} - ${order.address || ''}">
+                <i class="fa-solid fa-location-dot" style="font-size: 0.7rem; color: #227aff;"></i> ${order.district || ''} - ${order.address || ''}
+              </div>
+            </td>
+            <td>
+              <div style="font-weight: 700; color: #0f172a; font-size: 0.88rem;">${order.courseTitle}</div>
+              <span style="font-size: 0.72rem; color: #227aff; background: #eff6ff; padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid #bfdbfe;">
+                ID: ${order.courseId}
+              </span>
+            </td>
+            <td>
+              <strong style="color: #0f172a; font-size: 0.88rem;">${order.fee || 'LKR 3,500'}</strong>
+            </td>
+            <td>
+              <div style="font-size: 0.78rem; color: #64748b;">${dateFormatted}</div>
+            </td>
+            <td>
+              <span class="status-tag" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-size: 0.72rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem;">
+                <i class="fa-solid fa-clock"></i> Pending
+              </span>
+            </td>
+            <td>
+              <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                <button class="btn btn-sm" 
+                        onclick="ADMIN_CONTROLLER.approvePendingOrder('${order.orderId}')"
+                        style="background: #16a34a; color: #ffffff; border: 1px solid #16a34a; font-size: 0.75rem; padding: 0.35rem 0.65rem; font-weight: 700; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.3rem; cursor: pointer;"
+                        title="Verify payment and grant course access to student">
+                  <i class="fa-solid fa-check"></i> Approve
+                </button>
+                <button class="btn btn-sm btn-ghost" 
+                        onclick="ADMIN_CONTROLLER.cancelPendingOrder('${order.orderId}')"
+                        style="color: #ef4444; border: 1px solid #fecaca; font-size: 0.75rem; padding: 0.35rem 0.65rem; font-weight: 700; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.3rem; cursor: pointer;"
+                        title="Cancel/reject order and release duplicate lock">
+                  <i class="fa-solid fa-xmark"></i> Cancel
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    };
+
+    // Render immediately from local cache
+    renderTable(orders);
+
+    // Fetch fresh orders from Supabase Cloud
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getOrders === "function") {
+      try {
+        const fresh = await window.SUPABASE_HELPER.getOrders();
+        if (Array.isArray(fresh)) {
+          renderTable(fresh);
+        }
+      } catch(e) {}
     }
-
-    if (pendingOnly.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="7" style="text-align: center; color: #64748b; padding: 2.5rem;">
-            <i class="fa-solid fa-circle-check" style="font-size: 1.85rem; color: #10b981; margin-bottom: 0.35rem; display: block;"></i>
-            No pending enrollment orders awaiting approval. All student requests are verified!
-          </td>
-        </tr>
-      `;
-      return;
-    }
-
-    tbody.innerHTML = pendingOnly.map(order => {
-      const d = order.timestamp ? new Date(order.timestamp) : new Date();
-      const dateFormatted = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const phoneClean = (order.studentPhone || "").replace(/[^0-9]/g, '');
-      const waLink = phoneClean ? `https://wa.me/${phoneClean.startsWith('0') ? '94' + phoneClean.slice(1) : phoneClean}` : '';
-
-      return `
-        <tr>
-          <td>
-            <strong style="font-family: monospace; color: #92400e; background: #fef3c7; padding: 0.2rem 0.5rem; border-radius: 4px; border: 1px solid #fde68a; font-size: 0.85rem;">
-              ${order.orderId}
-            </strong>
-          </td>
-          <td>
-            <div style="font-weight: 700; color: #0f172a; font-size: 0.9rem;">${order.studentName}</div>
-            <div style="font-size: 0.75rem; color: #64748b;">ID: <strong style="color: #227aff;">${order.studentId}</strong></div>
-            <div style="font-size: 0.75rem; color: #475569;">
-              <i class="fa-solid fa-phone" style="font-size: 0.7rem;"></i> ${order.studentPhone}
-              ${waLink ? `<a href="${waLink}" target="_blank" rel="noopener noreferrer" style="color: #16a34a; font-weight: 700; margin-left: 0.35rem; text-decoration: none;"><i class="fa-brands fa-whatsapp"></i> Chat</a>` : ''}
-            </div>
-            <div style="font-size: 0.72rem; color: #64748b; max-width: 220px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${order.district || ''} - ${order.address || ''}">
-              <i class="fa-solid fa-location-dot" style="font-size: 0.7rem; color: #227aff;"></i> ${order.district || ''} - ${order.address || ''}
-            </div>
-          </td>
-          <td>
-            <div style="font-weight: 700; color: #0f172a; font-size: 0.88rem;">${order.courseTitle}</div>
-            <span style="font-size: 0.72rem; color: #227aff; background: #eff6ff; padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid #bfdbfe;">
-              ID: ${order.courseId}
-            </span>
-          </td>
-          <td>
-            <strong style="color: #0f172a; font-size: 0.88rem;">${order.fee || 'LKR 3,500'}</strong>
-          </td>
-          <td>
-            <div style="font-size: 0.78rem; color: #64748b;">${dateFormatted}</div>
-          </td>
-          <td>
-            <span class="status-tag" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-size: 0.72rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem;">
-              <i class="fa-solid fa-clock"></i> Pending
-            </span>
-          </td>
-          <td>
-            <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
-              <button class="btn btn-sm" 
-                      onclick="ADMIN_CONTROLLER.approvePendingOrder('${order.orderId}')"
-                      style="background: #16a34a; color: #ffffff; border: 1px solid #16a34a; font-size: 0.75rem; padding: 0.35rem 0.65rem; font-weight: 700; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.3rem; cursor: pointer;"
-                      title="Verify payment and grant course access to student">
-                <i class="fa-solid fa-check"></i> Approve
-              </button>
-              <button class="btn btn-sm btn-ghost" 
-                      onclick="ADMIN_CONTROLLER.cancelPendingOrder('${order.orderId}')"
-                      style="color: #ef4444; border: 1px solid #fecaca; font-size: 0.75rem; padding: 0.35rem 0.65rem; font-weight: 700; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.3rem; cursor: pointer;"
-                      title="Cancel/reject order and release duplicate lock">
-                <i class="fa-solid fa-xmark"></i> Cancel
-              </button>
-            </div>
-          </td>
-        </tr>
-      `;
-    }).join("");
   },
 
-  approvePendingOrder(orderId) {
+  async approvePendingOrder(orderId) {
     if (!orderId) return;
     let orders = [];
-    try {
-      orders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
-    } catch (e) {
-      orders = [];
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getOrders === "function") {
+      try { orders = await window.SUPABASE_HELPER.getOrders(); } catch(e) {}
+    }
+    if (!orders || !orders.length) {
+      try { orders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]"); } catch (e) { orders = []; }
     }
 
     const orderIndex = orders.findIndex(o => o.orderId === orderId);
@@ -498,7 +526,16 @@ const ADMIN_CONTROLLER = {
 
     const order = orders[orderIndex];
 
-    // Grant course access to the student
+    // 1. Update status in Supabase Cloud
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateOrderStatus === "function") {
+      try {
+        await window.SUPABASE_HELPER.updateOrderStatus(orderId, "Approved");
+      } catch (e) {
+        console.warn("Supabase updateOrderStatus error:", e);
+      }
+    }
+
+    // 2. Grant course access to the student
     let studentCourses = [];
     if (window.AUTH_SYSTEM && typeof window.AUTH_SYSTEM.getStudentEnrolledCourses === "function") {
       studentCourses = window.AUTH_SYSTEM.getStudentEnrolledCourses(order.studentId) || [];
@@ -537,7 +574,7 @@ const ADMIN_CONTROLLER = {
       }
     } catch (e) {}
 
-    // Update order status
+    // Update order status locally
     orders[orderIndex].status = "Approved";
     orders[orderIndex].approvedAt = new Date().toISOString();
     localStorage.setItem("edupeak_pending_orders", JSON.stringify(orders));
@@ -546,15 +583,23 @@ const ADMIN_CONTROLLER = {
       window.showToast(`🎉 Order ${order.orderId} approved! Access to "${order.courseTitle}" granted for ${order.studentName}.`, "success");
     }
 
-    this.renderPendingOrders();
+    await this.renderPendingOrders();
     this.renderStudents();
     this.renderOverview();
   },
 
-  cancelPendingOrder(orderId) {
+  async cancelPendingOrder(orderId) {
     if (!orderId) return;
     if (!confirm(`Are you sure you want to cancel order ${orderId}? This will remove the pending status and allow the student to place a new order.`)) {
       return;
+    }
+
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateOrderStatus === "function") {
+      try {
+        await window.SUPABASE_HELPER.updateOrderStatus(orderId, "Cancelled");
+      } catch (e) {
+        console.warn("Supabase cancel order error:", e);
+      }
     }
 
     let orders = [];
@@ -565,17 +610,17 @@ const ADMIN_CONTROLLER = {
     }
 
     const orderIndex = orders.findIndex(o => o.orderId === orderId);
-    if (orderIndex === -1) return;
-
-    orders[orderIndex].status = "Cancelled";
-    orders[orderIndex].cancelledAt = new Date().toISOString();
-    localStorage.setItem("edupeak_pending_orders", JSON.stringify(orders));
+    if (orderIndex !== -1) {
+      orders[orderIndex].status = "Cancelled";
+      orders[orderIndex].cancelledAt = new Date().toISOString();
+      localStorage.setItem("edupeak_pending_orders", JSON.stringify(orders));
+    }
 
     if (window.showToast) {
       window.showToast(`❌ Order ${orderId} has been cancelled. The course restriction has been released for the student.`, "info");
     }
 
-    this.renderPendingOrders();
+    await this.renderPendingOrders();
     this.renderStudents();
     this.renderOverview();
   },

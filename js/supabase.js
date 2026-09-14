@@ -156,7 +156,8 @@ const SUPABASE_HELPER = {
         this.syncInstitutes(),
         this.syncLessons(),
         this.syncQuizzes(),
-        this.syncSchedules()
+        this.syncSchedules(),
+        this.getOrders()
       ]);
     } catch (e) {
       console.warn("syncAllCloudData warning:", e);
@@ -244,7 +245,11 @@ const SUPABASE_HELPER = {
     if (!s) return false;
     const id = String(s.id || s.scheduleId || "").toLowerCase();
     const topic = String(s.topic || "").toLowerCase();
+    const status = String(s.status || "").toLowerCase();
     return (
+      id.startsWith("order-") ||
+      status.startsWith("order_") ||
+      status === "orders_sync" ||
       id.startsWith("sched-continuous-") ||
       id.startsWith("sched-early-test-") ||
       id.startsWith("sched-stream-test-") ||
@@ -551,6 +556,36 @@ const SUPABASE_HELPER = {
                 merged.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
                 localStorage.setItem(sKey, JSON.stringify(merged));
                 window.dispatchEvent(new CustomEvent("edupeak-live-chat-updated", { detail: { synced: true, sessionId: sId } }));
+              }
+            } catch(e) {}
+            return;
+          }
+          if (payload.new && (payload.new.id?.startsWith("order-") || payload.new.status?.startsWith("order_"))) {
+            try {
+              if (payload.new.coursetitle) {
+                const order = JSON.parse(payload.new.coursetitle);
+                if (order && order.orderId) {
+                  let cur = [];
+                  try { cur = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]"); } catch(e) {}
+                  const idx = cur.findIndex(o => o.orderId === order.orderId);
+                  if (idx >= 0) cur[idx] = order;
+                  else cur.unshift(order);
+                  localStorage.setItem("edupeak_pending_orders", JSON.stringify(cur));
+                  window.dispatchEvent(new CustomEvent("edupeak-order-updated", { detail: order }));
+                  if (order.status === "Approved") {
+                    window.dispatchEvent(new CustomEvent("edupeak-order-approved", { detail: { orderId: order.orderId, courseId: order.courseId } }));
+                  }
+                  if (window.ADMIN_CONTROLLER && typeof window.ADMIN_CONTROLLER.renderPendingOrders === "function") {
+                    window.ADMIN_CONTROLLER.renderPendingOrders();
+                    window.ADMIN_CONTROLLER.renderOverview();
+                  }
+                  if (window.TEACHER_CONTROLLER && typeof window.TEACHER_CONTROLLER.renderPendingOrders === "function") {
+                    window.TEACHER_CONTROLLER.renderPendingOrders();
+                  }
+                  if (typeof window.renderPendingOrders === "function") {
+                    window.renderPendingOrders();
+                  }
+                }
               }
             } catch(e) {}
             return;
@@ -2197,6 +2232,232 @@ const SUPABASE_HELPER = {
       window.dispatchEvent(new CustomEvent("edupeak-live-sessions-updated", { detail: { all: schedules } }));
     } catch(e) {}
 
+    return true;
+  },
+
+  // 8.5 COURSE ENROLLMENT ORDERS & VERIFICATION QUEUE (Synced with Supabase Cloud)
+  async getOrders() {
+    let localOrders = [];
+    try {
+      const stored = localStorage.getItem("edupeak_pending_orders");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) localOrders = parsed;
+      }
+    } catch(e) {}
+
+    if (this.client) {
+      try {
+        const { data, error } = await this.client
+          .from("broadcast_schedules")
+          .select("*")
+          .ilike("id", "order-%")
+          .order("updated_at", { ascending: false });
+
+        if (!error && Array.isArray(data)) {
+          const remoteOrders = data.map(row => {
+            try {
+              if (row.coursetitle) {
+                const parsed = JSON.parse(row.coursetitle);
+                if (parsed && parsed.orderId) {
+                  return {
+                    ...parsed,
+                    status: row.status === "order_approved" ? "Approved" : (row.status === "order_cancelled" ? "Cancelled" : (parsed.status || "Pending Approval"))
+                  };
+                }
+              }
+            } catch(e) {}
+            return {
+              orderId: (row.id || "").replace("order-", ""),
+              courseId: row.course_id || row.courseid,
+              courseTitle: row.coursetitle || "Course Masterclass",
+              status: row.status === "order_approved" ? "Approved" : (row.status === "order_cancelled" ? "Cancelled" : "Pending Approval"),
+              timestamp: row.scheduletime || row.updated_at
+            };
+          }).filter(o => o && o.orderId);
+
+          // Merge: remote is authoritative for status changes, but local unsynced pending orders are kept
+          const merged = [...remoteOrders];
+          localOrders.forEach(loc => {
+            if (!merged.some(m => m.orderId === loc.orderId)) {
+              merged.push(loc);
+            }
+          });
+
+          // Sort by timestamp descending
+          merged.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+
+          try {
+            localStorage.setItem("edupeak_pending_orders", JSON.stringify(merged));
+          } catch(e) {}
+
+          return merged;
+        }
+      } catch(e) {
+        console.warn("Supabase fetch orders error, using local:", e);
+      }
+    }
+
+    return localOrders;
+  },
+
+  async saveOrder(orderData) {
+    if (!orderData || !orderData.orderId) return null;
+
+    // 1. Immediately update local storage
+    let orders = [];
+    try {
+      orders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
+    } catch(e) { orders = []; }
+    const idx = orders.findIndex(o => o.orderId === orderData.orderId);
+    if (idx >= 0) {
+      orders[idx] = { ...orders[idx], ...orderData };
+    } else {
+      orders.unshift(orderData);
+    }
+    try {
+      localStorage.setItem("edupeak_pending_orders", JSON.stringify(orders));
+    } catch(e) {}
+
+    // 2. Ensure profile exists in Supabase so foreign key relationships are satisfied
+    if (this.client && orderData.studentId) {
+      try {
+        await this.syncProfile({
+          id: orderData.studentId,
+          name: orderData.studentName,
+          email: orderData.studentEmail || "",
+          phone: orderData.studentPhone || "",
+          district: orderData.district || "",
+          role: "student",
+          status: "active"
+        });
+      } catch(e) {}
+    }
+
+    // 3. Persist order in broadcast_schedules cloud bus
+    if (this.client) {
+      try {
+        const payload = {
+          id: `order-${orderData.orderId}`,
+          topic: `Order: ${orderData.studentName || orderData.studentId}`,
+          course_id: orderData.courseId || "",
+          courseid: orderData.courseId || "",
+          coursetitle: JSON.stringify(orderData),
+          scheduletime: orderData.timestamp || new Date().toISOString(),
+          provider: "whatsapp_order",
+          rawurl: orderData.address || "",
+          embedurl: orderData.studentPhone || "",
+          status: orderData.status === "Approved" ? "order_approved" : (orderData.status === "Cancelled" ? "order_cancelled" : "order_pending"),
+          watermarkenabled: false
+        };
+        await this.client.from("broadcast_schedules").upsert([payload]);
+      } catch(e) {
+        console.warn("Supabase upsert order error:", e);
+      }
+
+      // 4. Also record in enrollments table
+      if (orderData.courseId && orderData.studentId) {
+        try {
+          const enrollPayload = {
+            student_id: orderData.studentId,
+            course_id: orderData.courseId,
+            payment_status: orderData.status === "Approved" ? "paid" : (orderData.status === "Cancelled" ? "cancelled" : "pending")
+          };
+          await this.client.from("enrollments").insert([enrollPayload]);
+        } catch(e) {}
+      }
+    }
+
+    // Dispatch local and cross-tab events
+    try {
+      window.dispatchEvent(new CustomEvent("edupeak-order-updated", { detail: orderData }));
+    } catch(e) {}
+
+    return orderData;
+  },
+
+  async updateOrderStatus(orderId, newStatus) {
+    if (!orderId) return false;
+
+    // 1. Update local storage
+    let orders = [];
+    try {
+      orders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
+    } catch(e) { orders = []; }
+
+    const target = orders.find(o => o.orderId === orderId);
+    if (target) {
+      target.status = newStatus;
+      if (newStatus === "Approved") target.approvedAt = new Date().toISOString();
+      if (newStatus === "Cancelled") target.cancelledAt = new Date().toISOString();
+      try {
+        localStorage.setItem("edupeak_pending_orders", JSON.stringify(orders));
+      } catch(e) {}
+    }
+
+    // 2. Update in Supabase Cloud
+    if (this.client) {
+      try {
+        const rowStatus = newStatus === "Approved" ? "order_approved" : (newStatus === "Cancelled" ? "order_cancelled" : "order_pending");
+        
+        // Fetch existing row to preserve complete object inside coursetitle
+        const { data } = await this.client.from("broadcast_schedules").select("*").eq("id", `order-${orderId}`).limit(1);
+        let updatedOrderData = target || { orderId, status: newStatus };
+        if (data && data.length > 0 && data[0].coursetitle) {
+          try {
+            const parsed = JSON.parse(data[0].coursetitle);
+            parsed.status = newStatus;
+            if (newStatus === "Approved") parsed.approvedAt = new Date().toISOString();
+            if (newStatus === "Cancelled") parsed.cancelledAt = new Date().toISOString();
+            updatedOrderData = parsed;
+          } catch(e) {}
+        }
+
+        await this.client.from("broadcast_schedules").update({
+          status: rowStatus,
+          coursetitle: JSON.stringify(updatedOrderData),
+          updated_at: new Date().toISOString()
+        }).eq("id", `order-${orderId}`);
+
+        // Update enrollments table
+        if (updatedOrderData.studentId && updatedOrderData.courseId) {
+          const pStatus = newStatus === "Approved" ? "paid" : (newStatus === "Cancelled" ? "cancelled" : "pending");
+          await this.client.from("enrollments").update({
+            payment_status: pStatus
+          }).match({ student_id: updatedOrderData.studentId, course_id: updatedOrderData.courseId });
+        }
+      } catch(e) {
+        console.warn("Supabase update order status error:", e);
+      }
+    }
+
+    try {
+      window.dispatchEvent(new CustomEvent("edupeak-order-updated", { detail: { orderId, status: newStatus } }));
+      if (newStatus === "Approved") {
+        window.dispatchEvent(new CustomEvent("edupeak-order-approved", { detail: { orderId, courseId: target?.courseId } }));
+      }
+    } catch(e) {}
+
+    return true;
+  },
+
+  async deleteOrder(orderId) {
+    if (!orderId) return false;
+
+    let orders = [];
+    try {
+      orders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
+    } catch(e) { orders = []; }
+    orders = orders.filter(o => o.orderId !== orderId);
+    try {
+      localStorage.setItem("edupeak_pending_orders", JSON.stringify(orders));
+    } catch(e) {}
+
+    if (this.client) {
+      try {
+        await this.client.from("broadcast_schedules").delete().eq("id", `order-${orderId}`);
+      } catch(e) {}
+    }
     return true;
   },
 

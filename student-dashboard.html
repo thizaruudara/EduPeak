@@ -1336,23 +1336,33 @@
       if (!currentUser || !currentUser.id) return false;
       try {
         const orders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
-        return orders.some(o => 
-          o.studentId === currentUser.id && 
-          o.status === "Pending Approval" && 
-          (o.courseId === courseId || (courseId && o.courseId && o.courseId.includes(courseId)))
-        );
+        const currentUserId = currentUser.id;
+        const currentEmail = currentUser.email || "";
+        const currentPhone = currentUser.phone ? currentUser.phone.replace(/\D/g, '') : "";
+        return orders.some(o => {
+          const matchUser = o.studentId === currentUserId ||
+            (currentEmail && o.studentEmail && o.studentEmail.toLowerCase() === currentEmail.toLowerCase()) ||
+            (currentPhone && o.studentPhone && o.studentPhone.replace(/\D/g, '') === currentPhone);
+          const isPendingStatus = o.status === "Pending Approval" || o.status === "order_pending";
+          const matchCourse = o.courseId === courseId || (courseId && o.courseId && o.courseId.includes(courseId));
+          return matchUser && isPendingStatus && matchCourse;
+        });
       } catch (e) {
         return false;
       }
     }
 
-    function renderPendingOrders() {
+    async function renderPendingOrders() {
       const card = document.getElementById("dashPendingOrdersCard");
       const listEl = document.getElementById("dashPendingOrdersList");
       const badgeEl = document.getElementById("dashPendingOrdersCountBadge");
       if (!card || !listEl) return;
 
       const currentUserId = currentUser ? (currentUser.id || "EP-2027-001") : "EP-2027-001";
+      const currentEmail = currentUser ? (currentUser.email || "") : "";
+      const currentPhone = currentUser ? (currentUser.phone ? currentUser.phone.replace(/\D/g, '') : "") : "";
+
+      // Step 1: Render immediately from local cache if present (0ms delay)
       let pendingOrders = [];
       try {
         const stored = localStorage.getItem("edupeak_pending_orders");
@@ -1361,58 +1371,78 @@
         pendingOrders = [];
       }
 
-      const studentPending = pendingOrders.filter(o => 
-        o.studentId === currentUserId && o.status === "Pending Approval"
-      );
+      function filterAndDisplay(ordersList) {
+        const studentPending = (ordersList || []).filter(o => {
+          const matchUser = o.studentId === currentUserId ||
+            (currentEmail && o.studentEmail && o.studentEmail.toLowerCase() === currentEmail.toLowerCase()) ||
+            (currentPhone && o.studentPhone && o.studentPhone.replace(/\D/g, '') === currentPhone);
+          const isPending = o.status === "Pending Approval" || o.status === "order_pending";
+          return matchUser && isPending;
+        });
 
-      if (studentPending.length === 0) {
-        card.style.display = "none";
-        return;
-      }
+        if (studentPending.length === 0) {
+          card.style.display = "none";
+          return;
+        }
 
-      card.style.display = "block";
-      if (badgeEl) {
-        badgeEl.textContent = `⏳ ${studentPending.length} Pending Order${studentPending.length === 1 ? '' : 's'}`;
-      }
+        card.style.display = "block";
+        if (badgeEl) {
+          badgeEl.textContent = `⏳ ${studentPending.length} Pending Order${studentPending.length === 1 ? '' : 's'}`;
+        }
 
-      listEl.innerHTML = studentPending.map(order => {
-        const d = order.timestamp ? new Date(order.timestamp) : new Date();
-        const dateFormatted = d.toLocaleDateString() + ' at ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const waMsg = encodeURIComponent(`Hello EduPeak Hotline, I am inquiring about my pending course order ${order.orderId} for "${order.courseTitle}". Could you please check verification status?`);
-        const hotlineUrl = `https://wa.me/94760687578?text=${waMsg}`;
+        listEl.innerHTML = studentPending.map(order => {
+          const d = order.timestamp ? new Date(order.timestamp) : new Date();
+          const dateFormatted = d.toLocaleDateString() + ' at ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const waMsg = encodeURIComponent(`Hello EduPeak Hotline, I am inquiring about my pending course order ${order.orderId} for "${order.courseTitle}". Could you please check verification status?`);
+          const hotlineUrl = `https://wa.me/94760687578?text=${waMsg}`;
 
-        return `
-          <div style="background: #ffffff; border: 1.5px solid #fde68a; border-radius: 12px; padding: 1.15rem; margin-bottom: 0.75rem; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-            <div style="display: flex; align-items: flex-start; gap: 0.85rem;">
-              <div style="width: 42px; height: 42px; border-radius: 10px; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0; margin-top: 2px;">
-                <i class="fa-solid fa-clock-rotate-left"></i>
+          return `
+            <div style="background: #ffffff; border: 1.5px solid #fde68a; border-radius: 12px; padding: 1.15rem; margin-bottom: 0.75rem; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+              <div style="display: flex; align-items: flex-start; gap: 0.85rem;">
+                <div style="width: 42px; height: 42px; border-radius: 10px; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0; margin-top: 2px;">
+                  <i class="fa-solid fa-clock-rotate-left"></i>
+                </div>
+                <div>
+                  <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; flex-wrap: wrap;">
+                    <span style="font-family: monospace; font-size: 0.78rem; font-weight: 800; background: #fef3c7; color: #92400e; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #fde68a;">
+                      ${order.orderId}
+                    </span>
+                    <span style="display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.725rem; font-weight: 700; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; padding: 0.15rem 0.5rem; border-radius: 9999px;">
+                      <i class="fa-solid fa-hourglass-half"></i> Awaiting Admin Verification
+                    </span>
+                  </div>
+                  <h4 style="margin: 0 0 0.25rem 0; font-size: 0.95rem; font-weight: 800; color: #0f172a;">
+                    ${order.courseTitle}
+                  </h4>
+                  <div style="font-size: 0.78rem; color: #64748b; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <span><i class="fa-regular fa-calendar"></i> Ordered: ${dateFormatted}</span>
+                    <span><i class="fa-solid fa-tag"></i> Fee: <strong>${order.fee || 'LKR 3,500 / Month'}</strong></span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; flex-wrap: wrap;">
-                  <span style="font-family: monospace; font-size: 0.78rem; font-weight: 800; background: #fef3c7; color: #92400e; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #fde68a;">
-                    ${order.orderId}
-                  </span>
-                  <span style="display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.725rem; font-weight: 700; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; padding: 0.15rem 0.5rem; border-radius: 9999px;">
-                    <i class="fa-solid fa-hourglass-half"></i> Awaiting Admin Verification
-                  </span>
-                </div>
-                <h4 style="margin: 0 0 0.25rem 0; font-size: 0.95rem; font-weight: 800; color: #0f172a;">
-                  ${order.courseTitle}
-                </h4>
-                <div style="font-size: 0.78rem; color: #64748b; display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                  <span><i class="fa-regular fa-calendar"></i> Ordered: ${dateFormatted}</span>
-                  <span><i class="fa-solid fa-tag"></i> Fee: <strong>${order.fee || 'LKR 3,500 / Month'}</strong></span>
-                </div>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <a href="${hotlineUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="background: #16a34a; color: #ffffff; font-weight: 700; border-radius: 8px; padding: 0.45rem 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem;">
+                  <i class="fa-brands fa-whatsapp"></i> WhatsApp Hotline
+                </a>
               </div>
             </div>
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-              <a href="${hotlineUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="background: #16a34a; color: #ffffff; font-weight: 700; border-radius: 8px; padding: 0.45rem 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem;">
-                <i class="fa-brands fa-whatsapp"></i> WhatsApp Hotline
-              </a>
-            </div>
-          </div>
-        `;
-      }).join('');
+          `;
+        }).join('');
+      }
+
+      filterAndDisplay(pendingOrders);
+
+      // Step 2: Fetch fresh from Supabase Cloud (even if student cleared browser cache)
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getOrders === "function") {
+        try {
+          const fresh = await window.SUPABASE_HELPER.getOrders();
+          if (Array.isArray(fresh)) {
+            filterAndDisplay(fresh);
+            renderStudentCourses();
+            if (typeof renderEnrolledCourses === "function") renderEnrolledCourses();
+          }
+        } catch(e) {}
+      }
     }
 
     function renderStudentCourseCardHTML(course) {
@@ -1938,6 +1968,17 @@
     window.addEventListener("edupeak:courses-synced", () => {
       updateStudentCategoryCounts();
       renderStudentCourses();
+    });
+
+    window.addEventListener("edupeak-order-updated", () => {
+      if (typeof renderPendingOrders === "function") renderPendingOrders();
+      if (typeof renderStudentCourses === "function") renderStudentCourses();
+    });
+
+    window.addEventListener("edupeak-order-approved", () => {
+      if (typeof renderPendingOrders === "function") renderPendingOrders();
+      if (typeof renderEnrolledCourses === "function") renderEnrolledCourses();
+      if (typeof renderStudentCourses === "function") renderStudentCourses();
     });
   </script>
 

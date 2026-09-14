@@ -856,7 +856,7 @@
       return Array.from(new Set(list));
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", async () => {
       // 1. Check User Session
       currentUser = window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null;
 
@@ -927,10 +927,16 @@
           }
 
           // Check if student already has an active pending order awaiting admin verification for this course
-          const pendingOrders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
+          let pendingOrders = [];
+          if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getOrders === "function") {
+            try { pendingOrders = await window.SUPABASE_HELPER.getOrders(); } catch(e) {}
+          }
+          if (!pendingOrders || !pendingOrders.length) {
+            try { pendingOrders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]"); } catch(e) {}
+          }
           const existingPendingOrder = pendingOrders.find(o => 
-            o.studentId === currentUser.id && 
-            o.status === "Pending Approval" && 
+            (o.studentId === currentUser.id || (currentUser.email && o.studentEmail === currentUser.email)) && 
+            (o.status === "Pending Approval" || o.status === "order_pending") && 
             (o.courseId === selectedCourse.id || (selectedCourse.id && o.courseId && o.courseId.includes(selectedCourse.id)))
           );
 
@@ -983,7 +989,7 @@
       }
     });
 
-    function processWhatsAppOrder() {
+    async function processWhatsAppOrder() {
       if (!selectedCourse) return;
 
       const name = document.getElementById("studentNameInput").value.trim() || (currentUser && currentUser.name) || "Student";
@@ -1011,14 +1017,21 @@
         return;
       }
 
-      // Check if duplicate pending order already exists
+      // Check if duplicate pending order already exists in Supabase or local storage
       const isTeacherOrAdmin = currentUser && (currentUser.role === "teacher" || currentUser.role === "admin");
       if (!isTeacherOrAdmin) {
-        const pendingOrders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
+        let pendingOrders = [];
+        if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getOrders === "function") {
+          try { pendingOrders = await window.SUPABASE_HELPER.getOrders(); } catch(e) {}
+        }
+        if (!pendingOrders || !pendingOrders.length) {
+          try { pendingOrders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]"); } catch(e) {}
+        }
+
         const existingPendingOrder = pendingOrders.find(o => 
-          o.studentId === studentId && 
+          (o.studentId === studentId || (currentUser && currentUser.email && o.studentEmail === currentUser.email)) && 
           (o.courseId === selectedCourse.id || (selectedCourse.id && o.courseId && o.courseId.includes(selectedCourse.id))) && 
-          o.status === "Pending Approval"
+          (o.status === "Pending Approval" || o.status === "order_pending")
         );
         if (existingPendingOrder) {
           showToast("⚠️ You already placed an order for this course! It is currently pending approval.", "warning");
@@ -1073,24 +1086,38 @@ _Hello EduPeak Administration, I would like to order this course. Please provide
       lastGeneratedWaUrl = waUrl;
       window.lastGeneratedWaUrl = waUrl;
 
-      // Save pending order record in LocalStorage so admin/teacher can track orders
+      // Save order record to Supabase Cloud & LocalStorage
+      const orderRecord = {
+        orderId: orderRef,
+        studentId: studentId,
+        studentName: name,
+        studentEmail: (currentUser && currentUser.email) || "",
+        studentPhone: phone,
+        district: district,
+        address: address,
+        courseId: selectedCourse.id,
+        courseTitle: selectedCourse.title,
+        fee: selectedCourse.fee,
+        timestamp: new Date().toISOString(),
+        status: "Pending Approval"
+      };
+
       try {
-        const pendingOrders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
-        pendingOrders.unshift({
-          orderId: orderRef,
-          studentId: studentId,
-          studentName: name,
-          studentPhone: phone,
-          district: district,
-          address: address,
-          courseId: selectedCourse.id,
-          courseTitle: selectedCourse.title,
-          fee: selectedCourse.fee,
-          timestamp: new Date().toISOString(),
-          status: "Pending Approval"
-        });
-        localStorage.setItem("edupeak_pending_orders", JSON.stringify(pendingOrders));
-      } catch (e) {}
+        if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.saveOrder === "function") {
+          await window.SUPABASE_HELPER.saveOrder(orderRecord);
+        } else {
+          const pendingOrders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
+          pendingOrders.unshift(orderRecord);
+          localStorage.setItem("edupeak_pending_orders", JSON.stringify(pendingOrders));
+        }
+      } catch (e) {
+        console.warn("Error persisting order:", e);
+        try {
+          const pendingOrders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
+          pendingOrders.unshift(orderRecord);
+          localStorage.setItem("edupeak_pending_orders", JSON.stringify(pendingOrders));
+        } catch(err) {}
+      }
 
       // Open WhatsApp in new window/tab
       window.open(waUrl, "_blank");
@@ -1099,7 +1126,7 @@ _Hello EduPeak Administration, I would like to order this course. Please provide
       document.getElementById("successInvoiceId").textContent = orderRef;
       document.getElementById("successStudentId").textContent = studentId;
       document.getElementById("successModalMessage").innerHTML = `
-        Your enrollment order for <strong>${selectedCourse.title}</strong> has been generated! WhatsApp is opening so you can send the order details to our hotline (<strong>+94 76 068 7578</strong>). Our team will provide payment instructions and manually assign your course in the LMS upon verification.
+        Your enrollment order for <strong>${selectedCourse.title}</strong> has been generated and saved! WhatsApp is opening so you can send the order details to our hotline (<strong>+94 76 068 7578</strong>). Our team will verify and activate your LMS course access.
       `;
 
       document.getElementById("checkoutSuccessModal").classList.add("active");

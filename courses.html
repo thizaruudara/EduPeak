@@ -387,11 +387,17 @@
       if (!currentUser || !currentUser.id) return false;
       try {
         const orders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
-        return orders.some(o => 
-          o.studentId === currentUser.id && 
-          o.status === "Pending Approval" && 
-          (o.courseId === courseId || (courseId && o.courseId && o.courseId.includes(courseId)))
-        );
+        const currentUserId = currentUser.id;
+        const currentEmail = currentUser.email || "";
+        const currentPhone = currentUser.phone ? currentUser.phone.replace(/\D/g, '') : "";
+        return orders.some(o => {
+          const matchUser = o.studentId === currentUserId ||
+            (currentEmail && o.studentEmail && o.studentEmail.toLowerCase() === currentEmail.toLowerCase()) ||
+            (currentPhone && o.studentPhone && o.studentPhone.replace(/\D/g, '') === currentPhone);
+          const isPendingStatus = o.status === "Pending Approval" || o.status === "order_pending";
+          const matchCourse = o.courseId === courseId || (courseId && o.courseId && o.courseId.includes(courseId));
+          return matchUser && isPendingStatus && matchCourse;
+        });
       } catch (e) {
         return false;
       }
@@ -771,6 +777,14 @@
       renderCategorizedCourses();
     });
 
+    window.addEventListener("edupeak-order-updated", () => {
+      renderCategorizedCourses();
+    });
+
+    window.addEventListener("edupeak-order-approved", () => {
+      renderCategorizedCourses();
+    });
+
     document.addEventListener("click", (e) => {
       const wrapper = document.getElementById("userProfileDropdownWrapper");
       if (wrapper && wrapper.classList.contains("open") && !wrapper.contains(e.target)) {
@@ -778,10 +792,18 @@
       }
     });
 
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", async () => {
       if (window.AUTH_SYSTEM) window.AUTH_SYSTEM.init();
       updateCategoryCounts();
       renderCategorizedCourses();
+
+      // Sync orders with Supabase Cloud so pending badges update accurately
+      if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getOrders === "function") {
+        try {
+          await window.SUPABASE_HELPER.getOrders();
+          renderCategorizedCourses();
+        } catch(e) {}
+      }
 
       const mobileToggle = document.getElementById("mobileMenuToggle");
       const mainNav = document.getElementById("mainNav");
