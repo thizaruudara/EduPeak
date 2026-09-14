@@ -323,21 +323,6 @@ const TEACHER_CONTROLLER = {
     if (!scheduleStr) {
       return { day: "Every Saturday", startTime: "07:30", endTime: "13:30" };
     }
-    const days = [
-      "Every Saturday", "Every Sunday", "Every Monday", "Every Tuesday", 
-      "Every Wednesday", "Every Thursday", "Every Friday", 
-      "Weekends (Sat & Sun)", "Weekdays (Mon - Fri)", "Flexible / Online",
-      "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
-      "Special Live Broadcast"
-    ];
-    let matchedDay = "Every Saturday";
-    for (const d of days) {
-      if (scheduleStr.toLowerCase().includes(d.toLowerCase())) {
-        matchedDay = d.startsWith("Every") || d.includes("(") ? d : `Every ${d}`;
-        break;
-      }
-    }
-
     const timeMatches = Array.from(scheduleStr.matchAll(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)/gi));
     let startTime = "07:30";
     let endTime = "13:30";
@@ -346,6 +331,30 @@ const TEACHER_CONTROLLER = {
       endTime = this.parseTimeTo24h(timeMatches[1][0]);
     } else if (timeMatches.length === 1) {
       startTime = this.parseTimeTo24h(timeMatches[0][0]);
+    }
+
+    let extractedDay = "";
+    if (timeMatches.length > 0 && timeMatches[0].index > 0) {
+      extractedDay = scheduleStr.substring(0, timeMatches[0].index).trim();
+    } else {
+      extractedDay = scheduleStr.trim();
+    }
+
+    const standardDays = [
+      "Every Saturday", "Every Sunday", "Every Monday", "Every Tuesday", 
+      "Every Wednesday", "Every Thursday", "Every Friday", 
+      "Weekends (Sat & Sun)", "Weekdays (Mon - Fri)", "Flexible / Online"
+    ];
+
+    let matchedDay = extractedDay;
+    const foundStandard = standardDays.find(d => 
+      d.toLowerCase() === extractedDay.toLowerCase() || 
+      d.replace("Every ", "").toLowerCase() === extractedDay.toLowerCase()
+    );
+    if (foundStandard) {
+      matchedDay = foundStandard;
+    } else if (!matchedDay) {
+      matchedDay = "Every Saturday";
     }
 
     return { day: matchedDay, startTime, endTime };
@@ -360,7 +369,27 @@ const TEACHER_CONTROLLER = {
     return `${day} ${start12} - ${end12}`;
   },
 
+  toggleCustomInput(val, inputId) {
+    const el = document.getElementById(inputId);
+    if (el) el.style.display = (val === "custom") ? "block" : "none";
+  },
+
   openNewCourseModal() {
+    const feeSelect = document.getElementById("courseFeeSelect");
+    if (feeSelect) feeSelect.value = "LKR 3,500 / Month";
+    this.toggleCustomInput("LKR 3,500 / Month", "courseFeeCustom");
+    if (document.getElementById("courseFeeCustom")) document.getElementById("courseFeeCustom").value = "";
+
+    const daySelect = document.getElementById("courseScheduleDaySelect");
+    if (daySelect) daySelect.value = "Every Saturday";
+    this.toggleCustomInput("Every Saturday", "courseScheduleDayCustom");
+    if (document.getElementById("courseScheduleDayCustom")) document.getElementById("courseScheduleDayCustom").value = "";
+
+    const medSelect = document.getElementById("courseMediumSelect");
+    if (medSelect) medSelect.value = "Sinhala & English Medium";
+    this.toggleCustomInput("Sinhala & English Medium", "courseMediumCustom");
+    if (document.getElementById("courseMediumCustom")) document.getElementById("courseMediumCustom").value = "";
+
     document.getElementById("newCourseModal").classList.add("active");
   },
 
@@ -377,13 +406,49 @@ const TEACHER_CONTROLLER = {
     if (document.getElementById("editCourseExamYearSelect")) {
       document.getElementById("editCourseExamYearSelect").value = c.examYear || c.level || "2026 A/L";
     }
-    document.getElementById("editCourseCategorySelect").value = c.category || "theory";
-    document.getElementById("editCourseFeeInput").value = c.fee || "LKR 3,500 / Month";
+    
+    // Category
+    const catSelect = document.getElementById("editCourseCategorySelect");
+    const currentCat = c.category || "theory";
+    const catOption = catSelect ? Array.from(catSelect.options).find(opt => opt.value === currentCat) : null;
+    if (catOption) {
+      catSelect.value = currentCat;
+      this.toggleCustomInput(currentCat, "editCourseCategoryCustom");
+      if (document.getElementById("editCourseCategoryCustom")) document.getElementById("editCourseCategoryCustom").value = "";
+    } else if (catSelect) {
+      catSelect.value = "custom";
+      this.toggleCustomInput("custom", "editCourseCategoryCustom");
+      if (document.getElementById("editCourseCategoryCustom")) document.getElementById("editCourseCategoryCustom").value = currentCat;
+    }
+
+    // Fee
+    const feeSelect = document.getElementById("editCourseFeeSelect");
+    const currentFee = c.fee || "LKR 3,500 / Month";
+    const feeOption = feeSelect ? Array.from(feeSelect.options).find(opt => opt.value === currentFee) : null;
+    if (feeOption) {
+      feeSelect.value = currentFee;
+      this.toggleCustomInput(currentFee, "editCourseFeeCustom");
+      if (document.getElementById("editCourseFeeCustom")) document.getElementById("editCourseFeeCustom").value = "";
+    } else if (feeSelect) {
+      feeSelect.value = "custom";
+      this.toggleCustomInput("custom", "editCourseFeeCustom");
+      if (document.getElementById("editCourseFeeCustom")) document.getElementById("editCourseFeeCustom").value = currentFee;
+    }
     
     // Populate Day and Time slot pickers
     const parsedSchedule = this.parseScheduleString(c.liveTime || "Every Saturday 7:30 AM - 1:30 PM");
-    if (document.getElementById("editCourseScheduleDaySelect")) {
-      document.getElementById("editCourseScheduleDaySelect").value = parsedSchedule.day;
+    const daySelect = document.getElementById("editCourseScheduleDaySelect");
+    if (daySelect) {
+      const dayOption = Array.from(daySelect.options).find(opt => opt.value === parsedSchedule.day);
+      if (dayOption) {
+        daySelect.value = parsedSchedule.day;
+        this.toggleCustomInput(parsedSchedule.day, "editCourseScheduleDayCustom");
+        if (document.getElementById("editCourseScheduleDayCustom")) document.getElementById("editCourseScheduleDayCustom").value = "";
+      } else {
+        daySelect.value = "custom";
+        this.toggleCustomInput("custom", "editCourseScheduleDayCustom");
+        if (document.getElementById("editCourseScheduleDayCustom")) document.getElementById("editCourseScheduleDayCustom").value = parsedSchedule.day;
+      }
     }
     if (document.getElementById("editCourseScheduleStartTime")) {
       document.getElementById("editCourseScheduleStartTime").value = parsedSchedule.startTime;
@@ -391,7 +456,20 @@ const TEACHER_CONTROLLER = {
     if (document.getElementById("editCourseScheduleEndTime")) {
       document.getElementById("editCourseScheduleEndTime").value = parsedSchedule.endTime;
     }
-    document.getElementById("editCourseMediumInput").value = c.medium || "Sinhala & English Medium";
+
+    // Medium
+    const medSelect = document.getElementById("editCourseMediumSelect");
+    const currentMed = c.medium || "Sinhala & English Medium";
+    const medOption = medSelect ? Array.from(medSelect.options).find(opt => opt.value === currentMed) : null;
+    if (medOption) {
+      medSelect.value = currentMed;
+      this.toggleCustomInput(currentMed, "editCourseMediumCustom");
+      if (document.getElementById("editCourseMediumCustom")) document.getElementById("editCourseMediumCustom").value = "";
+    } else if (medSelect) {
+      medSelect.value = "custom";
+      this.toggleCustomInput("custom", "editCourseMediumCustom");
+      if (document.getElementById("editCourseMediumCustom")) document.getElementById("editCourseMediumCustom").value = currentMed;
+    }
 
     document.getElementById("editCourseModal").classList.add("active");
   },
@@ -406,19 +484,37 @@ const TEACHER_CONTROLLER = {
     const examYear = document.getElementById("editCourseExamYearSelect") ? document.getElementById("editCourseExamYearSelect").value : (courses[index].examYear || "2026 A/L");
     const title = document.getElementById("editCourseTitleInput").value.trim();
 
-    const day = document.getElementById("editCourseScheduleDaySelect")?.value || "Every Saturday";
+    let day = document.getElementById("editCourseScheduleDaySelect")?.value || "Every Saturday";
+    if (day === "custom") {
+      day = document.getElementById("editCourseScheduleDayCustom")?.value.trim() || "Every Saturday";
+    }
     const start = document.getElementById("editCourseScheduleStartTime")?.value || "07:30";
     const end = document.getElementById("editCourseScheduleEndTime")?.value || "13:30";
     const liveTime = this.buildScheduleString(day, start, end);
+
+    let category = document.getElementById("editCourseCategorySelect")?.value || "theory";
+    if (category === "custom") {
+      category = document.getElementById("editCourseCategoryCustom")?.value.trim() || "theory";
+    }
+
+    let fee = document.getElementById("editCourseFeeSelect")?.value || "LKR 3,500 / Month";
+    if (fee === "custom") {
+      fee = document.getElementById("editCourseFeeCustom")?.value.trim() || "LKR 3,500 / Month";
+    }
+
+    let medium = document.getElementById("editCourseMediumSelect")?.value || "Sinhala & English Medium";
+    if (medium === "custom") {
+      medium = document.getElementById("editCourseMediumCustom")?.value.trim() || "Sinhala & English Medium";
+    }
 
     courses[index].title = title;
     courses[index].title_si = title;
     courses[index].examYear = examYear;
     courses[index].level = examYear;
-    courses[index].category = document.getElementById("editCourseCategorySelect").value;
-    courses[index].fee = document.getElementById("editCourseFeeInput").value.trim() || courses[index].fee;
+    courses[index].category = category;
+    courses[index].fee = fee;
     courses[index].liveTime = liveTime;
-    courses[index].medium = document.getElementById("editCourseMediumInput").value.trim() || courses[index].medium;
+    courses[index].medium = medium;
 
     this.saveCoursesDatabase(courses);
 
@@ -502,12 +598,24 @@ const TEACHER_CONTROLLER = {
     const title = document.getElementById("courseTitleInput").value.trim();
     const examYear = document.getElementById("courseExamYearSelect") ? document.getElementById("courseExamYearSelect").value : "2026 A/L";
     const stream = document.getElementById("courseStreamSelect").value;
-    const fee = document.getElementById("courseFeeInput").value.trim();
     
-    const day = document.getElementById("courseScheduleDaySelect")?.value || "Every Saturday";
+    let fee = document.getElementById("courseFeeSelect") ? document.getElementById("courseFeeSelect").value : "LKR 3,500 / Month";
+    if (fee === "custom") {
+      fee = document.getElementById("courseFeeCustom")?.value.trim() || "LKR 3,500 / Month";
+    }
+    
+    let day = document.getElementById("courseScheduleDaySelect")?.value || "Every Saturday";
+    if (day === "custom") {
+      day = document.getElementById("courseScheduleDayCustom")?.value.trim() || "Every Saturday";
+    }
     const start = document.getElementById("courseScheduleStartTime")?.value || "07:30";
     const end = document.getElementById("courseScheduleEndTime")?.value || "13:30";
     const schedule = this.buildScheduleString(day, start, end);
+
+    let medium = document.getElementById("courseMediumSelect") ? document.getElementById("courseMediumSelect").value : "Sinhala & English Medium";
+    if (medium === "custom") {
+      medium = document.getElementById("courseMediumCustom")?.value.trim() || "Sinhala & English Medium";
+    }
 
     const icon = document.getElementById("courseIconSelect").value;
 
@@ -521,11 +629,11 @@ const TEACHER_CONTROLLER = {
       stream: "Physical Science",
       stream_si: "භෞතික විද්‍යා අංශය",
       category: stream.includes("paper") ? "papers" : (stream.includes("rev") ? "revision" : "theory"),
-      fee: fee ? (fee.startsWith("LKR") ? fee : `LKR ${fee} / Month`) : "LKR 3,500 / Month",
+      fee: fee,
       liveTime: schedule,
       thumbnailIcon: icon || "fa-atom",
-      medium: "Sinhala & English Medium",
-      medium_si: "සිංහල හා ඉංග්‍රීසි මාධ්‍ය",
+      medium: medium,
+      medium_si: medium.includes("Sinhala") ? "සිංහල හා ඉංග්‍රීසි මාධ්‍ය" : medium,
       level: examYear,
       level_si: "අ.පො.ස. උ/පෙළ",
       students: 1,

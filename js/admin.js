@@ -958,6 +958,26 @@ const ADMIN_CONTROLLER = {
     `).join("");
   },
 
+  toggleCourseCategoryCustom(val) {
+    const el = document.getElementById("courseFormCategoryCustom");
+    if (el) el.style.display = (val === "custom") ? "block" : "none";
+  },
+
+  toggleCourseFeeCustom(val) {
+    const el = document.getElementById("courseFormFeeCustom");
+    if (el) el.style.display = (val === "custom") ? "block" : "none";
+  },
+
+  toggleCourseScheduleDayCustom(val) {
+    const el = document.getElementById("courseFormScheduleDayCustom");
+    if (el) el.style.display = (val === "custom") ? "block" : "none";
+  },
+
+  toggleCourseMediumCustom(val) {
+    const el = document.getElementById("courseFormMediumCustom");
+    if (el) el.style.display = (val === "custom") ? "block" : "none";
+  },
+
   openAddCourseModal() {
     document.getElementById("courseModalTitle").textContent = "Add New Course";
     document.getElementById("courseFormId").value = "crs-phy-" + Date.now().toString(36);
@@ -965,20 +985,49 @@ const ADMIN_CONTROLLER = {
     if (document.getElementById("courseFormTitleSi")) {
       document.getElementById("courseFormTitleSi").value = "";
     }
-    document.getElementById("courseFormCategory").value = "theory";
-    document.getElementById("courseFormFee").value = "LKR 3,500 / Month";
+    
+    // Category
+    const catSelect = document.getElementById("courseFormCategory");
+    if (catSelect) catSelect.value = "theory";
+    this.toggleCourseCategoryCustom("theory");
+    if (document.getElementById("courseFormCategoryCustom")) {
+      document.getElementById("courseFormCategoryCustom").value = "";
+    }
+
+    // Monthly Fee
+    const feeSelect = document.getElementById("courseFormFee");
+    if (feeSelect) feeSelect.value = "LKR 3,500 / Month";
+    this.toggleCourseFeeCustom("LKR 3,500 / Month");
+    if (document.getElementById("courseFormFeeCustom")) {
+      document.getElementById("courseFormFeeCustom").value = "";
+    }
+
     document.getElementById("courseFormLevel").value = "2026 A/L";
     document.getElementById("courseFormTeacher").value = "Amalsha Wanniarachchi";
-    if (document.getElementById("courseFormScheduleDay")) {
-      document.getElementById("courseFormScheduleDay").value = "Every Saturday";
+    
+    // Schedule Day
+    const daySelect = document.getElementById("courseFormScheduleDay");
+    if (daySelect) daySelect.value = "Every Saturday";
+    this.toggleCourseScheduleDayCustom("Every Saturday");
+    if (document.getElementById("courseFormScheduleDayCustom")) {
+      document.getElementById("courseFormScheduleDayCustom").value = "";
     }
+
     if (document.getElementById("courseFormScheduleStartTime")) {
       document.getElementById("courseFormScheduleStartTime").value = "07:30";
     }
     if (document.getElementById("courseFormScheduleEndTime")) {
       document.getElementById("courseFormScheduleEndTime").value = "13:30";
     }
-    document.getElementById("courseFormMedium").value = "Sinhala & English Medium";
+
+    // Medium
+    const medSelect = document.getElementById("courseFormMedium");
+    if (medSelect) medSelect.value = "Sinhala & English Medium";
+    this.toggleCourseMediumCustom("Sinhala & English Medium");
+    if (document.getElementById("courseFormMediumCustom")) {
+      document.getElementById("courseFormMediumCustom").value = "";
+    }
+
     document.getElementById("adminCourseDrawerModal").classList.add("active");
   },
 
@@ -993,23 +1042,83 @@ const ADMIN_CONTROLLER = {
     if (document.getElementById("courseFormTitleSi")) {
       document.getElementById("courseFormTitleSi").value = c.title_si || "";
     }
-    document.getElementById("courseFormCategory").value = c.category || "theory";
-    document.getElementById("courseFormFee").value = c.fee || c.price || "LKR 3,500 / Month";
+
+    // Category
+    const catSelect = document.getElementById("courseFormCategory");
+    const currentCat = c.category || "theory";
+    const catOption = catSelect ? Array.from(catSelect.options).find(opt => opt.value === currentCat) : null;
+    if (catOption) {
+      catSelect.value = currentCat;
+      this.toggleCourseCategoryCustom(currentCat);
+      if (document.getElementById("courseFormCategoryCustom")) document.getElementById("courseFormCategoryCustom").value = "";
+    } else if (catSelect) {
+      catSelect.value = "custom";
+      this.toggleCourseCategoryCustom("custom");
+      if (document.getElementById("courseFormCategoryCustom")) {
+        document.getElementById("courseFormCategoryCustom").value = currentCat;
+      }
+    }
+
+    // Fee
+    const feeSelect = document.getElementById("courseFormFee");
+    const currentFee = c.fee || c.price || "LKR 3,500 / Month";
+    const feeOption = feeSelect ? Array.from(feeSelect.options).find(opt => opt.value === currentFee) : null;
+    if (feeOption) {
+      feeSelect.value = currentFee;
+      this.toggleCourseFeeCustom(currentFee);
+      if (document.getElementById("courseFormFeeCustom")) document.getElementById("courseFormFeeCustom").value = "";
+    } else if (feeSelect) {
+      feeSelect.value = "custom";
+      this.toggleCourseFeeCustom("custom");
+      if (document.getElementById("courseFormFeeCustom")) {
+        document.getElementById("courseFormFeeCustom").value = currentFee;
+      }
+    }
+
     document.getElementById("courseFormLevel").value = c.examYear || c.level || "2026 A/L";
     document.getElementById("courseFormTeacher").value = c.teacherName || c.teacher || "Amalsha Wanniarachchi";
     
     // Parse Day & Time Slot
     const parsedSchedule = this.parseScheduleString(c.liveTime || "Every Saturday 7:30 AM - 1:30 PM");
-    if (document.getElementById("courseFormScheduleDay")) {
-      document.getElementById("courseFormScheduleDay").value = parsedSchedule.day;
+    const daySelect = document.getElementById("courseFormScheduleDay");
+    if (daySelect) {
+      const dayOption = Array.from(daySelect.options).find(opt => opt.value === parsedSchedule.day);
+      if (dayOption) {
+        daySelect.value = parsedSchedule.day;
+        this.toggleCourseScheduleDayCustom(parsedSchedule.day);
+        if (document.getElementById("courseFormScheduleDayCustom")) document.getElementById("courseFormScheduleDayCustom").value = "";
+      } else {
+        daySelect.value = "custom";
+        this.toggleCourseScheduleDayCustom("custom");
+        if (document.getElementById("courseFormScheduleDayCustom")) {
+          document.getElementById("courseFormScheduleDayCustom").value = parsedSchedule.day;
+        }
+      }
     }
+
     if (document.getElementById("courseFormScheduleStartTime")) {
       document.getElementById("courseFormScheduleStartTime").value = parsedSchedule.startTime;
     }
     if (document.getElementById("courseFormScheduleEndTime")) {
       document.getElementById("courseFormScheduleEndTime").value = parsedSchedule.endTime;
     }
-    document.getElementById("courseFormMedium").value = c.medium || "Sinhala & English Medium";
+
+    // Medium
+    const medSelect = document.getElementById("courseFormMedium");
+    const currentMed = c.medium || "Sinhala & English Medium";
+    const medOption = medSelect ? Array.from(medSelect.options).find(opt => opt.value === currentMed) : null;
+    if (medOption) {
+      medSelect.value = currentMed;
+      this.toggleCourseMediumCustom(currentMed);
+      if (document.getElementById("courseFormMediumCustom")) document.getElementById("courseFormMediumCustom").value = "";
+    } else if (medSelect) {
+      medSelect.value = "custom";
+      this.toggleCourseMediumCustom("custom");
+      if (document.getElementById("courseFormMediumCustom")) {
+        document.getElementById("courseFormMediumCustom").value = currentMed;
+      }
+    }
+
     document.getElementById("adminCourseDrawerModal").classList.add("active");
   },
 
@@ -1040,20 +1149,6 @@ const ADMIN_CONTROLLER = {
     if (!scheduleStr) {
       return { day: "Every Saturday", startTime: "07:30", endTime: "13:30" };
     }
-    const days = [
-      "Every Saturday", "Every Sunday", "Every Monday", "Every Tuesday", 
-      "Every Wednesday", "Every Thursday", "Every Friday", 
-      "Weekends (Sat & Sun)", "Weekdays (Mon - Fri)", "Flexible / Online",
-      "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"
-    ];
-    let matchedDay = "Every Saturday";
-    for (const d of days) {
-      if (scheduleStr.toLowerCase().includes(d.toLowerCase())) {
-        matchedDay = d.startsWith("Every") || d.includes("(") ? d : `Every ${d}`;
-        break;
-      }
-    }
-
     const timeMatches = Array.from(scheduleStr.matchAll(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)/gi));
     let startTime = "07:30";
     let endTime = "13:30";
@@ -1062,6 +1157,30 @@ const ADMIN_CONTROLLER = {
       endTime = this.parseTimeTo24h(timeMatches[1][0]);
     } else if (timeMatches.length === 1) {
       startTime = this.parseTimeTo24h(timeMatches[0][0]);
+    }
+
+    let extractedDay = "";
+    if (timeMatches.length > 0 && timeMatches[0].index > 0) {
+      extractedDay = scheduleStr.substring(0, timeMatches[0].index).trim();
+    } else {
+      extractedDay = scheduleStr.trim();
+    }
+
+    const standardDays = [
+      "Every Saturday", "Every Sunday", "Every Monday", "Every Tuesday", 
+      "Every Wednesday", "Every Thursday", "Every Friday", 
+      "Weekends (Sat & Sun)", "Weekdays (Mon - Fri)", "Flexible / Online"
+    ];
+
+    let matchedDay = extractedDay;
+    const foundStandard = standardDays.find(d => 
+      d.toLowerCase() === extractedDay.toLowerCase() || 
+      d.replace("Every ", "").toLowerCase() === extractedDay.toLowerCase()
+    );
+    if (foundStandard) {
+      matchedDay = foundStandard;
+    } else if (!matchedDay) {
+      matchedDay = "Every Saturday";
     }
 
     return { day: matchedDay, startTime, endTime };
@@ -1081,17 +1200,32 @@ const ADMIN_CONTROLLER = {
     const id = document.getElementById("courseFormId").value;
     const title = document.getElementById("courseFormTitle").value.trim();
     const titleSi = document.getElementById("courseFormTitleSi") ? document.getElementById("courseFormTitleSi").value.trim() : title;
-    const category = document.getElementById("courseFormCategory").value;
-    const fee = document.getElementById("courseFormFee").value.trim();
+    
+    let category = document.getElementById("courseFormCategory") ? document.getElementById("courseFormCategory").value : "theory";
+    if (category === "custom") {
+      category = document.getElementById("courseFormCategoryCustom")?.value.trim() || "theory";
+    }
+
+    let fee = document.getElementById("courseFormFee") ? document.getElementById("courseFormFee").value : "LKR 3,500 / Month";
+    if (fee === "custom") {
+      fee = document.getElementById("courseFormFeeCustom")?.value.trim() || "LKR 3,500 / Month";
+    }
+
     const level = document.getElementById("courseFormLevel").value.trim();
     const teacher = document.getElementById("courseFormTeacher").value.trim();
     
-    const day = document.getElementById("courseFormScheduleDay")?.value || "Every Saturday";
+    let day = document.getElementById("courseFormScheduleDay")?.value || "Every Saturday";
+    if (day === "custom") {
+      day = document.getElementById("courseFormScheduleDayCustom")?.value.trim() || "Every Saturday";
+    }
     const start = document.getElementById("courseFormScheduleStartTime")?.value || "07:30";
     const end = document.getElementById("courseFormScheduleEndTime")?.value || "13:30";
     const schedule = this.buildScheduleString(day, start, end);
 
-    const medium = document.getElementById("courseFormMedium").value.trim();
+    let medium = document.getElementById("courseFormMedium") ? document.getElementById("courseFormMedium").value : "Sinhala & English Medium";
+    if (medium === "custom") {
+      medium = document.getElementById("courseFormMediumCustom")?.value.trim() || "Sinhala & English Medium";
+    }
 
     const courseData = {
       id: id,

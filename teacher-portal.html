@@ -732,12 +732,23 @@
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
             <div class="form-group">
-              <label class="form-label">Monthly Fee (LKR)</label>
-              <input type="text" class="form-control" id="courseFeeInput" placeholder="e.g. 4,500" value="3,500">
+              <label class="form-label">Monthly Fee</label>
+              <select class="form-control" id="courseFeeSelect" onchange="TEACHER_CONTROLLER.toggleCustomInput(this.value, 'courseFeeCustom')" style="font-weight: 600;">
+                <option value="LKR 3,500 / Month" selected>LKR 3,500 / Month</option>
+                <option value="LKR 3,000 / Month">LKR 3,000 / Month</option>
+                <option value="LKR 2,500 / Month">LKR 2,500 / Month</option>
+                <option value="LKR 2,000 / Month">LKR 2,000 / Month</option>
+                <option value="LKR 4,000 / Month">LKR 4,000 / Month</option>
+                <option value="LKR 4,500 / Month">LKR 4,500 / Month</option>
+                <option value="LKR 5,000 / Month">LKR 5,000 / Month</option>
+                <option value="Free / නොමිලේ">Free / නොමිලේ</option>
+                <option value="custom">Custom Fee (වෙනත් ගාස්තුවක්)...</option>
+              </select>
+              <input type="text" class="form-control" id="courseFeeCustom" placeholder="e.g. LKR 3,800 / Month" style="display: none; margin-top: 0.5rem; font-weight: 600;">
             </div>
             <div class="form-group">
               <label class="form-label"><i class="fa-solid fa-calendar-day" style="color: #227aff;"></i> Lecture Day</label>
-              <select class="form-control" id="courseScheduleDaySelect" style="font-weight: 600;">
+              <select class="form-control" id="courseScheduleDaySelect" style="font-weight: 600;" onchange="TEACHER_CONTROLLER.toggleCustomInput(this.value, 'courseScheduleDayCustom')">
                 <option value="Every Saturday" selected>Every Saturday (සෙනසුරාදා)</option>
                 <option value="Every Sunday">Every Sunday (ඉරිදා)</option>
                 <option value="Every Monday">Every Monday (සඳුදා)</option>
@@ -748,8 +759,22 @@
                 <option value="Weekends (Sat & Sun)">Weekends (Sat & Sun)</option>
                 <option value="Weekdays (Mon - Fri)">Weekdays (Mon - Fri)</option>
                 <option value="Flexible / Online">Flexible / Online (ස්වයං අධ්‍යයනය)</option>
+                <option value="custom">Custom Day / Any Day (වෙනත් ඕනෑම දිනයක්)...</option>
               </select>
+              <input type="text" class="form-control" id="courseScheduleDayCustom" placeholder="e.g. Every Poya Day, Mon & Wed, or Specific Date" style="display: none; margin-top: 0.5rem; font-weight: 600;">
             </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Medium of Study</label>
+            <select class="form-control" id="courseMediumSelect" onchange="TEACHER_CONTROLLER.toggleCustomInput(this.value, 'courseMediumCustom')" style="font-weight: 600;">
+              <option value="Sinhala & English Medium" selected>Sinhala & English Medium</option>
+              <option value="Sinhala Medium (සිංහල මාධ්‍ය)">Sinhala Medium (සිංහල මාධ්‍ය)</option>
+              <option value="English Medium (ඉංග්‍රීසි මාධ්‍ය)">English Medium (ඉංග්‍රීසි මාධ්‍ය)</option>
+              <option value="Tamil Medium (දෙමළ මාධ්‍ය)">Tamil Medium (දෙමළ මාධ්‍ය)</option>
+              <option value="Bilingual / Dual Medium">Bilingual / Dual Medium</option>
+              <option value="custom">Custom Medium (වෙනත් මාධ්‍යයක්)...</option>
+            </select>
+            <input type="text" class="form-control" id="courseMediumCustom" placeholder="e.g. Sinhala Medium Only" style="display: none; margin-top: 0.5rem; font-weight: 600;">
           </div>
           <div class="form-group">
             <label class="form-label"><i class="fa-solid fa-clock" style="color: #227aff;"></i> Lecture Time Slot (Start & End Time)</label>
@@ -805,21 +830,37 @@
             </div>
             <div class="form-group">
               <label class="form-label">Category</label>
-              <select class="form-control" id="editCourseCategorySelect">
+              <select class="form-control" id="editCourseCategorySelect" onchange="TEACHER_CONTROLLER.toggleCustomInput(this.value, 'editCourseCategoryCustom')">
                 <option value="theory">Theory Class</option>
                 <option value="revision">Revision Class</option>
                 <option value="papers">Speed Paper Class</option>
+                <option value="model-paper">Model Paper Class</option>
+                <option value="seminar">Special Seminar / Workshop</option>
+                <option value="booster">Booster Class</option>
+                <option value="custom">Other / Custom Category...</option>
               </select>
+              <input type="text" class="form-control" id="editCourseCategoryCustom" placeholder="Enter custom category" style="display: none; margin-top: 0.5rem;">
             </div>
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
             <div class="form-group">
-              <label class="form-label">Monthly Fee (LKR)</label>
-              <input type="text" class="form-control" id="editCourseFeeInput" placeholder="e.g. LKR 3,500 / Month">
+              <label class="form-label">Monthly Fee</label>
+              <select class="form-control" id="editCourseFeeSelect" onchange="TEACHER_CONTROLLER.toggleCustomInput(this.value, 'editCourseFeeCustom')" style="font-weight: 600;">
+                <option value="LKR 3,500 / Month">LKR 3,500 / Month</option>
+                <option value="LKR 3,000 / Month">LKR 3,000 / Month</option>
+                <option value="LKR 2,500 / Month">LKR 2,500 / Month</option>
+                <option value="LKR 2,000 / Month">LKR 2,000 / Month</option>
+                <option value="LKR 4,000 / Month">LKR 4,000 / Month</option>
+                <option value="LKR 4,500 / Month">LKR 4,500 / Month</option>
+                <option value="LKR 5,000 / Month">LKR 5,000 / Month</option>
+                <option value="Free / නොමිලේ">Free / නොමිලේ</option>
+                <option value="custom">Custom Fee (වෙනත් ගාස්තුවක්)...</option>
+              </select>
+              <input type="text" class="form-control" id="editCourseFeeCustom" placeholder="e.g. LKR 3,800 / Month" style="display: none; margin-top: 0.5rem; font-weight: 600;">
             </div>
             <div class="form-group">
               <label class="form-label"><i class="fa-solid fa-calendar-day" style="color: #227aff;"></i> Lecture Day</label>
-              <select class="form-control" id="editCourseScheduleDaySelect" style="font-weight: 600;">
+              <select class="form-control" id="editCourseScheduleDaySelect" style="font-weight: 600;" onchange="TEACHER_CONTROLLER.toggleCustomInput(this.value, 'editCourseScheduleDayCustom')">
                 <option value="Every Saturday">Every Saturday (සෙනසුරාදා)</option>
                 <option value="Every Sunday">Every Sunday (ඉරිදා)</option>
                 <option value="Every Monday">Every Monday (සඳුදා)</option>
@@ -830,7 +871,9 @@
                 <option value="Weekends (Sat & Sun)">Weekends (Sat & Sun)</option>
                 <option value="Weekdays (Mon - Fri)">Weekdays (Mon - Fri)</option>
                 <option value="Flexible / Online">Flexible / Online (ස්වයං අධ්‍යයනය)</option>
+                <option value="custom">Custom Day / Any Day (වෙනත් ඕනෑම දිනයක්)...</option>
               </select>
+              <input type="text" class="form-control" id="editCourseScheduleDayCustom" placeholder="e.g. Every Poya Day, Mon & Wed, or Specific Date" style="display: none; margin-top: 0.5rem; font-weight: 600;">
             </div>
           </div>
           <div class="form-group">
@@ -843,7 +886,15 @@
           </div>
           <div class="form-group">
             <label class="form-label">Medium of Study</label>
-            <input type="text" class="form-control" id="editCourseMediumInput" placeholder="Sinhala & English Medium">
+            <select class="form-control" id="editCourseMediumSelect" onchange="TEACHER_CONTROLLER.toggleCustomInput(this.value, 'editCourseMediumCustom')" style="font-weight: 600;">
+              <option value="Sinhala & English Medium">Sinhala & English Medium</option>
+              <option value="Sinhala Medium (සිංහල මාධ්‍ය)">Sinhala Medium (සිංහල මාධ්‍ය)</option>
+              <option value="English Medium (ඉංග්‍රීසි මාධ්‍ය)">English Medium (ඉංග්‍රීසි මාධ්‍ය)</option>
+              <option value="Tamil Medium (දෙමළ මාධ්‍ය)">Tamil Medium (දෙමළ මාධ්‍ය)</option>
+              <option value="Bilingual / Dual Medium">Bilingual / Dual Medium</option>
+              <option value="custom">Custom Medium (වෙනත් මාධ්‍යයක්)...</option>
+            </select>
+            <input type="text" class="form-control" id="editCourseMediumCustom" placeholder="e.g. English Medium" style="display: none; margin-top: 0.5rem; font-weight: 600;">
           </div>
 
           <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">

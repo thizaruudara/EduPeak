@@ -866,7 +866,16 @@ const SUPABASE_HELPER = {
       try {
         const { data, error } = await this.client.from("courses").select("*");
         if (!error && Array.isArray(data)) {
-          const filtered = data.filter(c => !deletedIds.includes(c.id));
+          const normalized = data.map(c => ({
+            ...c,
+            examYear: c.examyear || c.examYear || c.level,
+            liveTime: c.livetime || c.liveTime,
+            teacherName: c.teachername || c.teacherName || c.teacher,
+            teacherId: c.teacherid || c.teacherId,
+            modulesCount: c.modulescount !== undefined ? c.modulescount : (c.modulesCount || 24),
+            thumbnailIcon: c.thumbnailicon || c.thumbnailIcon || 'fa-atom'
+          }));
+          const filtered = normalized.filter(c => !deletedIds.includes(c.id));
           this.setSharedData("edupeak_courses_db", filtered);
           try {
             localStorage.setItem("edupeak_courses_db", JSON.stringify(filtered));
@@ -923,8 +932,51 @@ const SUPABASE_HELPER = {
 
     if (this.isConnected && this.client) {
       try {
-        const { data, error } = await this.client.from("courses").upsert([courseData]).select();
-        if (!error && data && data.length > 0) courseData = data[0];
+        const dbPayload = {
+          id: courseData.id,
+          title: courseData.title || "",
+          title_si: courseData.title_si || courseData.title || "",
+          teacher: courseData.teacherName || courseData.teacher || "Amalsha Wanniarachchi",
+          teachername: courseData.teacherName || courseData.teacher || "Amalsha Wanniarachchi",
+          teacherid: courseData.teacherId || "tch-physics",
+          stream: courseData.stream || "Physical Science",
+          stream_si: courseData.stream_si || "භෞතික විද්‍යා අංශය",
+          price: courseData.fee || courseData.price || "LKR 3,500 / Month",
+          fee: courseData.fee || courseData.price || "LKR 3,500 / Month",
+          fee_si: courseData.fee_si || courseData.fee || "රු. 3,500 / මාසිකව",
+          category: courseData.category || "theory",
+          examyear: courseData.examYear || courseData.level || "2026 A/L",
+          level: courseData.level || courseData.examYear || "2026 A/L",
+          level_si: courseData.level_si || courseData.level || "2026 උ/පෙළ",
+          livetime: courseData.liveTime || courseData.livetime || "Every Saturday 7:30 AM",
+          medium: courseData.medium || "Sinhala & English Medium",
+          medium_si: courseData.medium_si || courseData.medium || "සිංහල හා ඉංග්‍රීසි මාධ්‍ය",
+          rating: courseData.rating || 4.99,
+          students: courseData.students || 1200,
+          modulescount: courseData.modulesCount || courseData.modulescount || 24,
+          thumbnailicon: courseData.thumbnailIcon || courseData.thumbnailicon || "fa-atom",
+          color: courseData.color || "from-blue-600 to-indigo-600",
+          badge: courseData.badge || `${courseData.level || '2026 A/L'} Batch`,
+          badge_si: courseData.badge_si || `${courseData.level || '2026 A/L'} කණ්ඩායම`,
+          active: true
+        };
+
+        const { data, error } = await this.client.from("courses").upsert([dbPayload]).select();
+        if (error) {
+          console.warn("Supabase upsert course error details:", error);
+        }
+        if (!error && data && data.length > 0) {
+          courseData = {
+            ...courseData,
+            ...data[0],
+            examYear: data[0].examyear || courseData.examYear,
+            liveTime: data[0].livetime || courseData.liveTime,
+            teacherName: data[0].teachername || courseData.teacherName,
+            teacherId: data[0].teacherid || courseData.teacherId,
+            modulesCount: data[0].modulescount || courseData.modulesCount,
+            thumbnailIcon: data[0].thumbnailicon || courseData.thumbnailIcon
+          };
+        }
       } catch (e) {
         console.warn("Supabase upsert course error:", e);
       }
