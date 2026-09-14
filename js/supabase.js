@@ -1864,6 +1864,8 @@ const SUPABASE_HELPER = {
       description: merged.description || "",
       pinnedNotice: merged.pinnedNotice || merged.pinned_notice || "",
       recordingUrl: merged.recordingUrl || merged.recording_url || "",
+      thumbnailUrl: merged.thumbnailUrl || merged.thumbnail_url || "",
+      thumbnail_url: merged.thumbnailUrl || merged.thumbnail_url || "",
       viewersCount: Number(merged.viewersCount || merged.viewers_count || 0),
       startedAt: (function() {
         let sAt = merged.startedAt || merged.started_at || null;

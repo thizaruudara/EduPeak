@@ -1355,6 +1355,36 @@
           <!-- Fallback Direct IFrame for Zoom/Vimeo streams -->
           <iframe id="theaterVideoIframe" class="video-player-frame" src="about:blank" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="display: none;"></iframe>
 
+          <!-- 4. Course Enrollment Locked Screen (Displayed when student is not enrolled in course) -->
+          <div class="live-standby-screen" id="liveClassLockedScreen" style="display: none; z-index: 10; background: radial-gradient(circle at center, rgba(30,27,75,0.96) 0%, rgba(15,23,42,0.99) 100%);">
+            <div style="width: 76px; height: 76px; border-radius: 50%; background: rgba(239,68,68,0.12); border: 2px solid rgba(239,68,68,0.35); display: flex; align-items: center; justify-content: center; margin-bottom: 1.15rem; box-shadow: 0 0 28px rgba(239,68,68,0.22);">
+              <i class="fa-solid fa-lock" style="font-size: 2rem; color: #ef4444;"></i>
+            </div>
+            <span class="stream-status-pill ended" style="font-size: 0.78rem; padding: 0.35rem 0.9rem; background: rgba(239,68,68,0.18); border-color: rgba(239,68,68,0.35); color: #fca5a5; font-weight: 700; letter-spacing: 0.5px;">
+              <i class="fa-solid fa-shield-halved" style="font-size: 0.65rem;"></i> COURSE ENROLLMENT REQUIRED
+            </span>
+            <h2 id="lockedCourseTitle" style="font-family: 'Outfit', sans-serif; font-size: 1.55rem; font-weight: 800; color: #fff; margin: 1rem 0 0.35rem; text-align: center; max-width: 580px;">
+              Course Live Masterclass
+            </h2>
+            <p id="lockedLecturerSubtitle" style="color: #94a3b8; font-size: 0.92rem; margin: 0 0 1rem; text-align: center;">
+              Conducted by Amalsha Wanniarachchi • Faculty Lecturer
+            </p>
+            <div id="lockedCourseFeeBadge" style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(34,122,255,0.14); border: 1px solid rgba(34,122,255,0.35); color: #60a5fa; font-weight: 800; font-size: 0.92rem; padding: 0.38rem 0.95rem; border-radius: 999px; margin-bottom: 1.25rem;">
+              <i class="fa-solid fa-tag"></i> <span id="lockedCourseFeeText">LKR 4,500 / Month</span>
+            </div>
+            <p style="color: #cbd5e1; font-size: 0.9rem; max-width: 520px; margin: 0 0 1.5rem; text-align: center; line-height: 1.55;">
+              This live broadcast is restricted to students who have purchased this course. If you enroll now — even while the live stream is in progress — you will gain instant access and connect directly into the broadcast!
+            </p>
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center;">
+              <a id="btnLockedEnrollNow" href="courses.html" class="btn btn-primary" style="font-weight: 800; padding: 0.68rem 1.5rem; border-radius: 10px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #227aff 0%, #1d4ed8 100%); color: #fff; box-shadow: 0 4px 14px rgba(34,122,255,0.35);">
+                <i class="fa-solid fa-cart-shopping"></i> Enroll Now & Join Live
+              </a>
+              <button type="button" class="btn btn-secondary" onclick="LIVE_APP.handleVerifyAccessClick()" style="font-weight: 700; padding: 0.68rem 1.3rem; border-radius: 10px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff; display: inline-flex; align-items: center; gap: 0.5rem;">
+                <i class="fa-solid fa-arrows-rotate"></i> Check / Refresh Access
+              </button>
+            </div>
+          </div>
+
           <!-- No Streams Offline Standby Screen (When 0 broadcasts are scheduled/active) -->
           <div class="live-standby-screen" id="liveNoStreamsScreen" style="display: none; z-index: 10;">
             <div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; margin-bottom: 1.25rem;">
@@ -1554,6 +1584,20 @@
       <form id="scheduleLiveForm" onsubmit="LIVE_APP.handleSaveScheduleSubmit(event)">
         <div class="live-modal-body">
           <input type="hidden" id="formScheduleId">
+          <input type="hidden" id="formThumbnailUrl">
+
+          <!-- Course Binding for Enrollment-Based Access Control -->
+          <div>
+            <label class="live-form-label">
+              <i class="fa-solid fa-graduation-cap" style="color: #227aff; margin-right: 4px;"></i> Select Bound Course (Access Control) *
+            </label>
+            <select class="live-form-select" id="formCourseSelect" required onchange="LIVE_APP.handleCourseSelectChange(this.value)">
+              <option value="">-- Choose Existing Course from System --</option>
+            </select>
+            <div id="courseAccessInfoHint" style="display:none; margin-top: 6px; font-size: 0.78rem; color: #38bdf8; background: rgba(56,189,248,0.1); padding: 0.45rem 0.75rem; border-radius: 6px; border: 1px solid rgba(56,189,248,0.22); line-height: 1.4;">
+              <i class="fa-solid fa-shield-halved"></i> <span>Only students enrolled in this course will have permission to access and watch this live broadcast. Students purchasing midway can immediately join!</span>
+            </div>
+          </div>
 
           <div class="form-group-grid">
             <div>
@@ -1569,6 +1613,55 @@
             <div>
               <label class="live-form-label">Subject / Discipline *</label>
               <input type="text" class="live-form-input" id="formSubject" value="Physics" required>
+            </div>
+          </div>
+
+          <div class="form-group-grid">
+            <div>
+              <label class="live-form-label">Stream Provider *</label>
+              <select class="live-form-select" id="formProvider" onchange="LIVE_APP.handleProviderChange(this.value)">
+                <option value="youtube">YouTube Live Stream (Standard)</option>
+                <option value="zoom">Zoom Meeting Room</option>
+                <option value="vimeo">Vimeo Live Stream</option>
+                <option value="custom">Custom WebRTC / HLS Stream URL</option>
+              </select>
+            </div>
+            <div>
+              <label class="live-form-label">Initial Broadcast Status *</label>
+              <select class="live-form-select" id="formStatus" style="font-weight: 700;">
+                <option value="scheduled">⏳ Scheduled (Standby Mode)</option>
+                <option value="live">🔴 LIVE NOW (Broadcasting Immediately)</option>
+                <option value="ended">🏁 Concluded (Archive)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- YouTube Live URL Input with Strict Live Validation & Auto-Metadata -->
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <label class="live-form-label" style="margin-bottom: 4px;">
+                <i class="fa-brands fa-youtube" style="color: #ef4444; margin-right: 4px;"></i> YouTube Live Stream URL *
+              </label>
+              <span style="font-size: 0.72rem; color: #f59e0b; font-weight: 600;">(Live URLs only: youtube.com/live/...)</span>
+            </div>
+            <div style="position: relative;">
+              <input type="url" class="live-form-input" id="formStreamUrl" placeholder="https://www.youtube.com/live/..." required oninput="LIVE_APP.handleStreamUrlInput(this.value)" onchange="LIVE_APP.handleStreamUrlInput(this.value)">
+              <span id="urlFetchSpinner" style="display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #38bdf8; font-size: 0.8rem; font-weight: 600;">
+                <i class="fa-solid fa-spinner fa-spin"></i> Fetching YouTube Live Info...
+              </span>
+            </div>
+            <div id="urlValidationMsg" style="display:none; font-size: 0.78rem; margin-top: 6px; padding: 0.4rem 0.65rem; border-radius: 6px;"></div>
+
+            <!-- Auto-populated YouTube Live Metadata Preview -->
+            <div id="youtubeLivePreviewBox" style="display: none; margin-top: 10px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; padding: 0.75rem; align-items: center; gap: 0.85rem;">
+              <img id="formThumbnailPreview" src="" alt="Live Thumbnail" style="width: 120px; height: 68px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.15); flex-shrink: 0; background: #000;">
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 0.72rem; color: #22c55e; font-weight: 700; display: flex; align-items: center; gap: 5px; margin-bottom: 2px;">
+                  <i class="fa-solid fa-circle-check"></i> YouTube Live Metadata Detected
+                </div>
+                <div id="previewLiveTitle" style="font-size: 0.85rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+                <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Title and thumbnail automatically assigned from YouTube live broadcast.</div>
+              </div>
             </div>
           </div>
 
@@ -1605,31 +1698,6 @@
                 <input type="time" class="live-form-input" id="formEndTime" value="12:30" required>
               </div>
             </div>
-          </div>
-
-          <div class="form-group-grid">
-            <div>
-              <label class="live-form-label">Stream Provider *</label>
-              <select class="live-form-select" id="formProvider" onchange="LIVE_APP.handleProviderChange(this.value)">
-                <option value="youtube">YouTube Live Stream (Standard)</option>
-                <option value="zoom">Zoom Meeting Room</option>
-                <option value="vimeo">Vimeo Live Stream</option>
-                <option value="custom">Custom WebRTC / HLS Stream URL</option>
-              </select>
-            </div>
-            <div>
-              <label class="live-form-label">Initial Broadcast Status *</label>
-              <select class="live-form-select" id="formStatus" style="font-weight: 700;">
-                <option value="scheduled">⏳ Scheduled (Standby Mode)</option>
-                <option value="live">🔴 LIVE NOW (Broadcasting Immediately)</option>
-                <option value="ended">🏁 Concluded (Archive)</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label class="live-form-label">Stream URL / YouTube Embed URL *</label>
-            <input type="url" class="live-form-input" id="formStreamUrl" placeholder="https://www.youtube.com/watch?v=..." required>
           </div>
 
           <div id="zoomUrlFieldBox">
@@ -1873,6 +1941,15 @@
         await this.loadInitialStreams(requestedId);
         this.initWatermarkDrift();
 
+        window.isCourseEnrolled = this.isUserEnrolledInCourse.bind(this);
+
+        if (params.get("action") === "schedule") {
+          const isStaff = this.currentUser && (this.currentUser.role === "admin" || this.currentUser.role === "teacher");
+          if (isStaff) {
+            setTimeout(() => this.openScheduleModal(), 350);
+          }
+        }
+
         window.addEventListener("beforeunload", () => {
           if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.leaveLivePresence === "function") {
             window.SUPABASE_HELPER.leaveLivePresence();
@@ -1971,9 +2048,21 @@
           } catch(e) {}
         }
 
-        if (!Array.isArray(schedules) || schedules.length === 0) {
+        if (!Array.isArray(schedules)) {
           schedules = [];
         }
+
+        // Merge local schedules from localStorage if any are missing from remote (e.g. offline/test/recent schedules)
+        try {
+          const localS = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
+          if (Array.isArray(localS)) {
+            localS.forEach(ls => {
+              if (ls && ls.id && !schedules.some(s => s.id === ls.id)) {
+                schedules.push(ls);
+              }
+            });
+          }
+        } catch(e) {}
 
         this.renderStreamsList(schedules);
 
@@ -2154,6 +2243,7 @@
           const isActive = s.id === this.activeSessionId;
           const isLive = s.status === "live";
           const isEnded = s.status === "ended";
+          const isEnrolled = isStaff || this.isUserEnrolledInCourse(s.courseId);
 
           let pillHtml = `<span class="stream-status-pill scheduled"><i class="fa-solid fa-clock"></i> Scheduled</span>`;
           if (isLive) {
@@ -2162,10 +2252,18 @@
             pillHtml = `<span class="stream-status-pill ended"><i class="fa-solid fa-flag-checkered"></i> Concluded</span>`;
           }
 
+          let lockBadge = "";
+          if (!isEnrolled && s.courseId) {
+            lockBadge = `<span class="stream-status-pill locked" style="background: rgba(239,68,68,0.16); border: 1px solid rgba(239,68,68,0.35); color: #fca5a5; font-size: 0.68rem; padding: 0.2rem 0.55rem; font-weight: 700;"><i class="fa-solid fa-lock" style="font-size: 0.6rem;"></i> Enrolled Only</span>`;
+          }
+
           return `
-            <div class="stream-card ${isActive ? 'is-active-stream' : ''}" onclick="LIVE_APP.loadSession('${s.id}')">
+            <div class="stream-card ${isActive ? 'is-active-stream' : ''} ${!isEnrolled && s.courseId ? 'is-locked-stream' : ''}" onclick="LIVE_APP.loadSession('${s.id}')">
               <div class="stream-card-top">
-                <span class="stream-batch-badge">${s.examYear || '2027 A/L'}</span>
+                <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+                  <span class="stream-batch-badge">${s.examYear || '2027 A/L'}</span>
+                  ${lockBadge}
+                </div>
                 ${pillHtml}
               </div>
 
@@ -2207,8 +2305,22 @@
         } else {
           try { schedules = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]"); } catch(e) {}
         }
+        if (!Array.isArray(schedules)) schedules = [];
 
-        const session = schedules.find(s => s.id === sessionId) || this.activeSession;
+        let session = schedules.find(s => s.id === sessionId);
+        if (!session) {
+          try {
+            const rawLocal = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
+            if (Array.isArray(rawLocal)) {
+              session = rawLocal.find(s => s.id === sessionId);
+              if (session && !schedules.some(s => s.id === session.id)) {
+                schedules.push(session);
+              }
+            }
+          } catch(e) {}
+        }
+        if (!session) session = this.activeSession;
+
         if (!session) {
           if (schedules.length === 0) {
             this.loadEmptyState();
@@ -2229,9 +2341,61 @@
         const noStreamsScreen = document.getElementById("liveNoStreamsScreen");
         const standbyScreen = document.getElementById("liveStandbyScreen");
         const endedScreen = document.getElementById("liveEndedScreen");
+        const lockedScreen = document.getElementById("liveClassLockedScreen");
         const zoomBtn = document.getElementById("btnLaunchZoomRoom");
 
         if (noStreamsScreen) noStreamsScreen.style.display = "none";
+
+        // Access Control Verification: Only enrolled students or staff can watch this course's live broadcast
+        const isStaff = this.currentUser && (this.currentUser.role === "admin" || this.currentUser.role === "teacher");
+        const isEnrolled = isStaff || this.isUserEnrolledInCourse(session.courseId);
+
+        if (!isEnrolled && session.courseId) {
+          // Student is NOT enrolled in the required course
+          if (customPlayer) customPlayer.style.display = "none";
+          if (iframe) {
+            iframe.style.display = "none";
+            iframe.src = "about:blank";
+          }
+          if (standbyScreen) standbyScreen.style.display = "none";
+          if (endedScreen) endedScreen.style.display = "none";
+
+          if (lockedScreen) {
+            lockedScreen.style.display = "flex";
+            const titleEl = document.getElementById("lockedCourseTitle");
+            if (titleEl) titleEl.textContent = session.courseTitle || session.topic;
+            const subEl = document.getElementById("lockedLecturerSubtitle");
+            if (subEl) subEl.textContent = `Conducted by ${session.teacherName || 'Faculty Lecturer'} • ${session.examYear || '2027 A/L'} ${session.subject || 'Physics'}`;
+
+            // Look up course fee
+            let courseFee = "Monthly Fee Applicable";
+            if (this.allCoursesCache && this.allCoursesCache.length) {
+              const c = this.allCoursesCache.find(item => item.id === session.courseId);
+              if (c && (c.fee || c.price)) courseFee = c.fee || `LKR ${c.price} / Month`;
+            }
+            const feeEl = document.getElementById("lockedCourseFeeText");
+            if (feeEl) feeEl.textContent = courseFee;
+
+            const enrollBtn = document.getElementById("btnLockedEnrollNow");
+            if (enrollBtn) {
+              enrollBtn.href = `courses.html?enroll=${encodeURIComponent(session.courseId || "")}`;
+            }
+          }
+
+          // Start active mid-broadcast enrollment watcher so purchasing midway joins immediately
+          this.startMidBroadcastEnrollmentWatch(sessionId, session.courseId);
+
+          // Update Info Headers below player
+          this.updateBroadcastInfoHeaders(session);
+          return;
+        } else {
+          // Access granted
+          if (lockedScreen) lockedScreen.style.display = "none";
+          if (this.midBroadcastTimer) {
+            clearInterval(this.midBroadcastTimer);
+            this.midBroadcastTimer = null;
+          }
+        }
 
         if (session.status === "live") {
           if (this.countdownTimer) {
@@ -2381,7 +2545,6 @@
         const cleanSchedTime = rawSchedTime.replace(/^\d{4}-\d{2}-\d{2}\s*[•·]\s*/, "").trim();
         document.getElementById("infoScheduleTime").textContent = cleanSchedTime || (session.scheduleStartTime && session.scheduleEndTime ? `${session.scheduleStartTime} - ${session.scheduleEndTime}` : "Time TBA");
         
-        const isStaff = this.currentUser && (this.currentUser.role === "admin" || this.currentUser.role === "teacher");
         const viewersChip = document.getElementById("infoViewersChip");
         if (viewersChip) {
           viewersChip.style.display = isStaff ? "inline-flex" : "none";
@@ -3002,10 +3165,364 @@
         }
       },
 
+      // --- Course Access & Live URL Validation Helpers ---
+      isUserEnrolledInCourse(courseId) {
+        if (!courseId) return true; // Unbound or free broadcast
+        let user = this.currentUser || (window.AUTH_SYSTEM && window.AUTH_SYSTEM.getCurrentUser ? window.AUTH_SYSTEM.getCurrentUser() : null);
+        
+        // Also check if fresh user data was updated in localStorage
+        try {
+          const fresh = JSON.parse(localStorage.getItem("edupeak_user") || localStorage.getItem("edupeak_active_user") || "null");
+          if (fresh) user = { ...user, ...fresh };
+        } catch(e) {}
+
+        if (!user) return false;
+        if (user.role === "teacher" || user.role === "admin") return true;
+
+        // Check active student's enrolled courses array
+        if (Array.isArray(user.enrolledCourses) && user.enrolledCourses.includes(courseId)) {
+          return true;
+        }
+        if (user.id && window.AUTH_SYSTEM && typeof window.AUTH_SYSTEM.getStudentEnrolledCourses === "function") {
+          const list = window.AUTH_SYSTEM.getStudentEnrolledCourses(user.id);
+          if (Array.isArray(list) && list.includes(courseId)) return true;
+        }
+
+        // Check pending/approved orders in edupeak_pending_orders (WhatsApp/Bank payments)
+        try {
+          const orders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
+          const hasApproved = Array.isArray(orders) && orders.some(ord => {
+            const isApproved = ord.status && ord.status.toLowerCase().includes("approved");
+            const matchUser = ord.studentId === user.id ||
+              (ord.studentEmail && user.email && ord.studentEmail.toLowerCase() === user.email.toLowerCase()) ||
+              (ord.studentPhone && user.phone && ord.studentPhone.replace(/\D/g, '') === user.phone.replace(/\D/g, ''));
+            return isApproved && matchUser && ord.courseId === courseId;
+          });
+          if (hasApproved) return true;
+        } catch(e) {}
+
+        // Check dedicated per-student course access key
+        if (user.id) {
+          try {
+            const stored = JSON.parse(localStorage.getItem(`edupeak_student_courses_${user.id}`) || "[]");
+            if (Array.isArray(stored) && stored.includes(courseId)) return true;
+          } catch(e) {}
+        }
+
+        return false;
+      },
+
+      midBroadcastTimer: null,
+      startMidBroadcastEnrollmentWatch(sessionId, courseId) {
+        if (this.midBroadcastTimer) {
+          clearInterval(this.midBroadcastTimer);
+          this.midBroadcastTimer = null;
+        }
+        if (!courseId) return;
+
+        const checkNow = () => {
+          if (this.activeSessionId === sessionId && this.isUserEnrolledInCourse(courseId)) {
+            if (this.midBroadcastTimer) {
+              clearInterval(this.midBroadcastTimer);
+              this.midBroadcastTimer = null;
+            }
+            if (window.showToast) {
+              window.showToast("🎉 Course enrollment detected! Joining live masterclass now...", "success");
+            }
+            this.loadSession(sessionId);
+          }
+        };
+
+        // Active poll every 2.5 seconds
+        this.midBroadcastTimer = setInterval(checkNow, 2500);
+
+        // Also listen for storage & custom events
+        const onStorageUpdate = () => checkNow();
+        window.addEventListener("storage", onStorageUpdate, { once: true });
+        window.addEventListener("edupeak-order-approved", onStorageUpdate, { once: true });
+        window.addEventListener("edupeak:courses-synced", onStorageUpdate, { once: true });
+      },
+
+      handleVerifyAccessClick() {
+        if (!this.activeSession) return;
+        const isEnrolled = this.isUserEnrolledInCourse(this.activeSession.courseId);
+        if (isEnrolled) {
+          if (window.showToast) {
+            window.showToast("✓ Verified! You have access to this live class.", "success");
+          }
+          this.loadSession(this.activeSession.id);
+        } else {
+          if (window.showToast) {
+            window.showToast("Enrollment not found yet. Please complete enrollment or wait for order approval.", "warning");
+          } else {
+            alert("Enrollment not found yet. Please complete enrollment or wait for order approval.");
+          }
+        }
+      },
+
+      updateBroadcastInfoHeaders(session) {
+        if (!session) return;
+        const topicEl = document.getElementById("infoTopicTitle");
+        const topicSiEl = document.getElementById("infoTopicTitleSi");
+        if (topicEl) topicEl.textContent = session.topic || "EduPeak Live Masterclass";
+        if (topicSiEl) {
+          const rawSi = (session.topic_si || "").trim();
+          const rawTopic = (session.topic || "").trim();
+          if (rawSi && rawSi !== rawTopic) {
+            topicSiEl.textContent = rawSi;
+            topicSiEl.style.display = "block";
+          } else {
+            topicSiEl.textContent = "";
+            topicSiEl.style.display = "none";
+          }
+        }
+        const bBadge = document.getElementById("infoBatchBadge");
+        if (bBadge) bBadge.textContent = session.examYear || "2027 A/L";
+        const sBadge = document.getElementById("infoSubjectBadge");
+        if (sBadge) sBadge.innerHTML = `<i class="fa-solid fa-atom" style="color: #227aff;"></i> ${session.subject || 'Physics'}`;
+        const dEl = document.getElementById("infoScheduleDate");
+        if (dEl) dEl.textContent = session.scheduleDate || "Today";
+        const rawSchedTime = session.scheduleTime || "";
+        const cleanSchedTime = rawSchedTime.replace(/^\d{4}-\d{2}-\d{2}\s*[•·]\s*/, "").trim();
+        const tEl = document.getElementById("infoScheduleTime");
+        if (tEl) tEl.textContent = cleanSchedTime || (session.scheduleStartTime && session.scheduleEndTime ? `${session.scheduleStartTime} - ${session.scheduleEndTime}` : "Time TBA");
+        
+        const isStaff = this.currentUser && (this.currentUser.role === "admin" || this.currentUser.role === "teacher");
+        const viewersChip = document.getElementById("infoViewersChip");
+        if (viewersChip) {
+          viewersChip.style.display = isStaff ? "inline-flex" : "none";
+        }
+        const vCount = (session.viewersCount !== undefined && session.viewersCount !== null)
+          ? session.viewersCount
+          : ((session.viewers_count !== undefined && session.viewers_count !== null) ? session.viewers_count : 0);
+        const viewersEl = document.getElementById("infoViewersCount");
+        if (viewersEl) {
+          viewersEl.textContent = `${vCount} Live Viewers`;
+        }
+        const descEl = document.getElementById("infoDescriptionText");
+        if (descEl) descEl.textContent = session.description || "Comprehensive live interactive masterclass with live doubt resolution.";
+        const lectEl = document.getElementById("infoLecturerName");
+        if (lectEl) lectEl.innerHTML = `${session.teacherName || 'Faculty Lecturer'} <i class="fa-solid fa-circle-check" style="color: #227aff; font-size: 0.8rem;"></i>`;
+        const avEl = document.getElementById("infoLecturerAvatar");
+        if (avEl) avEl.textContent = (session.teacherName || "L").charAt(0).toUpperCase();
+
+        const statusPill = document.getElementById("infoStatusPill");
+        if (statusPill) {
+          if (session.status === "live") {
+            statusPill.className = "stream-status-pill live";
+            statusPill.innerHTML = `<span class="live-pulse-dot"></span> LIVE NOW`;
+          } else if (session.status === "scheduled") {
+            statusPill.className = "stream-status-pill scheduled";
+            statusPill.innerHTML = `<i class="fa-solid fa-clock"></i> SCHEDULED`;
+          } else {
+            statusPill.className = "stream-status-pill ended";
+            statusPill.innerHTML = `<i class="fa-solid fa-flag-checkered"></i> CONCLUDED`;
+          }
+        }
+      },
+
+      validateLiveStreamUrl(url, provider = "youtube") {
+        if (!url || typeof url !== "string") {
+          return { valid: false, error: "Please enter a stream URL." };
+        }
+        const trimmed = url.trim();
+        if (provider === "youtube") {
+          const liveRegex = /(?:youtube\.com|youtu\.be)\/live\/([a-zA-Z0-9_-]{11})/i;
+          const match = trimmed.match(liveRegex);
+          if (!match || !match[1]) {
+            if (trimmed.includes("watch?v=") || (trimmed.includes("youtu.be/") && !trimmed.includes("/live/"))) {
+              return {
+                valid: false,
+                error: "❌ Invalid URL: Regular recorded video URLs are not allowed. You must enter a YouTube Live URL (e.g. https://www.youtube.com/live/VIDEO_ID)."
+              };
+            }
+            return {
+              valid: false,
+              error: "❌ Only YouTube Live URLs (e.g. https://www.youtube.com/live/VIDEO_ID) are permitted."
+            };
+          }
+          return { valid: true, videoId: match[1] };
+        }
+        return { valid: true };
+      },
+
+      _streamUrlDebounceTimer: null,
+      async handleStreamUrlInput(url) {
+        clearTimeout(this._streamUrlDebounceTimer);
+        const validationEl = document.getElementById("urlValidationMsg");
+        const spinner = document.getElementById("urlFetchSpinner");
+        const previewBox = document.getElementById("youtubeLivePreviewBox");
+        const previewImg = document.getElementById("formThumbnailPreview");
+        const previewTitle = document.getElementById("previewLiveTitle");
+        const thumbInput = document.getElementById("formThumbnailUrl");
+
+        if (!url || !url.trim()) {
+          if (validationEl) validationEl.style.display = "none";
+          if (previewBox) previewBox.style.display = "none";
+          return;
+        }
+
+        const provider = document.getElementById("formProvider")?.value || "youtube";
+        if (provider !== "youtube") {
+          if (validationEl) validationEl.style.display = "none";
+          if (previewBox) previewBox.style.display = "none";
+          return;
+        }
+
+        const check = this.validateLiveStreamUrl(url, provider);
+        if (!check.valid) {
+          if (validationEl) {
+            validationEl.style.display = "block";
+            validationEl.style.background = "rgba(239, 68, 68, 0.15)";
+            validationEl.style.border = "1px solid rgba(239, 68, 68, 0.3)";
+            validationEl.style.color = "#fca5a5";
+            validationEl.textContent = check.error;
+          }
+          if (previewBox) previewBox.style.display = "none";
+          return;
+        }
+
+        // URL is a valid live URL
+        if (validationEl) {
+          validationEl.style.display = "block";
+          validationEl.style.background = "rgba(34, 197, 94, 0.12)";
+          validationEl.style.border = "1px solid rgba(34, 197, 94, 0.3)";
+          validationEl.style.color = "#86efac";
+          validationEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> Valid YouTube Live stream URL (ID: ${check.videoId})`;
+        }
+
+        const videoId = check.videoId;
+        const generatedThumb = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+        if (thumbInput) thumbInput.value = generatedThumb;
+        if (previewImg) previewImg.src = generatedThumb;
+
+        this._streamUrlDebounceTimer = setTimeout(async () => {
+          if (spinner) spinner.style.display = "inline-flex";
+          try {
+            let fetchedTitle = "";
+            try {
+              const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+              if (res.ok) {
+                const data = await res.json();
+                if (data && data.title) {
+                  fetchedTitle = data.title;
+                }
+              }
+            } catch(e) {}
+
+            if (fetchedTitle) {
+              const topicInput = document.getElementById("formTopic");
+              if (topicInput) {
+                topicInput.value = fetchedTitle;
+              }
+              const topicSiInput = document.getElementById("formTopicSi");
+              if (topicSiInput && !topicSiInput.value) {
+                topicSiInput.value = fetchedTitle;
+              }
+              if (previewTitle) previewTitle.textContent = fetchedTitle;
+              if (previewBox) previewBox.style.display = "flex";
+            } else {
+              if (previewTitle) previewTitle.textContent = `YouTube Live Stream [${videoId}]`;
+              if (previewBox) previewBox.style.display = "flex";
+            }
+          } catch(err) {
+            console.warn("YouTube live metadata fetch notice:", err);
+          } finally {
+            if (spinner) spinner.style.display = "none";
+          }
+        }, 350);
+      },
+
+      async populateCoursesDropdown(selectedCourseId = "") {
+        const select = document.getElementById("formCourseSelect");
+        if (!select) return;
+
+        let courses = [];
+        if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getCourses === "function") {
+          courses = await window.SUPABASE_HELPER.getCourses();
+        } else {
+          try { courses = JSON.parse(localStorage.getItem("edupeak_courses_db") || "[]"); } catch(e) {}
+        }
+        if (!Array.isArray(courses)) courses = [];
+
+        try {
+          const localC = JSON.parse(localStorage.getItem("edupeak_courses_db") || "[]");
+          if (Array.isArray(localC)) {
+            localC.forEach(lc => {
+              if (lc && lc.id && !courses.some(c => c.id === lc.id)) {
+                courses.push(lc);
+              }
+            });
+          }
+        } catch(e) {}
+
+        if (!courses || courses.length === 0) {
+          courses = window.COURSES_DATA || [];
+        }
+
+        this.allCoursesCache = courses;
+
+        select.innerHTML = `<option value="">-- Choose Existing Course from System --</option>` +
+          courses.map(c => {
+            const isSel = c.id === selectedCourseId ? "selected" : "";
+            const teacher = c.teacher || c.teacherName || "Amalsha Wanniarachchi";
+            const batch = c.examYear || c.level || "A/L";
+            const fee = c.fee || (c.price ? `LKR ${c.price}` : "");
+            return `<option value="${c.id}" ${isSel} data-exam="${c.examYear || ''}" data-subject="${c.category || ''}" data-teacher="${teacher}" data-teacherid="${c.teacherId || ''}" data-title="${c.title || ''}" data-fee="${fee}">${c.title} (${batch} • ${teacher})</option>`;
+          }).join("");
+
+        if (selectedCourseId) {
+          select.value = selectedCourseId;
+          const hint = document.getElementById("courseAccessInfoHint");
+          if (hint) hint.style.display = "block";
+        }
+      },
+
+      handleCourseSelectChange(courseId) {
+        const hint = document.getElementById("courseAccessInfoHint");
+        if (hint) hint.style.display = courseId ? "block" : "none";
+
+        if (!courseId || !this.allCoursesCache) return;
+        const c = this.allCoursesCache.find(item => item.id === courseId);
+        if (!c) return;
+
+        if (c.examYear) {
+          const examSelect = document.getElementById("formExamYear");
+          if (examSelect) {
+            for (let opt of examSelect.options) {
+              if (opt.value.includes(c.examYear) || c.examYear.includes(opt.value)) {
+                examSelect.value = opt.value;
+                break;
+              }
+            }
+          }
+        }
+
+        if (c.category || c.subject) {
+          const subInput = document.getElementById("formSubject");
+          if (subInput) subInput.value = c.category || c.subject || "Physics";
+        }
+
+        if (c.teacher || c.teacherName) {
+          const tName = document.getElementById("formLecturerName");
+          if (tName) tName.value = c.teacher || c.teacherName;
+        }
+
+        const topicInput = document.getElementById("formTopic");
+        if (topicInput && (!topicInput.value || topicInput.value.includes("Live Masterclass & Practical Derivations"))) {
+          topicInput.value = `${c.title} - Live Masterclass`;
+        }
+      },
+
       // --- Schedule Modal Operations ---
-      openScheduleModal() {
+      async openScheduleModal() {
         document.getElementById("formScheduleId").value = "";
+        const thumbInput = document.getElementById("formThumbnailUrl");
+        if (thumbInput) thumbInput.value = "";
         document.getElementById("modalTitle").innerHTML = `<i class="fa-solid fa-calendar-plus" style="color: #227aff;"></i> Schedule New Live Broadcast`;
+        
+        await this.populateCoursesDropdown("");
+
         document.getElementById("formExamYear").value = "2027 A/L";
         document.getElementById("formSubject").value = "Physics";
         document.getElementById("formTopic").value = "";
@@ -3024,10 +3541,17 @@
         document.getElementById("formEndTime").value = defEnd;
         document.getElementById("formProvider").value = "youtube";
         document.getElementById("formStatus").value = "scheduled";
-        document.getElementById("formStreamUrl").value = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+        document.getElementById("formStreamUrl").value = "";
         document.getElementById("formZoomUrl").value = "";
-        document.getElementById("formPinnedNotice").value = "📢 Welcome students! Today's physics tute is ready for discussion.";
-        document.getElementById("formDescription").value = "Comprehensive live masterclass with conceptual derivations and speed MCQ questions.";
+        document.getElementById("formPinnedNotice").value = "📢 Welcome students! Today's tute is ready for live discussion.";
+        document.getElementById("formDescription").value = "Comprehensive live masterclass with conceptual derivations and interactive doubts clearing.";
+
+        const validationEl = document.getElementById("urlValidationMsg");
+        if (validationEl) validationEl.style.display = "none";
+        const previewBox = document.getElementById("youtubeLivePreviewBox");
+        if (previewBox) previewBox.style.display = "none";
+        const hint = document.getElementById("courseAccessInfoHint");
+        if (hint) hint.style.display = "none";
 
         const activeUser = this.currentUser || (window.AUTH_SYSTEM ? window.AUTH_SYSTEM.getCurrentUser() : null);
         let lectName = "Amalsha Wanniarachchi";
@@ -3063,6 +3587,9 @@
 
         document.getElementById("formScheduleId").value = s.id;
         document.getElementById("modalTitle").innerHTML = `<i class="fa-solid fa-pen-to-square" style="color: #227aff;"></i> Edit Live Broadcast: ${s.topic}`;
+        
+        await this.populateCoursesDropdown(s.courseId || s.course_id || "");
+
         document.getElementById("formExamYear").value = s.examYear || "2027 A/L";
         document.getElementById("formSubject").value = s.subject || "Physics";
         document.getElementById("formTopic").value = s.topic || "";
@@ -3079,12 +3606,9 @@
         }
         document.getElementById("formDate").value = s.scheduleDate || new Date().toISOString().split("T")[0];
 
-        // If separate start/end time fields are missing (schedules from teacher portal only
-        // store a combined scheduleTime string), parse them out so the form shows the real time.
         let parsedStart = s.scheduleStartTime || "";
         let parsedEnd   = s.scheduleEndTime   || "";
         if ((!parsedStart || !parsedEnd) && s.scheduleTime) {
-          // Extract time tokens like "7:30 AM", "13:30", "1:30 PM" from the string
           const timeTokens = Array.from(
             s.scheduleTime.matchAll(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)/gi)
           ).map(m => m[0].trim());
@@ -3110,12 +3634,19 @@
         document.getElementById("formEndTime").value   = s.scheduleEndTime   || parsedEnd   || "12:30";
         document.getElementById("formProvider").value = s.provider || "youtube";
         document.getElementById("formStatus").value = s.status || "scheduled";
-        document.getElementById("formStreamUrl").value = s.rawUrl || s.rawurl || s.raw_url || s.embedUrl || s.embedurl || s.embed_url || "";
+        const streamUrlVal = s.rawUrl || s.rawurl || s.raw_url || s.embedUrl || s.embedurl || s.embed_url || "";
+        document.getElementById("formStreamUrl").value = streamUrlVal;
+        const thumbInput = document.getElementById("formThumbnailUrl");
+        if (thumbInput) thumbInput.value = s.thumbnailUrl || s.thumbnail_url || "";
         document.getElementById("formZoomUrl").value = s.zoomUrl || s.zoomurl || s.zoom_url || "";
         document.getElementById("formPinnedNotice").value = s.pinnedNotice || "";
         document.getElementById("formDescription").value = s.description || "";
         document.getElementById("formWatermarkToggle").checked = s.watermarkEnabled !== false;
         document.getElementById("formChatToggle").checked = s.chatEnabled !== false;
+
+        if (streamUrlVal) {
+          this.handleStreamUrlInput(streamUrlVal);
+        }
 
         document.getElementById("scheduleLiveModal").classList.add("active");
       },
@@ -3142,23 +3673,56 @@
         e.preventDefault();
 
         const id = document.getElementById("formScheduleId").value;
+        const courseSelect = document.getElementById("formCourseSelect");
+        const courseId = courseSelect ? courseSelect.value : "";
+        if (!courseId) {
+          if (window.showToast) window.showToast("⚠️ Please select an associated course from the system.", "warning");
+          else alert("Please select an associated course from the system.");
+          if (courseSelect) courseSelect.focus();
+          return;
+        }
+
+        const selectedOption = courseSelect.options[courseSelect.selectedIndex];
+        let courseTitle = selectedOption ? (selectedOption.getAttribute("data-title") || selectedOption.textContent.split("(")[0].trim()) : "";
+
+        const provider = document.getElementById("formProvider").value;
+        const rawUrl = document.getElementById("formStreamUrl").value.trim();
+
+        // Strict live URL validation for YouTube
+        if (provider === "youtube") {
+          const check = this.validateLiveStreamUrl(rawUrl, "youtube");
+          if (!check.valid) {
+            if (window.showToast) window.showToast(check.error, "error");
+            else alert(check.error);
+            const urlInput = document.getElementById("formStreamUrl");
+            if (urlInput) urlInput.focus();
+            return;
+          }
+        }
+
         const examYear = document.getElementById("formExamYear").value;
         const subject = document.getElementById("formSubject").value.trim() || "Physics";
-        const topic = document.getElementById("formTopic").value.trim();
+        const topic = document.getElementById("formTopic").value.trim() || `${courseTitle} - Live Masterclass`;
         const topic_si = document.getElementById("formTopicSi").value.trim() || topic;
         const teacherName = document.getElementById("formLecturerName").value.trim();
         const teacherId = document.getElementById("formTeacherId").value.trim();
         const scheduleDate = document.getElementById("formDate").value;
         const scheduleStartTime = document.getElementById("formStartTime").value;
         const scheduleEndTime = document.getElementById("formEndTime").value;
-        const provider = document.getElementById("formProvider").value;
         const status = document.getElementById("formStatus").value;
-        const rawUrl = document.getElementById("formStreamUrl").value.trim();
         const zoomUrl = document.getElementById("formZoomUrl").value.trim();
         const pinnedNotice = document.getElementById("formPinnedNotice").value.trim();
         const description = document.getElementById("formDescription").value.trim();
         const watermarkEnabled = document.getElementById("formWatermarkToggle").checked;
         const chatEnabled = document.getElementById("formChatToggle").checked;
+
+        let videoId = "";
+        if (provider === "youtube") {
+          const match = rawUrl.match(/(?:youtube\.com|youtu\.be)\/live\/([a-zA-Z0-9_-]{11})/i);
+          if (match && match[1]) videoId = match[1];
+        }
+        const thumbInput = document.getElementById("formThumbnailUrl");
+        const thumbnailUrl = (thumbInput && thumbInput.value) ? thumbInput.value : (videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : "");
 
         // Auto format schedule string
         const scheduleTime = `${scheduleDate} • ${scheduleStartTime} - ${scheduleEndTime}`;
@@ -3175,8 +3739,11 @@
           topic_si,
           examYear,
           subject,
-          courseTitle: topic,
-          courseId: `crs-${examYear.toLowerCase().replace(/[^a-z0-9]/g, "")}-${subject.toLowerCase()}`,
+          courseTitle: courseTitle || topic,
+          courseId: courseId,
+          course_id: courseId,
+          thumbnailUrl: thumbnailUrl,
+          thumbnail_url: thumbnailUrl,
           teacherId,
           teacherName,
           creatorId: this.currentUser?.id || teacherId,
@@ -3205,7 +3772,7 @@
 
         this.closeScheduleModal();
         if (window.showToast) {
-          window.showToast(`✓ Broadcast schedule "${topic}" saved and published!`, "success");
+          window.showToast(`✓ Broadcast schedule "${topic}" saved and bound to ${courseTitle}!`, "success");
         }
 
         await this.loadInitialStreams(schedData.id);

@@ -788,7 +788,31 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     return Math.max(0, elapsed);
   }
 
+  function syncToLiveEdge() {
+    if (!liveYtPlayer) return;
+    try {
+      const isLive = typeof liveYtPlayer.getVideoData === "function" && liveYtPlayer.getVideoData()?.isLive;
+      if (isLive) {
+        const dur = typeof liveYtPlayer.getDuration === "function" ? liveYtPlayer.getDuration() : 0;
+        if (dur > 0) {
+          liveYtPlayer.seekTo(dur, true);
+        }
+      } else {
+        const targetElapsed = getElapsedSeconds();
+        if (targetElapsed > 0) {
+          liveYtPlayer.seekTo(targetElapsed, true);
+        }
+      }
+    } catch(e) {}
+  }
+
   function getPlaybackResumeSeconds(videoId) {
+    // For live broadcasts, NEVER resume from past saved positions!
+    // The player must synchronize directly to the real-time live moment (0 delay).
+    const isLiveBroadcast = !activeSessionData || activeSessionData.status === "live";
+    if (isLiveBroadcast) {
+      return getElapsedSeconds();
+    }
     const sessId = (activeSessionData && (activeSessionData.id || activeSessionData.scheduleId))
       || (window.LIVE_APP ? window.LIVE_APP.activeSessionId : null);
     let savedSec = 0;
@@ -849,8 +873,13 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     durationCheckInterval = setInterval(() => {
       if (!liveYtPlayer) return;
       try {
+        const isLiveType = typeof liveYtPlayer.getVideoData === "function" && liveYtPlayer.getVideoData()?.isLive;
+        const isLiveSession = !activeSessionData || activeSessionData.status === "live";
         const curTime = typeof liveYtPlayer.getCurrentTime === "function" ? liveYtPlayer.getCurrentTime() : 0;
-        if (curTime > 1) {
+        const vidDuration = typeof liveYtPlayer.getDuration === "function" ? liveYtPlayer.getDuration() : 0;
+
+        // If it's a concluded or non-live session, allow saving playback
+        if (!isLiveSession && curTime > 1) {
           const sessId = (activeSessionData && (activeSessionData.id || activeSessionData.scheduleId))
             || (window.LIVE_APP ? window.LIVE_APP.activeSessionId : null);
           const vId = (typeof liveYtPlayer.getVideoData === "function" && liveYtPlayer.getVideoData()?.video_id) || "";
@@ -866,8 +895,22 @@ const EDUPEAK_LIVE_PLAYER = (function() {
           return;
         }
 
-        const vidDuration = typeof liveYtPlayer.getDuration === "function" ? liveYtPlayer.getDuration() : 0;
-        const isLiveType = typeof liveYtPlayer.getVideoData === "function" && liveYtPlayer.getVideoData()?.isLive;
+        // Keep 100% synchronized with live timing (0 delay)
+        if (isLiveSession) {
+          if (isLiveType) {
+            // Real YouTube live stream: snap to live edge if lag exceeds 3.5s
+            if (vidDuration > 0 && curTime > 0 && (vidDuration - curTime > 3.5)) {
+              try { liveYtPlayer.seekTo(vidDuration, true); } catch(e) {}
+            }
+          } else {
+            // Live broadcast with scheduled elapsed time: lock to exact elapsed seconds
+            const targetElapsed = getElapsedSeconds();
+            if (targetElapsed > 2 && Math.abs(curTime - targetElapsed) > 4) {
+              try { liveYtPlayer.seekTo(targetElapsed, true); } catch(e) {}
+            }
+          }
+        }
+
         if (!isLiveType && vidDuration > 0) {
           if ((curTime >= vidDuration - 1.2 || curTime >= vidDuration) && curTime > 0) {
             triggerLiveEnded();
@@ -875,7 +918,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
           }
         }
       } catch(e) {}
-    }, 1000);
+    }, 1500);
   }
 
   function stopDurationWatchdog() {
@@ -1004,10 +1047,19 @@ const EDUPEAK_LIVE_PLAYER = (function() {
               triggerStartupMask();
               scheduleLiveControlsFade();
 
-              const targetPos = Math.floor(getPlaybackResumeSeconds(videoId));
-              const curTime = typeof liveYtPlayer.getCurrentTime === "function" ? liveYtPlayer.getCurrentTime() : 0;
-              if (targetPos > 3 && curTime < 2) {
-                try { liveYtPlayer.seekTo(targetPos, true); } catch(e) {}
+              // Synchronize directly with 100% live broadcast timing (0 delay)
+              const isLiveType = typeof liveYtPlayer.getVideoData === "function" && liveYtPlayer.getVideoData()?.isLive;
+              if (isLiveType) {
+                const dur = typeof liveYtPlayer.getDuration === "function" ? liveYtPlayer.getDuration() : 0;
+                if (dur > 0) {
+                  try { liveYtPlayer.seekTo(dur, true); } catch(e) {}
+                }
+              } else {
+                const targetPos = Math.floor(getPlaybackResumeSeconds(videoId));
+                const curTime = typeof liveYtPlayer.getCurrentTime === "function" ? liveYtPlayer.getCurrentTime() : 0;
+                if (targetPos > 2 && Math.abs(curTime - targetPos) > 3) {
+                  try { liveYtPlayer.seekTo(targetPos, true); } catch(e) {}
+                }
               }
 
               // Hide any bot fallback prompt if playing
@@ -1022,6 +1074,22 @@ const EDUPEAK_LIVE_PLAYER = (function() {
               }
             } else if (event.data === PAUSED) {
               if (isSessionEnded) return; // don't try to resume an ended session
+
+              // Check user role: students are NOT allowed to stop or pause live broadcasts
+              const user = (window.AUTH_SYSTEM && window.AUTH_SYSTEM.getCurrentUser) ? window.AUTH_SYSTEM.getCurrentUser() : null;
+              const isStaff = user && (user.role === "teacher" || user.role === "admin");
+              const isLiveSession = !activeSessionData || activeSessionData.status === "live";
+
+              if (!isStaff && isLiveSession) {
+                // Instantly resume live stream and keep locked to broadcast edge
+                isLivePlaying = true;
+                try {
+                  liveYtPlayer.playVideo();
+                  syncToLiveEdge();
+                } catch(e) {}
+                return;
+              }
+
               isLivePlaying = false;
               showLiveControls();
               // Check if paused because the video reached the end
@@ -1535,6 +1603,38 @@ const EDUPEAK_LIVE_PLAYER = (function() {
           liveQMenu.classList.remove("active");
         }
       });
+
+      // Block students from seeking backward/forward or stopping the live stream
+      document.addEventListener("keydown", (e) => {
+        const liveWrapper = document.getElementById("edupeakLivePlayerWrapper");
+        if (!liveWrapper || liveWrapper.style.display === "none") return;
+
+        const isLiveSession = !activeSessionData || activeSessionData.status === "live";
+        if (!isLiveSession) return;
+
+        const user = (window.AUTH_SYSTEM && window.AUTH_SYSTEM.getCurrentUser) ? window.AUTH_SYSTEM.getCurrentUser() : null;
+        const isStaff = user && (user.role === "teacher" || user.role === "admin");
+        if (isStaff) return; // Allow staff full control
+
+        const activeEl = document.activeElement;
+        const tag = (activeEl && activeEl.tagName) ? activeEl.tagName.toLowerCase() : "";
+        if (tag === "input" || tag === "textarea" || tag === "select") return;
+
+        // Block seek and pause keys: Space, Left/Right arrows, J, K, L, Home, End, 0-9
+        const seekKeys = [" ", "Spacebar", "ArrowLeft", "ArrowRight", "j", "J", "k", "K", "l", "L", "Home", "End"];
+        if (seekKeys.includes(e.key) || (e.key >= "0" && e.key <= "9")) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.key === " " || e.key === "k" || e.key === "K") {
+            if (liveYtPlayer && typeof liveYtPlayer.playVideo === "function") {
+              try {
+                liveYtPlayer.playVideo();
+                syncToLiveEdge();
+              } catch(err) {}
+            }
+          }
+        }
+      }, true);
 
       const handleNativeFullscreenChange = () => {
         const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;

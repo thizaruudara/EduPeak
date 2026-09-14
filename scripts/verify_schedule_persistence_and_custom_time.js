@@ -111,6 +111,14 @@ async function runTest() {
     const customEndTime = "18:15";
 
     console.log(`3. Filling custom schedule: "${testTopic}" with time ${customStartTime} - ${customEndTime}...`);
+    await page.evaluate(() => {
+      const courseSel = document.getElementById('formCourseSelect');
+      if (courseSel && courseSel.options.length > 1) {
+        courseSel.selectedIndex = 1;
+        courseSel.dispatchEvent(new Event('change'));
+      }
+    });
+    await page.fill('#formStreamUrl', 'https://www.youtube.com/live/jfKfPfyJRdk');
     await page.fill('#formTopic', testTopic);
     await page.fill('#formStartTime', customStartTime);
     await page.fill('#formEndTime', customEndTime);
