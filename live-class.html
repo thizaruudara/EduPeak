@@ -2243,7 +2243,8 @@
           const isActive = s.id === this.activeSessionId;
           const isLive = s.status === "live";
           const isEnded = s.status === "ended";
-          const isEnrolled = isStaff || this.isUserEnrolledInCourse(s.courseId);
+          const sessCourseId = s.courseId || s.course_id || s.courseid || "";
+          const isEnrolled = isStaff || this.isUserEnrolledInCourse(sessCourseId);
 
           let pillHtml = `<span class="stream-status-pill scheduled"><i class="fa-solid fa-clock"></i> Scheduled</span>`;
           if (isLive) {
@@ -2253,12 +2254,12 @@
           }
 
           let lockBadge = "";
-          if (!isEnrolled && s.courseId) {
+          if (!isEnrolled && sessCourseId) {
             lockBadge = `<span class="stream-status-pill locked" style="background: rgba(239,68,68,0.16); border: 1px solid rgba(239,68,68,0.35); color: #fca5a5; font-size: 0.68rem; padding: 0.2rem 0.55rem; font-weight: 700;"><i class="fa-solid fa-lock" style="font-size: 0.6rem;"></i> Enrolled Only</span>`;
           }
 
           return `
-            <div class="stream-card ${isActive ? 'is-active-stream' : ''} ${!isEnrolled && s.courseId ? 'is-locked-stream' : ''}" onclick="LIVE_APP.loadSession('${s.id}')">
+            <div class="stream-card ${isActive ? 'is-active-stream' : ''} ${!isEnrolled && sessCourseId ? 'is-locked-stream' : ''}" onclick="LIVE_APP.loadSession('${s.id}')">
               <div class="stream-card-top">
                 <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
                   <span class="stream-batch-badge">${s.examYear || '2027 A/L'}</span>
@@ -2348,9 +2349,10 @@
 
         // Access Control Verification: Only enrolled students or staff can watch this course's live broadcast
         const isStaff = this.currentUser && (this.currentUser.role === "admin" || this.currentUser.role === "teacher");
-        const isEnrolled = isStaff || this.isUserEnrolledInCourse(session.courseId);
+        const sessCourseId = session.courseId || session.course_id || session.courseid || "";
+        const isEnrolled = isStaff || this.isUserEnrolledInCourse(sessCourseId);
 
-        if (!isEnrolled && session.courseId) {
+        if (!isEnrolled && sessCourseId) {
           // Student is NOT enrolled in the required course
           if (customPlayer) customPlayer.style.display = "none";
           if (iframe) {
@@ -2370,7 +2372,7 @@
             // Look up course fee
             let courseFee = "Monthly Fee Applicable";
             if (this.allCoursesCache && this.allCoursesCache.length) {
-              const c = this.allCoursesCache.find(item => item.id === session.courseId);
+              const c = this.allCoursesCache.find(item => item.id === sessCourseId);
               if (c && (c.fee || c.price)) courseFee = c.fee || `LKR ${c.price} / Month`;
             }
             const feeEl = document.getElementById("lockedCourseFeeText");

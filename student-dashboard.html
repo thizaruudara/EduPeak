@@ -1130,8 +1130,74 @@
       const linkEl   = document.getElementById("studentLiveAlertLink");
 
       const deleted = (() => { try { return JSON.parse(localStorage.getItem("edupeak_deleted_schedules_db") || "[]"); } catch(e) { return []; } })();
+
+      // Helper: Check if student has active verified enrollment in the session's course
+      const user = currentUser || (window.AUTH_SYSTEM && typeof window.AUTH_SYSTEM.getCurrentUser === "function" ? window.AUTH_SYSTEM.getCurrentUser() : null);
+      const isTeacherOrAdmin = user && (user.role === "teacher" || user.role === "admin");
+
+      const isStudentEnrolledInSessionCourse = (session) => {
+        if (isTeacherOrAdmin) return true; // Instructors & administrators can monitor all course broadcasts
+        if (!session) return false;
+
+        // Extract bound course ID
+        let courseId = session.courseId || session.course_id || session.courseid || "";
+        if (!courseId && typeof session.coursetitle === "string" && session.coursetitle.trim().startsWith("{")) {
+          try {
+            const parsed = JSON.parse(session.coursetitle.trim());
+            courseId = parsed.courseId || parsed.course_id || parsed.courseid || "";
+          } catch(e) {}
+        }
+
+        // Under course-gated live system, broadcasts are tied to specific courses
+        if (!courseId) {
+          // Unbound / legacy sessions without course binding are hidden from non-enrolled students
+          return session.isFree === true || session.is_free === true;
+        }
+
+        // 1. Check window.isCourseEnrolled helper
+        if (typeof isCourseEnrolled === "function" && isCourseEnrolled(courseId)) return true;
+        if (window.isCourseEnrolled && window.isCourseEnrolled(courseId)) return true;
+
+        const studentId = user ? (user.id || "EP-2027-001") : "EP-2027-001";
+
+        // 2. Check Auth System enrolled courses
+        const userCourses = (window.AUTH_SYSTEM && typeof window.AUTH_SYSTEM.getStudentEnrolledCourses === "function")
+          ? window.AUTH_SYSTEM.getStudentEnrolledCourses(studentId)
+          : (user ? (user.enrolledCourses || []) : []);
+        if (Array.isArray(userCourses)) {
+          if (userCourses.some(eid => eid === courseId || String(eid).replace(/-theory|-revision|-paper/g, '') === String(courseId).replace(/-theory|-revision|-paper/g, ''))) {
+            return true;
+          }
+        }
+
+        // 3. Check approved orders in local storage
+        try {
+          const orders = JSON.parse(localStorage.getItem("edupeak_pending_orders") || "[]");
+          const hasApproved = Array.isArray(orders) && orders.some(ord => {
+            const isApproved = ord.status && ord.status.toLowerCase().includes("approved");
+            const matchUser = ord.studentId === studentId ||
+              (ord.studentEmail && user && user.email && ord.studentEmail.toLowerCase() === user.email.toLowerCase()) ||
+              (ord.studentPhone && user && user.phone && ord.studentPhone.replace(/\D/g, '') === user.phone.replace(/\D/g, ''));
+            return isApproved && matchUser && ord.courseId === courseId;
+          });
+          if (hasApproved) return true;
+        } catch(e) {}
+
+        // 4. Check dedicated per-student course access cache
+        try {
+          const stored = JSON.parse(localStorage.getItem(`edupeak_student_courses_${studentId}`) || "[]");
+          if (Array.isArray(stored) && stored.includes(courseId)) return true;
+        } catch(e) {}
+
+        return false;
+      };
+
       const validSessions = (Array.isArray(sessions) ? sessions : [])
-        .filter(s => s && s.id && !deleted.includes(s.id) && s.topic && s.topic !== "No Live Broadcast Scheduled");
+        .filter(s => {
+          if (!s || !s.id || deleted.includes(s.id) || !s.topic || s.topic === "No Live Broadcast Scheduled") return false;
+          if (s.id.startsWith("order-") || s.id.startsWith("chat-sync-") || s.status === "chat_sync" || s.topic === "chat_sync") return false;
+          return isStudentEnrolledInSessionCourse(s);
+        });
 
       const liveSession      = validSessions.find(s => s.status === "live") || null;
       const scheduledSession = validSessions.find(s => s.status === "scheduled") || null;
@@ -1979,6 +2045,7 @@
       if (typeof renderPendingOrders === "function") renderPendingOrders();
       if (typeof renderEnrolledCourses === "function") renderEnrolledCourses();
       if (typeof renderStudentCourses === "function") renderStudentCourses();
+      if (typeof checkLiveBanner === "function") checkLiveBanner(true);
     });
   </script>
 
