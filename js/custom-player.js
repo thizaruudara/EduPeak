@@ -788,18 +788,27 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     return Math.max(0, elapsed);
   }
 
-  function syncToLiveEdge() {
+  let lastLiveSyncTime = 0;
+
+  function syncToLiveEdge(force = false) {
     if (!liveYtPlayer) return;
+    const now = Date.now();
+    if (!force && (now - lastLiveSyncTime < 15000)) return; // 15s cooldown to prevent any oscillation
     try {
       const isLive = typeof liveYtPlayer.getVideoData === "function" && liveYtPlayer.getVideoData()?.isLive;
+      const curTime = typeof liveYtPlayer.getCurrentTime === "function" ? liveYtPlayer.getCurrentTime() : 0;
+      const dur = typeof liveYtPlayer.getDuration === "function" ? liveYtPlayer.getDuration() : 0;
+
       if (isLive) {
-        const dur = typeof liveYtPlayer.getDuration === "function" ? liveYtPlayer.getDuration() : 0;
-        if (dur > 0) {
+        // Only seek if genuinely lagging behind live buffer (> 25s)
+        if (dur > 0 && (force || (dur - curTime > 25))) {
+          lastLiveSyncTime = now;
           liveYtPlayer.seekTo(dur, true);
         }
       } else {
         const targetElapsed = getElapsedSeconds();
-        if (targetElapsed > 0) {
+        if (targetElapsed > 0 && (force || Math.abs(curTime - targetElapsed) > 15)) {
+          lastLiveSyncTime = now;
           liveYtPlayer.seekTo(targetElapsed, true);
         }
       }
@@ -895,17 +904,20 @@ const EDUPEAK_LIVE_PLAYER = (function() {
           return;
         }
 
-        // Keep 100% synchronized with live timing (0 delay)
+        // Keep synchronized with live timing smoothly (NO micro-seeking while stream is healthy)
         if (isLiveSession) {
+          const now = Date.now();
           if (isLiveType) {
-            // Real YouTube live stream: snap to live edge if lag exceeds 3.5s
-            if (vidDuration > 0 && curTime > 0 && (vidDuration - curTime > 3.5)) {
+            // Real YouTube live stream: only sync if student lagged behind significantly (> 25s) with 20s cooldown
+            if (vidDuration > 0 && curTime > 0 && (vidDuration - curTime > 25) && (now - lastLiveSyncTime > 20000)) {
+              lastLiveSyncTime = now;
               try { liveYtPlayer.seekTo(vidDuration, true); } catch(e) {}
             }
           } else {
-            // Live broadcast with scheduled elapsed time: lock to exact elapsed seconds
+            // Live broadcast with scheduled elapsed time: lock to exact elapsed seconds only if drift > 12s
             const targetElapsed = getElapsedSeconds();
-            if (targetElapsed > 2 && Math.abs(curTime - targetElapsed) > 4) {
+            if (targetElapsed > 2 && Math.abs(curTime - targetElapsed) > 12 && (now - lastLiveSyncTime > 20000)) {
+              lastLiveSyncTime = now;
               try { liveYtPlayer.seekTo(targetElapsed, true); } catch(e) {}
             }
           }
@@ -918,7 +930,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
           }
         }
       } catch(e) {}
-    }, 1500);
+    }, 3000);
   }
 
   function stopDurationWatchdog() {
@@ -1005,24 +1017,29 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       ? Math.floor(startOffset)
       : Math.floor(getPlaybackResumeSeconds(videoId));
 
-    const initialStart = resumeSec > 0 ? resumeSec : 0;
+    const isLiveBroadcast = !activeSessionData || activeSessionData.status === "live";
+    const initialStart = (!isLiveBroadcast && resumeSec > 0) ? resumeSec : 0;
+
+    const pVars = {
+      autoplay: 1,
+      mute: 1,        // muted autoplay is allowed by all browsers
+      controls: 0,
+      enablejsapi: 1,
+      fs: 0,
+      rel: 0,
+      playsinline: 1,
+      origin: window.location.origin,
+      widget_referrer: window.location.href
+    };
+    if (initialStart > 0) {
+      pVars.start = initialStart;
+    }
 
     try {
       liveYtPlayer = new window.YT.Player('edupeakLiveYTPlayerMount', {
         host: 'https://www.youtube.com',
         videoId: videoId,
-        playerVars: {
-          autoplay: 1,
-          mute: 1,        // muted autoplay is allowed by all browsers
-          controls: 0,
-          enablejsapi: 1,
-          fs: 0,
-          rel: 0,
-          playsinline: 1,
-          start: initialStart > 0 ? initialStart : 0,
-          origin: window.location.origin,
-          widget_referrer: window.location.href
-        },
+        playerVars: pVars,
         events: {
           'onReady': () => {
             try {
@@ -1047,20 +1064,8 @@ const EDUPEAK_LIVE_PLAYER = (function() {
               triggerStartupMask();
               scheduleLiveControlsFade();
 
-              // Synchronize directly with 100% live broadcast timing (0 delay)
-              const isLiveType = typeof liveYtPlayer.getVideoData === "function" && liveYtPlayer.getVideoData()?.isLive;
-              if (isLiveType) {
-                const dur = typeof liveYtPlayer.getDuration === "function" ? liveYtPlayer.getDuration() : 0;
-                if (dur > 0) {
-                  try { liveYtPlayer.seekTo(dur, true); } catch(e) {}
-                }
-              } else {
-                const targetPos = Math.floor(getPlaybackResumeSeconds(videoId));
-                const curTime = typeof liveYtPlayer.getCurrentTime === "function" ? liveYtPlayer.getCurrentTime() : 0;
-                if (targetPos > 2 && Math.abs(curTime - targetPos) > 3) {
-                  try { liveYtPlayer.seekTo(targetPos, true); } catch(e) {}
-                }
-              }
+              // Smooth playback: do NOT seek while stream is already playing
+              // YouTube Live naturally maintains the live edge
 
               // Hide any bot fallback prompt if playing
               const fallbackEl = document.getElementById("livePlayerBotCheckFallback");
@@ -1081,11 +1086,10 @@ const EDUPEAK_LIVE_PLAYER = (function() {
               const isLiveSession = !activeSessionData || activeSessionData.status === "live";
 
               if (!isStaff && isLiveSession) {
-                // Instantly resume live stream and keep locked to broadcast edge
+                // Instantly resume live stream smoothly (no seekTo to avoid stutter/buffer loop)
                 isLivePlaying = true;
                 try {
                   liveYtPlayer.playVideo();
-                  syncToLiveEdge();
                 } catch(e) {}
                 return;
               }
@@ -1629,7 +1633,6 @@ const EDUPEAK_LIVE_PLAYER = (function() {
             if (liveYtPlayer && typeof liveYtPlayer.playVideo === "function") {
               try {
                 liveYtPlayer.playVideo();
-                syncToLiveEdge();
               } catch(err) {}
             }
           }
