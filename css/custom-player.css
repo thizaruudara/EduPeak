@@ -484,6 +484,43 @@ body.edupeak-fullscreen-locked .site-header {
   background: transparent;
 }
 
+/* Permanent Sleek Top Mask: Completely blocks YouTube title, avatar & channel info across all devices */
+.edupeak-player-permanent-top-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: linear-gradient(180deg, #000000 0%, #000000 80%, rgba(0, 0, 0, 0.92) 90%, transparent 100%) !important;
+  pointer-events: none;
+  z-index: 12;
+}
+
+@media (max-width: 768px) {
+  .edupeak-player-permanent-top-mask {
+    height: 52px;
+    background: linear-gradient(180deg, #000000 0%, #000000 82%, rgba(0, 0, 0, 0.94) 92%, transparent 100%) !important;
+  }
+
+  .edupeak-player-top-bar {
+    height: 48px !important;
+  }
+
+  .edupeak-player-top-bar .top-bar-inner {
+    padding: 0.5rem 0.75rem 0 !important;
+  }
+
+  /* Hide lesson title on mobile so it never collides or peeks out behind/underneath the pill */
+  .edupeak-player-top-bar .top-bar-lesson {
+    display: none !important;
+  }
+
+  .edupeak-player-top-bar .res-badge,
+  .edupeak-player-top-bar .edupeak-player-status-tag {
+    display: none !important;
+  }
+}
+
 /* Top Protection Header — fully covers YouTube channel name, avatar, title, watch-later, share */
 .edupeak-player-top-bar {
   position: absolute;
@@ -492,12 +529,7 @@ body.edupeak-fullscreen-locked .site-header {
   right: 0;
   height: 80px;
   padding: 0;
-  /* Solid black at very top (where YouTube title lives), fades to transparent below */
-  background: linear-gradient(180deg,
-    #000000 0%,
-    rgba(5, 8, 18, 0.97) 35%,
-    rgba(5, 8, 18, 0.80) 60%,
-    transparent 100%);
+  background: transparent;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -561,10 +593,10 @@ body.edupeak-fullscreen-locked .site-header {
 }
 
 .drm-badge {
-  background: rgba(34, 122, 255, 0.25);
-  border: 1px solid rgba(34, 122, 255, 0.45);
-  backdrop-filter: blur(8px);
-  color: #93c5fd;
+  background: #14070a !important;
+  border: 1px solid rgba(239, 68, 68, 0.7) !important;
+  color: #fca5a5 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.85);
   font-size: 0.725rem;
   font-weight: 700;
   padding: 0.25rem 0.65rem;

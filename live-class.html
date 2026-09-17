@@ -22,6 +22,11 @@
   <link rel="stylesheet" href="css/lms.css">
   <link rel="stylesheet" href="css/custom-player.css">
 
+  <!-- YouTube IFrame Player API (Preloaded for instant video loading on refresh) -->
+  <link rel="preconnect" href="https://www.youtube.com">
+  <link rel="preconnect" href="https://www.google.com">
+  <script src="https://www.youtube.com/iframe_api"></script>
+
   <!-- Agora RTC Web SDK (for clean real-time WebRTC live broadcasts with 0 external watermarks) -->
   <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js"></script>
 
@@ -1224,6 +1229,9 @@
                 <div id="agoraRemoteVideoBox" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2;"></div>
               </div>
 
+              <!-- Permanent Sleek Top Mask (Completely blocks YouTube title, avatar & channel info across all devices) -->
+              <div class="edupeak-player-permanent-top-mask" id="livePlayerPermanentTopMask"></div>
+
               <!-- Transparent Click Shield (Intercepts clicks: clicking joins/unmutes stream, DOES NOT pause live broadcast) -->
               <div class="edupeak-player-click-shield" id="livePlayerClickShield" onclick="EDUPEAK_LIVE_PLAYER.onShieldClick()"></div>
 
@@ -1257,7 +1265,7 @@
               <div class="edupeak-player-top-bar" id="livePlayerTopBar">
                 <div class="top-bar-inner">
                   <div class="edupeak-player-brand">
-                    <span class="drm-badge" style="background: rgba(239,68,68,0.22); border-color: rgba(239,68,68,0.45); color: #fca5a5;"><i class="fa-solid fa-tower-broadcast"></i> EduPeak Live</span>
+                    <span class="drm-badge" style="background: #14070a; border-color: rgba(239,68,68,0.7); color: #fca5a5; box-shadow: 0 2px 8px rgba(0,0,0,0.8);"><i class="fa-solid fa-tower-broadcast"></i> EduPeak Live</span>
                     <span class="res-badge" id="liveTopResBadge"><i class="fa-solid fa-bolt"></i> 1080p HD</span>
                   </div>
                   <div class="edupeak-player-status-tag" style="background: rgba(239,68,68,0.22); border-color: rgba(239,68,68,0.4); color: #fca5a5;">
@@ -2331,61 +2339,110 @@
       },
 
       async loadInitialStreams(preferredId) {
-        let schedules = [];
-        if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getLiveSessions === "function") {
-          schedules = await window.SUPABASE_HELPER.getLiveSessions();
-        } else {
-          try {
-            schedules = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
-          } catch(e) {}
-        }
-
-        if (!Array.isArray(schedules)) {
-          schedules = [];
-        }
-
-        // Merge local schedules from localStorage if any are missing from remote (e.g. offline/test/recent schedules)
+        // Step 1: Cache-First Instant Playback (0ms latency on reload)
+        let localSchedules = [];
         try {
-          const localS = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
-          if (Array.isArray(localS)) {
-            localS.forEach(ls => {
-              if (ls && ls.id && !schedules.some(s => s.id === ls.id)) {
-                schedules.push(ls);
-              }
-            });
-          }
+          localSchedules = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
         } catch(e) {}
+        if (!Array.isArray(localSchedules)) localSchedules = [];
 
-        // Filter out ended streams strictly — Live Hub only displays active live and scheduled streams
-        const activeOrScheduled = schedules.filter(s => s && s.status !== "ended");
-        this.renderStreamsList(activeOrScheduled);
-
-        if (activeOrScheduled.length === 0) {
-          this.loadEmptyState();
-          return;
-        }
-
-        // Pick preferred session, or last visited session, or first live stream, or first scheduled stream
-        let target = null;
+        const activeOrScheduledLocal = localSchedules.filter(s => s && s.status !== "ended");
+        let initialTarget = null;
         if (preferredId) {
-          target = activeOrScheduled.find(s => s.id === preferredId);
+          initialTarget = activeOrScheduledLocal.find(s => s.id === preferredId);
         }
-        if (!target) {
+        if (!initialTarget) {
           try {
             const lastSavedId = localStorage.getItem("edupeak_last_active_stream");
             if (lastSavedId) {
-              target = activeOrScheduled.find(s => s.id === lastSavedId);
+              initialTarget = activeOrScheduledLocal.find(s => s.id === lastSavedId);
             }
           } catch(e) {}
         }
-        if (!target) {
-          target = activeOrScheduled.find(s => s.status === "live") || activeOrScheduled[0];
+        if (!initialTarget) {
+          initialTarget = activeOrScheduledLocal.find(s => s.status === "live") || activeOrScheduledLocal[0];
         }
 
-        if (target) {
-          await this.loadSession(target.id, false);
+        if (initialTarget) {
+          this.renderStreamsList(activeOrScheduledLocal);
+          this.loadSession(initialTarget.id, false, activeOrScheduledLocal);
+        }
+
+        // Step 2: Asynchronous remote sync (Non-blocking background refresh)
+        const syncRemote = async () => {
+          let schedules = [];
+          if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getLiveSessions === "function") {
+            try {
+              schedules = await window.SUPABASE_HELPER.getLiveSessions();
+            } catch(e) {
+              schedules = localSchedules;
+            }
+          } else {
+            schedules = localSchedules;
+          }
+
+          if (!Array.isArray(schedules)) schedules = [];
+
+          // Merge any local schedules missing from remote
+          try {
+            const currentLocal = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
+            if (Array.isArray(currentLocal)) {
+              currentLocal.forEach(ls => {
+                if (ls && ls.id && !schedules.some(s => s.id === ls.id)) {
+                  schedules.push(ls);
+                }
+              });
+            }
+          } catch(e) {}
+
+          const activeOrScheduled = schedules.filter(s => s && s.status !== "ended");
+          this.renderStreamsList(activeOrScheduled);
+
+          if (activeOrScheduled.length === 0) {
+            if (!this.activeSessionId) {
+              this.loadEmptyState();
+            }
+            return;
+          }
+
+          if (!this.activeSessionId) {
+            let target = null;
+            if (preferredId) {
+              target = activeOrScheduled.find(s => s.id === preferredId);
+            }
+            if (!target) {
+              try {
+                const lastSavedId = localStorage.getItem("edupeak_last_active_stream");
+                if (lastSavedId) {
+                  target = activeOrScheduled.find(s => s.id === lastSavedId);
+                }
+              } catch(e) {}
+            }
+            if (!target) {
+              target = activeOrScheduled.find(s => s.status === "live") || activeOrScheduled[0];
+            }
+
+            if (target) {
+              await this.loadSession(target.id, false, activeOrScheduled);
+            } else {
+              this.loadEmptyState();
+            }
+          } else {
+            const remoteCurrent = activeOrScheduled.find(s => s.id === this.activeSessionId);
+            if (remoteCurrent && this.activeSession) {
+              this.activeSession = { ...this.activeSession, ...remoteCurrent };
+              this.updateBroadcastInfoHeaders(this.activeSession);
+              if (remoteCurrent.status === "ended" && this.activeSession.status !== "ended") {
+                this.loadSession(remoteCurrent.id, false, activeOrScheduled);
+              }
+            }
+          }
+        };
+
+        if (initialTarget) {
+          syncRemote(); // Background non-blocking execution
         } else {
-          this.loadEmptyState();
+          await syncRemote(); // Fallback for brand-new device without local cache
         }
       },
 
@@ -2584,7 +2641,7 @@
         }).join("");
       },
 
-      async loadSession(sessionId, smoothScroll = true) {
+      async loadSession(sessionId, smoothScroll = true, passedSchedules = null) {
         this.activeSessionId = sessionId;
 
         // Persist session ID to localStorage and update URL query param
@@ -2598,29 +2655,33 @@
         } catch (e) {}
 
         let session = null;
-        try {
-          const preLocal = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
-          if (Array.isArray(preLocal)) {
-            session = preLocal.find(s => s && s.id === sessionId);
-          }
-        } catch(e) {}
+        let schedules = Array.isArray(passedSchedules) ? [...passedSchedules] : [];
 
-        let schedules = [];
-        if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getLiveSessions === "function") {
-          schedules = await window.SUPABASE_HELPER.getLiveSessions();
-        } else {
-          try { schedules = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]"); } catch(e) {}
-        }
-        if (!Array.isArray(schedules)) schedules = [];
-
-        if (!session) {
+        // Fast path 1: Look in passed schedules
+        if (schedules.length > 0) {
           session = schedules.find(s => s && s.id === sessionId);
-        } else {
-          const remoteMatch = schedules.find(s => s && s.id === sessionId);
-          if (remoteMatch) {
-            session = { ...session, ...remoteMatch };
-          } else {
-            schedules.push(session);
+        }
+
+        // Fast path 2: Look in local storage cache (0ms delay)
+        if (!session) {
+          try {
+            const preLocal = JSON.parse(localStorage.getItem("edupeak_schedules_db") || "[]");
+            if (Array.isArray(preLocal)) {
+              session = preLocal.find(s => s && s.id === sessionId);
+              if (session && schedules.length === 0) schedules = preLocal;
+            }
+          } catch(e) {}
+        }
+
+        // Slow fallback: Query Supabase only if session is not yet cached locally
+        if (!session) {
+          if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getLiveSessions === "function") {
+            try {
+              schedules = await window.SUPABASE_HELPER.getLiveSessions();
+            } catch(e) { schedules = []; }
+          }
+          if (Array.isArray(schedules)) {
+            session = schedules.find(s => s && s.id === sessionId);
           }
         }
 

@@ -1064,8 +1064,8 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       return;
     }
 
-    if (!window.YT) {
-      if (!window._edupeakYtScriptLoading) {
+    if (!window.YT || !window.YT.Player) {
+      if (!window._edupeakYtScriptLoading && !document.querySelector('script[src*="youtube.com/iframe_api"]')) {
         window._edupeakYtScriptLoading = true;
         const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
@@ -1076,12 +1076,20 @@ const EDUPEAK_LIVE_PLAYER = (function() {
           document.head.appendChild(tag);
         }
       }
-      setTimeout(() => createLiveYTPlayer(videoId, startOffset), 350);
-      return;
-    }
 
-    if (!window.YT.Player) {
-      setTimeout(() => createLiveYTPlayer(videoId, startOffset), 350);
+      const prevReady = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = function() {
+        if (typeof prevReady === "function") {
+          try { prevReady(); } catch(e) {}
+        }
+        createLiveYTPlayer(videoId, startOffset);
+      };
+
+      setTimeout(() => {
+        if (window.YT && window.YT.Player) {
+          createLiveYTPlayer(videoId, startOffset);
+        }
+      }, 50);
       return;
     }
 
