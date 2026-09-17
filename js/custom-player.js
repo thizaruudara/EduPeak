@@ -82,6 +82,7 @@ const EDUPEAK_PLAYER = (function() {
     setupPlayerEventListeners();
     startWatermarkMovement();
     updateWatermarkUser();
+    triggerStartupBanners(10000);
   }
 
   function createYTPlayer(videoId) {
@@ -174,6 +175,7 @@ const EDUPEAK_PLAYER = (function() {
       setVolume(currentVolume);
       setPlaybackRate(currentPlaybackRate, false); // Do not notify toast on page reload/init
       enforceNoCaptions(ytPlayer);
+      triggerStartupBanners(10000);
     } catch (e) {
       console.warn("Player ready init:", e);
     }
@@ -192,6 +194,7 @@ const EDUPEAK_PLAYER = (function() {
 
     if (event.data === PLAYING) {
       isPlaying = true;
+      requestWakeLock();
       if (bigPlayBtn) bigPlayBtn.classList.add("hidden");
       if (ctrlPlayIcon) ctrlPlayIcon.className = "fa-solid fa-pause";
       if (bigPlayIcon) bigPlayIcon.className = "fa-solid fa-pause";
@@ -202,6 +205,7 @@ const EDUPEAK_PLAYER = (function() {
       scheduleControlsFade();
     } else if (event.data === PAUSED || event.data === ENDED) {
       isPlaying = false;
+      releaseWakeLock();
       if (bigPlayBtn) bigPlayBtn.classList.remove("hidden");
       if (ctrlPlayIcon) ctrlPlayIcon.className = "fa-solid fa-play";
       if (bigPlayIcon) bigPlayIcon.className = "fa-solid fa-play";
@@ -229,10 +233,38 @@ const EDUPEAK_PLAYER = (function() {
     console.warn("EduPeak DRM Player status notice (Code: " + event.data + ")");
   }
 
+  // Update Lesson Metadata on Player Header and Banners
+  function updateLessonMeta(title, teacher, batch) {
+    if (title) {
+      const topTitle = document.getElementById("playerTopLessonTitle");
+      if (topTitle) topTitle.textContent = title;
+      const bTitle = document.getElementById("recordedBannerTopicTitle");
+      if (bTitle) bTitle.textContent = title;
+      const mTopic = document.getElementById("recordedMarqueeTopic");
+      if (mTopic) mTopic.textContent = title;
+    }
+    if (teacher) {
+      const topTeach = document.getElementById("playerTopTeacherName");
+      if (topTeach) topTeach.textContent = teacher;
+      const bTeach = document.getElementById("recordedBannerTeacherName");
+      if (bTeach) bTeach.textContent = teacher;
+      const mTeach = document.getElementById("recordedMarqueeTeacher");
+      if (mTeach) mTeach.textContent = teacher;
+    }
+    if (batch) {
+      const bBatch = document.getElementById("recordedBannerBatchBadge");
+      if (bBatch) bBatch.textContent = batch;
+    }
+  }
+
   // Load a new video into the custom player
-  function loadVideo(videoUrl) {
+  function loadVideo(videoUrl, title = null, teacher = null, batch = null) {
     const newId = extractYouTubeId(videoUrl);
     currentVideoId = newId;
+
+    if (title || teacher || batch) {
+      updateLessonMeta(title, teacher, batch);
+    }
 
     if (ytPlayer && ytPlayer.loadVideoById) {
       try {
@@ -251,6 +283,7 @@ const EDUPEAK_PLAYER = (function() {
       createYTPlayer(newId);
     }
     updateWatermarkUser();
+    triggerStartupBanners(10000);
   }
 
   // Play / Pause Toggle
@@ -278,6 +311,7 @@ const EDUPEAK_PLAYER = (function() {
       try { ytPlayer.pauseVideo(); } catch (e) {}
     }
     isPlaying = false;
+    releaseWakeLock();
     const bigPlayBtn = document.getElementById("playerBigPlayBtn");
     if (bigPlayBtn) bigPlayBtn.classList.remove("hidden");
     const ctrlPlayIcon = document.getElementById("ctrlPlayIcon");
@@ -287,6 +321,7 @@ const EDUPEAK_PLAYER = (function() {
     const viewport = document.getElementById("edupeakPlayerViewport");
     if (viewport) viewport.classList.remove("is-playing");
     stopProgressTracking();
+    showControls();
   }
 
   // Seek to specific timestamp in seconds
@@ -501,13 +536,19 @@ const EDUPEAK_PLAYER = (function() {
     if (durEl) durEl.textContent = formatTime(dur);
   }
 
-  // Auto-hide Controls on Inactivity
+  // Auto-hide Controls on Inactivity (matches Live Player timing and transitions)
   function showControls() {
     const controls = document.getElementById("playerControlsOverlay");
     const topBar = document.getElementById("playerTopBar");
     const wrapper = document.getElementById("edupeakPlayerWrapper");
-    if (controls) controls.classList.remove("fade-out");
-    if (topBar) topBar.classList.remove("fade-out");
+    if (controls) {
+      controls.classList.remove("fade-out");
+      controls.style.opacity = "";
+    }
+    if (topBar) {
+      topBar.classList.remove("fade-out");
+      topBar.style.opacity = "";
+    }
     if (wrapper) wrapper.classList.remove("hide-cursor");
   }
 
@@ -516,8 +557,14 @@ const EDUPEAK_PLAYER = (function() {
     const controls = document.getElementById("playerControlsOverlay");
     const topBar = document.getElementById("playerTopBar");
     const wrapper = document.getElementById("edupeakPlayerWrapper");
-    if (controls) controls.classList.add("fade-out");
-    if (topBar) topBar.classList.add("fade-out");
+    if (controls) {
+      controls.classList.add("fade-out");
+      controls.style.opacity = "";
+    }
+    if (topBar) {
+      topBar.classList.add("fade-out");
+      topBar.style.opacity = "";
+    }
     if (wrapper) wrapper.classList.add("hide-cursor");
   }
 
@@ -552,7 +599,7 @@ const EDUPEAK_PLAYER = (function() {
     currentQuality = quality;
 
     const qualityLabelMap = {
-      'auto': 'Auto',
+      'auto': 'Auto (1080p Max)',
       'hd1080': '1080p HD',
       'hd720': '720p HD',
       'large': '480p',
@@ -591,7 +638,7 @@ const EDUPEAK_PLAYER = (function() {
     if (labelEl) labelEl.textContent = displayLabel;
 
     // Update top status bar resolution badge (.res-badge)
-    const topResBadge = document.querySelector("#playerTopBar .res-badge");
+    const topResBadge = document.getElementById("playerTopResBadge") || document.querySelector("#playerTopBar .res-badge");
     if (topResBadge) {
       const badgeText = quality === 'auto' ? '1080p Ultra HD' : (displayLabel.includes('HD') ? displayLabel : `${displayLabel} Stream`);
       topResBadge.innerHTML = `<i class="fa-solid fa-bolt"></i> ${badgeText}`;
@@ -752,6 +799,93 @@ const EDUPEAK_PLAYER = (function() {
     });
   }
 
+  // 10-Second Startup Top and Bottom Watermark Banners
+  let startupBannerTimer = null;
+  let startupBannerHideTimer = null;
+
+  function triggerStartupBanners(durationMs = 10000) {
+    const topBanner = document.getElementById("recordedStartupTopBanner");
+    const bottomBanner = document.getElementById("recordedStartupBottomBanner");
+
+    clearTimeout(startupBannerTimer);
+    clearTimeout(startupBannerHideTimer);
+
+    updateWatermarkUser();
+
+    // On mobile devices (<= 768px), keep banners hidden for clean view
+    if (window.innerWidth <= 768) {
+      if (topBanner) {
+        topBanner.style.display = "none";
+        topBanner.style.visibility = "hidden";
+      }
+      if (bottomBanner) {
+        bottomBanner.style.display = "none";
+        bottomBanner.style.visibility = "hidden";
+      }
+      return;
+    }
+
+    if (topBanner) {
+      topBanner.classList.remove("banner-fade-out", "mask-faded", "fade-out");
+      topBanner.style.display = "flex";
+      topBanner.style.opacity = "1";
+      topBanner.style.visibility = "visible";
+    }
+    if (bottomBanner) {
+      bottomBanner.classList.remove("banner-fade-out", "mask-faded", "fade-out");
+      bottomBanner.style.display = "flex";
+      bottomBanner.style.opacity = "1";
+      bottomBanner.style.visibility = "visible";
+    }
+
+    startupBannerTimer = setTimeout(() => {
+      if (topBanner) {
+        topBanner.classList.add("banner-fade-out");
+      }
+      if (bottomBanner) {
+        bottomBanner.classList.add("banner-fade-out");
+      }
+
+      startupBannerHideTimer = setTimeout(() => {
+        if (topBanner && topBanner.classList.contains("banner-fade-out")) {
+          topBanner.style.visibility = "hidden";
+        }
+        if (bottomBanner && bottomBanner.classList.contains("banner-fade-out")) {
+          bottomBanner.style.visibility = "hidden";
+        }
+      }, 1000);
+    }, durationMs);
+  }
+
+  // Screen Wake Lock Integration
+  let playerWakeLock = null;
+  async function requestWakeLock() {
+    if ("wakeLock" in navigator && typeof navigator.wakeLock.request === "function") {
+      try {
+        if (!playerWakeLock || playerWakeLock.released) {
+          playerWakeLock = await navigator.wakeLock.request("screen");
+          playerWakeLock.addEventListener("release", () => {
+            playerWakeLock = null;
+          });
+        }
+      } catch (err) {}
+    }
+  }
+
+  function releaseWakeLock() {
+    if (playerWakeLock !== null) {
+      try {
+        playerWakeLock.release().then(() => {
+          playerWakeLock = null;
+        }).catch(() => {
+          playerWakeLock = null;
+        });
+      } catch(e) {
+        playerWakeLock = null;
+      }
+    }
+  }
+
   return {
     init: initPlayer,
     loadVideo: loadVideo,
@@ -769,7 +903,11 @@ const EDUPEAK_PLAYER = (function() {
     setWatermarkEnabled: setWatermarkEnabled,
     toggleFullscreen: toggleFullscreen,
     parseTimeToSeconds: parseTimeToSeconds,
-    updateWatermarkUser: updateWatermarkUser
+    updateWatermarkUser: updateWatermarkUser,
+    triggerStartupBanners: triggerStartupBanners,
+    updateLessonMeta: updateLessonMeta,
+    requestWakeLock: requestWakeLock,
+    releaseWakeLock: releaseWakeLock
   };
 })();
 

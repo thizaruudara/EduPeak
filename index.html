@@ -1167,126 +1167,203 @@
 
           <div class="classroom-layout-grid">
             
-            <div class="video-player-container">
-              <!-- Custom EduPeak DRM Video Player (Completely Masked YouTube) -->
-              <div class="edupeak-player-wrapper" id="edupeakPlayerWrapper">
-                <div class="edupeak-player-viewport" id="edupeakPlayerViewport">
-                  
-                  <!-- YouTube IFrame Hidden Container (Masked & Cropped) -->
-                  <div class="edupeak-yt-frame-cropper">
-                    <div id="edupeakYTPlayerMount"></div>
-                  </div>
-                  
-                  <!-- Transparent Click Shield (Intercepts user clicks, prevents YouTube menus) -->
-                  <div class="edupeak-player-click-shield" id="playerClickShield" onclick="EDUPEAK_PLAYER.togglePlayPause()"></div>
-
-                  <!-- Floating Anti-Piracy DRM Watermark (Displays Student NIC Only, Disabled by Default) -->
-                  <div class="edupeak-drm-watermark" id="playerDrmWatermark" style="display: none;">
-                    <span id="playerWatermarkText">200512345678</span>
-                  </div>
-
-                  <!-- Top DRM Status Bar -->
-                  <div class="edupeak-player-top-bar" id="playerTopBar">
-                    <div class="edupeak-player-brand">
-                      <span class="drm-badge"><i class="fa-solid fa-shield-halved"></i> EduPeak DRM Stream</span>
-                      <span class="res-badge"><i class="fa-solid fa-bolt"></i> 1080p Ultra HD</span>
+            <div class="video-stage-wrapper" style="display: flex; flex-direction: column; gap: 1rem;">
+              <!-- Responsive Video Container (16:9 Black Theater Stage matching Live Player) -->
+              <div class="video-player-container" id="recordedVideoPlayerContainer">
+                <!-- Custom EduPeak DRM Video Player (Completely Masked YouTube) -->
+                <div class="edupeak-player-wrapper" id="edupeakPlayerWrapper">
+                  <div class="edupeak-player-viewport" id="edupeakPlayerViewport">
+                    
+                    <!-- YouTube IFrame Container (Masked & Full Frame) -->
+                    <div class="edupeak-yt-frame-cropper">
+                      <div id="edupeakYTPlayerMount"></div>
                     </div>
-                    <div class="edupeak-player-status-tag">
-                      <span class="live-pulse-dot"></span> Protected Session
-                    </div>
-                  </div>
+                    
+                    <!-- Transparent Click Shield (Intercepts user clicks, controls play/pause and activity) -->
+                    <div class="edupeak-player-click-shield" id="playerClickShield" onclick="EDUPEAK_PLAYER.togglePlayPause()"></div>
 
-                  <!-- Big Center Glassmorphic Play/Pause Button -->
-                  <div class="edupeak-big-play-btn" id="playerBigPlayBtn" onclick="EDUPEAK_PLAYER.togglePlayPause()">
-                    <div class="big-play-icon-circle">
-                      <i class="fa-solid fa-play" id="bigPlayIcon"></i>
-                    </div>
-                  </div>
-
-                  <!-- Bottom Controls Overlay Bar -->
-                  <div class="edupeak-player-controls-overlay" id="playerControlsOverlay">
-                    <!-- Progress Bar with Buffer and Tooltip -->
-                    <div class="edupeak-progress-container" id="playerProgressContainer">
-                      <div class="edupeak-buffer-bar" id="playerBufferBar"></div>
-                      <div class="edupeak-progress-bar" id="playerProgressBar"></div>
-                      <div class="edupeak-progress-thumb" id="playerProgressThumb"></div>
-                      <div class="edupeak-hover-time-tooltip" id="playerHoverTooltip">00:00</div>
+                    <!-- Floating Anti-Piracy DRM Watermark (Displays Student NIC Only, Disabled by Default) -->
+                    <div class="edupeak-drm-watermark" id="playerDrmWatermark" style="display: none;">
+                      <span id="playerWatermarkText">200512345678</span>
                     </div>
 
-                    <!-- Controls Row -->
-                    <div class="edupeak-controls-row">
-                      <div class="controls-left">
-                        <button class="player-btn" id="btnPlayPause" onclick="EDUPEAK_PLAYER.togglePlayPause()" title="Play / Pause (Space)">
-                          <i class="fa-solid fa-play" id="ctrlPlayIcon"></i>
-                        </button>
+                    <!-- 10-Second Startup Top Watermark Banner (Completely blocks YouTube title, avatar & top controls for first 10s) -->
+                    <div class="edupeak-startup-banner top-banner" id="recordedStartupTopBanner">
+                      <div class="top-banner-left">
+                        <span class="banner-live-pill"><span class="live-pulse-dot" style="background:#ef4444;box-shadow:0 0 8px #ef4444;"></span> EDUPEAK MASTERCLASS</span>
+                        <span class="banner-res-pill"><i class="fa-solid fa-bolt"></i> 1080p HD</span>
+                        <span class="banner-topic-title" id="recordedBannerTopicTitle">Complete Mechanics Masterclass</span>
+                      </div>
+                      <div class="top-banner-right">
+                        <span class="banner-lecturer">
+                          <i class="fa-solid fa-graduation-cap" style="color: #38bdf8;"></i>
+                          <span id="recordedBannerTeacherName">Amalsha Wanniarachchi</span>
+                        </span>
+                        <span class="banner-batch-badge" id="recordedBannerBatchBadge">2027 A/L</span>
+                      </div>
+                    </div>
 
-                        <button class="player-btn" onclick="EDUPEAK_PLAYER.seekRelative(-10)" title="Rewind 10s (←)">
-                          <i class="fa-solid fa-rotate-left"></i> <span style="font-size: 0.72rem; font-weight: 700; margin-left: 2px;">10s</span>
-                        </button>
-
-                        <button class="player-btn" onclick="EDUPEAK_PLAYER.seekRelative(10)" title="Forward 10s (→)">
-                          <i class="fa-solid fa-rotate-right"></i> <span style="font-size: 0.72rem; font-weight: 700; margin-left: 2px;">10s</span>
-                        </button>
-
-                        <!-- Volume Controls -->
-                        <div class="volume-control-box">
-                          <button class="player-btn" id="btnMuteToggle" onclick="EDUPEAK_PLAYER.toggleMute()" title="Mute / Unmute">
-                            <i class="fa-solid fa-volume-high" id="ctrlVolumeIcon"></i>
-                          </button>
-                          <input type="range" class="volume-slider" id="playerVolumeSlider" min="0" max="100" value="100" oninput="EDUPEAK_PLAYER.setVolume(this.value)">
+                    <!-- Top Status Header (Shown on hover) matching Live Player -->
+                    <div class="edupeak-player-top-bar" id="playerTopBar">
+                      <div class="top-bar-inner">
+                        <div class="edupeak-player-brand">
+                          <span class="drm-badge" style="background: #14070a; border-color: rgba(239,68,68,0.7); color: #fca5a5; box-shadow: 0 2px 8px rgba(0,0,0,0.8);"><i class="fa-solid fa-play"></i> EduPeak Masterclass</span>
+                          <span class="res-badge" id="playerTopResBadge"><i class="fa-solid fa-bolt"></i> 1080p Ultra HD</span>
                         </div>
-
-                        <!-- Time Display -->
-                        <div class="player-time-display">
-                          <span id="playerCurrentTime">00:00</span>
-                          <span class="time-sep">/</span>
-                          <span id="playerTotalDuration">00:00</span>
+                        <div class="edupeak-player-status-tag" style="background: rgba(239,68,68,0.22); border-color: rgba(239,68,68,0.4); color: #fca5a5;">
+                          <span class="live-pulse-dot" style="background:#ef4444;box-shadow:0 0 8px #ef4444;"></span> RECORDED
                         </div>
                       </div>
+                      <div class="top-bar-lesson">
+                        <i class="fa-solid fa-book-open" style="color:#38bdf8;font-size:0.72rem;flex-shrink:0;"></i>
+                        <span class="lesson-title-text" id="playerTopLessonTitle">Module 01: Complete Mechanics Masterclass</span>
+                        <span class="teacher-name-text" id="playerTopTeacherName">Amalsha Wanniarachchi</span>
+                      </div>
+                    </div>
 
-                      <div class="controls-right">
-                        <!-- Playback Speed Dropdown -->
-                        <div class="speed-selector-wrapper">
-                          <button class="player-btn speed-btn-trigger" onclick="EDUPEAK_PLAYER.toggleSpeedMenu(event)" id="btnSpeedTrigger" title="Playback Speed">
-                            <span id="currentSpeedText">1.0x</span>
+                    <!-- Big Center Glowing Red Play/Pause Button (matches Live Player) -->
+                    <div class="edupeak-big-play-btn" id="playerBigPlayBtn" onclick="EDUPEAK_PLAYER.togglePlayPause()">
+                      <div class="big-play-icon-circle" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); box-shadow: 0 0 35px rgba(239, 68, 68, 0.6);">
+                        <i class="fa-solid fa-play" id="bigPlayIcon"></i>
+                      </div>
+                    </div>
+
+                    <!-- Bottom Controls Overlay Bar -->
+                    <div class="edupeak-player-controls-overlay" id="playerControlsOverlay">
+                      <!-- Progress Bar with Buffer and Tooltip -->
+                      <div class="edupeak-progress-container" id="playerProgressContainer">
+                        <div class="edupeak-buffer-bar" id="playerBufferBar"></div>
+                        <div class="edupeak-progress-bar" id="playerProgressBar" style="background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);"></div>
+                        <div class="edupeak-progress-thumb" id="playerProgressThumb" style="box-shadow: 0 0 10px rgba(239, 68, 68, 0.9);"></div>
+                        <div class="edupeak-hover-time-tooltip" id="playerHoverTooltip">00:00</div>
+                      </div>
+
+                      <!-- Controls Row -->
+                      <div class="edupeak-controls-row">
+                        <div class="controls-left">
+                          <button class="player-btn" id="btnPlayPause" onclick="EDUPEAK_PLAYER.togglePlayPause()" title="Play / Pause (Space)">
+                            <i class="fa-solid fa-play" id="ctrlPlayIcon"></i>
                           </button>
-                          <div class="speed-dropdown-menu" id="playerSpeedMenu">
-                            <button onclick="EDUPEAK_PLAYER.setPlaybackRate(0.75, true)">0.75x</button>
-                            <button onclick="EDUPEAK_PLAYER.setPlaybackRate(1.0, true)" class="active">1.0x (Normal)</button>
-                            <button onclick="EDUPEAK_PLAYER.setPlaybackRate(1.25, true)">1.25x</button>
-                            <button onclick="EDUPEAK_PLAYER.setPlaybackRate(1.5, true)">1.5x</button>
-                            <button onclick="EDUPEAK_PLAYER.setPlaybackRate(2.0, true)">2.0x</button>
+
+                          <button class="player-btn" onclick="EDUPEAK_PLAYER.seekRelative(-10)" title="Rewind 10s (←)">
+                            <i class="fa-solid fa-rotate-left"></i> <span style="font-size: 0.72rem; font-weight: 700; margin-left: 2px;">10s</span>
+                          </button>
+
+                          <button class="player-btn" onclick="EDUPEAK_PLAYER.seekRelative(10)" title="Forward 10s (→)">
+                            <i class="fa-solid fa-rotate-right"></i> <span style="font-size: 0.72rem; font-weight: 700; margin-left: 2px;">10s</span>
+                          </button>
+
+                          <!-- Volume Controls -->
+                          <div class="volume-control-box">
+                            <button class="player-btn" id="btnMuteToggle" onclick="EDUPEAK_PLAYER.toggleMute()" title="Mute / Unmute">
+                              <i class="fa-solid fa-volume-high" id="ctrlVolumeIcon"></i>
+                            </button>
+                            <input type="range" class="volume-slider" id="playerVolumeSlider" min="0" max="100" value="100" oninput="EDUPEAK_PLAYER.setVolume(this.value)">
+                          </div>
+
+                          <!-- Time Display -->
+                          <div class="player-time-display">
+                            <span id="playerCurrentTime">00:00</span>
+                            <span class="time-sep">/</span>
+                            <span id="playerTotalDuration">00:00</span>
                           </div>
                         </div>
 
-                        <!-- Interactive Video Quality Selector Dropdown -->
-                        <div class="quality-selector-wrapper">
-                          <button class="player-btn quality-btn-trigger" id="playerQualityTriggerBtn" onclick="EDUPEAK_PLAYER.toggleQualityMenu()" title="Stream Video Quality">
-                            <i class="fa-solid fa-gear" style="font-size: 0.85rem; margin-right: 0.25rem;"></i>
-                            <span id="playerQualityLabel">Auto</span>
-                          </button>
-                          <div class="quality-dropdown-menu" id="playerQualityMenu">
-                            <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('auto', this)" class="active" data-quality="auto"><span>Auto (1080p Max)</span></button>
-                            <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('hd1080', this)" data-quality="hd1080"><span>1080p HD</span></button>
-                            <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('hd720', this)" data-quality="hd720"><span>720p HD</span></button>
-                            <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('large', this)" data-quality="large"><span>480p</span></button>
-                            <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('medium', this)" data-quality="medium"><span>360p</span></button>
-                            <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('small', this)" data-quality="small"><span>240p</span></button>
-                            <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('tiny', this)" data-quality="tiny"><span>144p</span></button>
+                        <div class="controls-right">
+                          <!-- Playback Speed Dropdown -->
+                          <div class="speed-selector-wrapper">
+                            <button class="player-btn speed-btn-trigger" onclick="EDUPEAK_PLAYER.toggleSpeedMenu(event)" id="btnSpeedTrigger" title="Playback Speed">
+                              <span id="currentSpeedText">1.0x</span>
+                            </button>
+                            <div class="speed-dropdown-menu" id="playerSpeedMenu">
+                              <button onclick="EDUPEAK_PLAYER.setPlaybackRate(0.75, true)">0.75x</button>
+                              <button onclick="EDUPEAK_PLAYER.setPlaybackRate(1.0, true)" class="active">1.0x (Normal)</button>
+                              <button onclick="EDUPEAK_PLAYER.setPlaybackRate(1.25, true)">1.25x</button>
+                              <button onclick="EDUPEAK_PLAYER.setPlaybackRate(1.5, true)">1.5x</button>
+                              <button onclick="EDUPEAK_PLAYER.setPlaybackRate(2.0, true)">2.0x</button>
+                            </div>
                           </div>
-                        </div>
 
-                        <!-- Fullscreen Button -->
-                        <button class="player-btn" onclick="EDUPEAK_PLAYER.toggleFullscreen()" title="Fullscreen (F)">
-                          <i class="fa-solid fa-expand" id="ctrlFullscreenIcon"></i>
-                        </button>
+                          <!-- Interactive Video Quality Selector Dropdown with Gold Lightning Bolt (matches Live) -->
+                          <div class="quality-selector-wrapper">
+                            <button class="player-btn quality-btn-trigger" id="playerQualityTriggerBtn" onclick="EDUPEAK_PLAYER.toggleQualityMenu()" title="Stream Video Quality" style="background: rgba(255,255,255,0.08); border-color: rgba(56,189,248,0.25); color: #38bdf8; padding: 0.35rem 0.65rem;">
+                              <i class="fa-solid fa-bolt" style="color: #fbbf24; font-size: 0.82rem; margin-right: 0.28rem;"></i>
+                              <span id="playerQualityLabel">Auto (1080p Max)</span>
+                            </button>
+                            <div class="quality-dropdown-menu" id="playerQualityMenu">
+                              <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('auto', this)" class="active" data-quality="auto"><span>Auto (1080p Max)</span></button>
+                              <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('hd1080', this)" data-quality="hd1080"><span>1080p HD</span></button>
+                              <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('hd720', this)" data-quality="hd720"><span>720p HD</span></button>
+                              <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('large', this)" data-quality="large"><span>480p</span></button>
+                              <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('medium', this)" data-quality="medium"><span>360p</span></button>
+                              <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('small', this)" data-quality="small"><span>240p</span></button>
+                              <button onclick="EDUPEAK_PLAYER.setPlaybackQuality('tiny', this)" data-quality="tiny"><span>144p</span></button>
+                            </div>
+                          </div>
+
+                          <!-- Fullscreen Button -->
+                          <button class="player-btn" onclick="EDUPEAK_PLAYER.toggleFullscreen()" title="Fullscreen (F)">
+                            <i class="fa-solid fa-expand" id="ctrlFullscreenIcon"></i>
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
+                    <!-- 10-Second Startup Bottom Watermark Banner (Completely blocks YouTube logo, watermark & more videos for first 10s) -->
+                    <div class="edupeak-startup-banner bottom-banner" id="recordedStartupBottomBanner">
+                      <div class="ticker-row">
+                        <div class="ticker-badge" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);">
+                          <span class="pulse-dot"></span> Recorded Lecture
+                        </div>
+                        <div class="ticker-marquee">
+                          <span class="marquee-chunk">
+                            <i class="fa-solid fa-play" style="color:#ef4444;"></i>
+                            <span>EduPeak Video Classroom</span>
+                            <span class="sep">●</span>
+                            <i class="fa-solid fa-book-open" style="color:#38bdf8;"></i>
+                            <span id="recordedMarqueeTopic">Complete Mechanics Masterclass</span>
+                            <span class="sep">●</span>
+                            <i class="fa-solid fa-chalkboard-user" style="color:#a78bfa;"></i>
+                            <span class="lecturer-hl" id="recordedMarqueeTeacher">Amalsha Wanniarachchi</span>
+                            <span class="sep">●</span>
+                            <i class="fa-solid fa-shield-halved" style="color:#34d399;"></i>
+                            <span class="drm-hl">DRM Anti-Piracy Active</span>
+                            <span class="sep">●</span>
+                            <i class="fa-solid fa-bolt" style="color:#fbbf24;"></i>
+                            <span>1080p High-Definition Stream</span>
+                          </span>
+                          <span class="marquee-chunk">
+                            <i class="fa-solid fa-play" style="color:#ef4444;"></i>
+                            <span>EduPeak Video Classroom</span>
+                            <span class="sep">●</span>
+                            <i class="fa-solid fa-book-open" style="color:#38bdf8;"></i>
+                            <span>Complete Mechanics Masterclass</span>
+                            <span class="sep">●</span>
+                            <i class="fa-solid fa-shield-halved" style="color:#34d399;"></i>
+                            <span class="drm-hl">DRM Anti-Piracy Active</span>
+                            <span class="sep">●</span>
+                            <i class="fa-solid fa-bolt" style="color:#fbbf24;"></i>
+                            <span>1080p High-Definition Stream</span>
+                          </span>
+                        </div>
+                      </div>
+                      <div class="sub-info-row">
+                        <div class="sub-left">
+                          <i class="fa-solid fa-volume-high" style="color: #227aff;"></i>
+                          <span>EduPeak Studio HD Audio Stream</span>
+                        </div>
+                        <div class="sub-right">
+                          <i class="fa-solid fa-lock" style="color: #10b981;"></i>
+                          <span>Protected Video Lecture • EduPeak Cloud</span>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
                 </div>
               </div>
 
+              <!-- Video Meta Bar -->
               <div class="video-meta-bar">
                 <div class="video-title-box" style="flex: 1;">
                   <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem; flex-wrap: wrap;">

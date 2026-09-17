@@ -260,13 +260,14 @@
 }
 
 .video-player-container {
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
+  background: #000000;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 16px;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: var(--shadow-sm);
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.35);
 }
 
 .video-screen-box {
@@ -331,7 +332,9 @@
 .video-meta-bar {
   padding: 1.25rem 1.5rem;
   background: #ffffff;
-  border-top: 1px solid var(--border-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   display: flex;
   justify-content: space-between;
   align-items: center;

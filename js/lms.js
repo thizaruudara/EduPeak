@@ -51,6 +51,13 @@ function initLMS() {
   const currentLesson = lessons[LMS_STATE.currentLessonIndex];
   if (window.EDUPEAK_PLAYER && currentLesson && currentLesson.videoUrl) {
     window.EDUPEAK_PLAYER.init(currentLesson.videoUrl);
+    if (window.EDUPEAK_PLAYER.updateLessonMeta) {
+      window.EDUPEAK_PLAYER.updateLessonMeta(
+        currentLesson.title || "Complete Theory & Fundamentals",
+        currentLesson.teacher || "Amalsha Wanniarachchi",
+        "2027 A/L"
+      );
+    }
     window.EDUPEAK_PLAYER.setWatermarkEnabled(Boolean(currentLesson.watermarkEnabled));
   }
 
@@ -1807,9 +1814,14 @@ function renderLMSLesson(index) {
     pdfBtnText.textContent = lesson.hasPdf ? (lesson.pdfName ? lesson.pdfName.substring(0, 16) + '...' : 'Tute PDF') : 'No PDF';
   }
 
-  // Update video player (Custom EduPeak DRM Player)
+  // Update video player (Custom EduPeak DRM Player matching YouTube Live)
   if (window.EDUPEAK_PLAYER && lesson.videoUrl) {
-    window.EDUPEAK_PLAYER.loadVideo(lesson.videoUrl);
+    window.EDUPEAK_PLAYER.loadVideo(
+      lesson.videoUrl,
+      lesson.title || "Complete Theory & Fundamentals",
+      teacherDisplay,
+      courseObj.batch || "2027 A/L"
+    );
     // Anti-piracy watermark toggle: disabled by default unless lesson.watermarkEnabled is true
     window.EDUPEAK_PLAYER.setWatermarkEnabled(Boolean(lesson.watermarkEnabled));
   } else if (videoIframe && lesson.videoUrl) {
