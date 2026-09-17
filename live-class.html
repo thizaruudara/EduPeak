@@ -22,6 +22,12 @@
   <link rel="stylesheet" href="css/lms.css">
   <link rel="stylesheet" href="css/custom-player.css">
 
+  <!-- Agora RTC Web SDK (for clean real-time WebRTC live broadcasts with 0 external watermarks) -->
+  <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js"></script>
+
+  <!-- HLS.js (for direct clean OBS RTMP / HLS .m3u8 live stream playback) -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
   <style>
     :root {
       --live-bg: #070a13;
@@ -1193,8 +1199,14 @@
             <div class="edupeak-player-viewport" id="edupeakLivePlayerViewport">
               
               <!-- Cropper (Crops & Scales YouTube by 1.36 to eliminate YouTube logos, watermarks, titles, avatars, and channel branding) -->
-              <div class="edupeak-yt-frame-cropper">
+              <div class="edupeak-yt-frame-cropper" id="edupeakYtCropperWrapper">
                 <div id="edupeakLiveYTPlayerMount"></div>
+              </div>
+
+              <!-- Clean Native Video Mount for Agora WebRTC & Direct OBS HLS Streams (100% White-Label / Zero YouTube Branding) -->
+              <div class="edupeak-clean-video-mount" id="cleanLiveVideoMount" style="position: absolute; inset: 0; width: 100%; height: 100%; display: none; background: #000; z-index: 1;">
+                <video id="cleanLiveVideoElement" playsinline autoplay style="width: 100%; height: 100%; object-fit: contain; background: #000; display: block;"></video>
+                <div id="agoraRemoteVideoBox" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2;"></div>
               </div>
 
               <!-- Transparent Click Shield (Intercepts clicks: clicking joins/unmutes stream, DOES NOT pause live broadcast) -->
@@ -1628,12 +1640,13 @@
 
           <div class="form-group-grid">
             <div>
-              <label class="live-form-label">Stream Provider *</label>
+              <label class="live-form-label">Stream Provider / Broadcast Method *</label>
               <select class="live-form-select" id="formProvider" onchange="LIVE_APP.handleProviderChange(this.value)">
-                <option value="youtube">YouTube Live Stream (Standard)</option>
-                <option value="zoom">Zoom Meeting Room</option>
-                <option value="vimeo">Vimeo Live Stream</option>
-                <option value="custom">Custom WebRTC / HLS Stream URL</option>
+                <option value="agora">✨ Method 1: Agora WebRTC Studio (OBS Virtual Cam / Screen / 0 Watermark)</option>
+                <option value="custom_hls">📡 Method 2: Direct OBS RTMP Streaming (HLS .m3u8 Feed)</option>
+                <option value="youtube">▶️ YouTube Live Stream (Standard)</option>
+                <option value="zoom">📹 Zoom Meeting Room</option>
+                <option value="vimeo">🎞️ Vimeo Live Stream</option>
               </select>
             </div>
             <div>
@@ -1646,8 +1659,52 @@
             </div>
           </div>
 
+          <!-- Method 1: Agora WebRTC Studio Config Box -->
+          <div id="agoraConfigBox" style="background: rgba(34, 122, 255, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 10px; padding: 1rem; margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.65rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="background: #0284c7; color: #fff; font-size: 0.68rem; font-weight: 800; padding: 0.2rem 0.5rem; border-radius: 4px; letter-spacing: 0.5px;">METHOD 1</span>
+                <strong style="color: #fff; font-size: 0.88rem;"><i class="fa-solid fa-headset" style="color:#38bdf8;"></i> Agora WebRTC Live Studio</strong>
+              </div>
+              <span style="font-size: 0.72rem; color: #10b981; font-weight: 700;"><i class="fa-solid fa-bolt"></i> 100% Free 10,000 Mins/Mo</span>
+            </div>
+            <p style="font-size: 0.78rem; color: #cbd5e1; margin-bottom: 0.75rem; line-height: 1.4;">
+              Broadcast directly from your browser using <b>OBS Virtual Camera</b>, webcam, or desktop screen share. Real-time ultra-low latency (&lt;0.4s), <b>zero YouTube watermarks</b>, fully white-labeled!
+            </p>
+            <div class="form-group-grid">
+              <div>
+                <label class="live-form-label">Agora Channel Name *</label>
+                <input type="text" class="live-form-input" id="formAgoraChannel" placeholder="e.g. edupeak_physics_live" value="edupeak_physics_live">
+              </div>
+              <div>
+                <label class="live-form-label">Agora App ID (Optional / Testing)</label>
+                <input type="text" class="live-form-input" id="formAgoraAppId" placeholder="4e3895bb73ba4faea39c0dc118efbf89" value="4e3895bb73ba4faea39c0dc118efbf89">
+              </div>
+            </div>
+          </div>
+
+          <!-- Method 2: Direct OBS RTMP / HLS Stream Config Box -->
+          <div id="hlsConfigBox" style="display: none; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 10px; padding: 1rem; margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.65rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="background: #9333ea; color: #fff; font-size: 0.68rem; font-weight: 800; padding: 0.2rem 0.5rem; border-radius: 4px; letter-spacing: 0.5px;">METHOD 2</span>
+                <strong style="color: #fff; font-size: 0.88rem;"><i class="fa-solid fa-video" style="color:#c084fc;"></i> Direct OBS RTMP / HLS Stream</strong>
+              </div>
+              <button type="button" class="btn-live-schedule" style="padding: 0.25rem 0.6rem; font-size: 0.72rem; background: rgba(168, 85, 247, 0.25); border: 1px solid rgba(168, 85, 247, 0.5); color: #e9d5ff;" onclick="LIVE_APP.openObsGuideModal()">
+                <i class="fa-solid fa-circle-question"></i> OBS Setup Guide
+              </button>
+            </div>
+            <p style="font-size: 0.78rem; color: #cbd5e1; margin-bottom: 0.75rem; line-height: 1.4;">
+              Stream from OBS to an ingest server (MediaMTX / Cloudflare Stream / Agora RTMP) and paste the resulting <b>.m3u8</b> live playlist URL below.
+            </p>
+            <div>
+              <label class="live-form-label">Live HLS Stream URL (.m3u8) *</label>
+              <input type="url" class="live-form-input" id="formHlsUrl" placeholder="https://your-server.com/live/index.m3u8 or http://localhost:8888/live/stream/index.m3u8">
+            </div>
+          </div>
+
           <!-- YouTube Live URL Input with Strict Live Validation & Auto-Metadata -->
-          <div>
+          <div id="youtubeUrlFieldBox" style="display: none;">
             <div style="display: flex; justify-content: space-between; align-items: baseline;">
               <label class="live-form-label" style="margin-bottom: 4px;">
                 <i class="fa-brands fa-youtube" style="color: #ef4444; margin-right: 4px;"></i> YouTube Live Stream URL *
@@ -1655,7 +1712,7 @@
               <span style="font-size: 0.72rem; color: #f59e0b; font-weight: 600;">(Live URLs only: youtube.com/live/...)</span>
             </div>
             <div style="position: relative;">
-              <input type="url" class="live-form-input" id="formStreamUrl" placeholder="https://www.youtube.com/live/..." required oninput="LIVE_APP.handleStreamUrlInput(this.value)" onchange="LIVE_APP.handleStreamUrlInput(this.value)">
+              <input type="url" class="live-form-input" id="formStreamUrl" placeholder="https://www.youtube.com/live/..." oninput="LIVE_APP.handleStreamUrlInput(this.value)" onchange="LIVE_APP.handleStreamUrlInput(this.value)">
               <span id="urlFetchSpinner" style="display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #38bdf8; font-size: 0.8rem; font-weight: 600;">
                 <i class="fa-solid fa-spinner fa-spin"></i> Fetching YouTube Live Info...
               </span>
@@ -1747,6 +1804,187 @@
     </div>
   </div>
 
+  <!-- Method 1: Agora Broadcaster Studio Modal (OBS Virtual Camera & Screen Share Live Studio) -->
+  <div class="live-modal-wrapper" id="broadcasterStudioModal">
+    <div class="live-modal-content" style="max-width: 960px; width: 95%;">
+      <div class="live-modal-header" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.85rem;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="background: linear-gradient(135deg, #0284c7, #38bdf8); color: #fff; font-size: 0.7rem; font-weight: 800; padding: 0.2rem 0.6rem; border-radius: 4px; letter-spacing: 0.5px;">METHOD 1</span>
+            <h3 class="live-modal-title" style="margin: 0; font-size: 1.15rem; color: #fff;">
+              <i class="fa-solid fa-headset" style="color: #38bdf8;"></i> EduPeak Broadcaster Studio
+            </h3>
+          </div>
+          <p style="margin: 0.25rem 0 0; font-size: 0.78rem; color: #94a3b8;">
+            Broadcast with OBS Virtual Camera, Webcam, or Screen Share • 0 YouTube Watermarks • Ultra-low Latency (&lt;0.4s)
+          </p>
+        </div>
+        <button type="button" class="btn-live-icon" onclick="LIVE_APP.closeBroadcasterStudio()" title="Close Studio">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="live-modal-body" style="padding-top: 1rem;">
+        <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.25rem; align-items: start;" id="studioMainGrid">
+          
+          <!-- Left: Live Video Monitor Preview -->
+          <div>
+            <div style="position: relative; width: 100%; padding-top: 56.25%; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);" id="broadcasterMonitorContainer">
+              <div id="broadcasterLocalVideoBox" style="position: absolute; inset: 0; width: 100%; height: 100%;"></div>
+
+              <!-- Monitor Overlay Header -->
+              <div style="position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; align-items: center; pointer-events: none; z-index: 10;">
+                <span id="studioLiveBadge" style="background: rgba(15, 23, 42, 0.85); color: #94a3b8; border: 1px solid rgba(255,255,255,0.15); font-size: 0.72rem; font-weight: 800; padding: 0.25rem 0.65rem; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; backdrop-filter: blur(4px);">
+                  <span style="width: 7px; height: 7px; border-radius: 50%; background: #64748b;" id="studioStatusDot"></span> <span id="studioStatusText">OFFLINE (STANDBY)</span>
+                </span>
+                <span style="background: rgba(15, 23, 42, 0.85); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 0.25rem 0.55rem; border-radius: 6px; backdrop-filter: blur(4px);" id="studioResBadge">
+                  <i class="fa-solid fa-bolt"></i> 1080p 60fps
+                </span>
+              </div>
+
+              <!-- Audio VU Level Bar Overlay -->
+              <div style="position: absolute; bottom: 10px; left: 12px; right: 12px; z-index: 10; pointer-events: none; display: flex; align-items: center; gap: 8px; background: rgba(15, 23, 42, 0.8); padding: 0.35rem 0.65rem; border-radius: 8px; backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.1);">
+                <i class="fa-solid fa-microphone" style="font-size: 0.75rem; color: #10b981;" id="studioAudioMeterIcon"></i>
+                <div style="flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                  <div id="studioAudioVuBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444); transition: width 0.08s ease; border-radius: 3px;"></div>
+                </div>
+                <span style="font-size: 0.68rem; color: #94a3b8; font-weight: 700; min-width: 32px; text-align: right;" id="studioAudioVuText">0 dB</span>
+              </div>
+            </div>
+
+            <!-- OBS Virtual Camera Tip Banner -->
+            <div style="margin-top: 0.85rem; background: rgba(34, 122, 255, 0.07); border: 1px solid rgba(34, 122, 255, 0.2); border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; align-items: flex-start; gap: 0.65rem; font-size: 0.76rem; color: #cbd5e1; line-height: 1.45;">
+              <i class="fa-solid fa-lightbulb" style="color: #38bdf8; font-size: 1rem; margin-top: 1px; flex-shrink: 0;"></i>
+              <div>
+                <strong style="color: #fff;">How to broadcast with OBS:</strong> In OBS, click <b>"Start Virtual Camera"</b>. In the dropdown on the right, select <b>"OBS Virtual Camera"</b>. Whatever you show in OBS (screen, slides, graphics, iPad) streams instantly with 0 watermark!
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Broadcast Controls & Ingest Configuration -->
+          <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+            <div>
+              <label class="live-form-label"><i class="fa-solid fa-video" style="color: #38bdf8; margin-right: 4px;"></i> Video Input (Camera / OBS Virtual Camera)</label>
+              <select class="live-form-select" id="studioVideoSelect" onchange="LIVE_APP.handleStudioDeviceChange()"></select>
+            </div>
+
+            <div>
+              <label class="live-form-label"><i class="fa-solid fa-microphone" style="color: #10b981; margin-right: 4px;"></i> Audio Input (Microphone)</label>
+              <select class="live-form-select" id="studioAudioSelect" onchange="LIVE_APP.handleStudioDeviceChange()"></select>
+            </div>
+
+            <div class="form-group-grid" style="margin-bottom: 0;">
+              <div>
+                <label class="live-form-label">Video Quality</label>
+                <select class="live-form-select" id="studioProfileSelect" onchange="LIVE_APP.handleStudioProfileChange(this.value)">
+                  <option value="1080p_2" selected>1080p HD (60 fps)</option>
+                  <option value="1080p_1">1080p HD (30 fps)</option>
+                  <option value="720p_2">720p HD (30 fps)</option>
+                  <option value="480p_1">480p Standard</option>
+                </select>
+              </div>
+              <div>
+                <label class="live-form-label">Channel Target</label>
+                <input type="text" class="live-form-input" id="studioChannelDisplay" readonly style="opacity: 0.8; font-weight: 600; color: #38bdf8;">
+              </div>
+            </div>
+
+            <!-- Fast Quick Actions (Mic, Cam, Screen Share) -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; margin-top: 0.25rem;">
+              <button type="button" class="live-nav-btn" id="studioMicToggleBtn" onclick="LIVE_APP.toggleStudioMic()" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: #6ee7b7; font-size: 0.78rem; justify-content: center;">
+                <i class="fa-solid fa-microphone"></i> Mic On
+              </button>
+              <button type="button" class="live-nav-btn" id="studioCamToggleBtn" onclick="LIVE_APP.toggleStudioCam()" style="background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.35); color: #7dd3fc; font-size: 0.78rem; justify-content: center;">
+                <i class="fa-solid fa-video"></i> Cam On
+              </button>
+              <button type="button" class="live-nav-btn" id="studioShareScreenBtn" onclick="LIVE_APP.toggleStudioScreenShare()" style="background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.35); color: #d8b4fe; font-size: 0.78rem; justify-content: center;">
+                <i class="fa-solid fa-display"></i> Share Screen
+              </button>
+            </div>
+
+            <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 0.85rem; margin-top: 0.5rem;">
+              <button type="button" id="studioGoLiveBtn" class="btn-live-start" style="width: 100%; padding: 0.75rem 1rem; font-size: 0.95rem; font-weight: 800; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 0.65rem;" onclick="LIVE_APP.handleStudioGoLive()">
+                <i class="fa-solid fa-tower-broadcast"></i> Start Real-Time Broadcast
+              </button>
+              <p style="text-align: center; font-size: 0.72rem; color: #94a3b8; margin: 0.4rem 0 0;">
+                Students enrolled in this course will immediately connect with zero watermark.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Method 2: Direct OBS RTMP Streaming Guide Modal -->
+  <div class="live-modal-wrapper" id="obsGuideModal">
+    <div class="live-modal-content" style="max-width: 680px; width: 90%;">
+      <div class="live-modal-header" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.75rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="background: #9333ea; color: #fff; font-size: 0.7rem; font-weight: 800; padding: 0.2rem 0.6rem; border-radius: 4px; letter-spacing: 0.5px;">METHOD 2</span>
+          <h3 class="live-modal-title" style="margin: 0; font-size: 1.15rem; color: #fff;">
+            <i class="fa-solid fa-video" style="color: #c084fc;"></i> Direct OBS RTMP Streaming Guide
+          </h3>
+        </div>
+        <button type="button" class="btn-live-icon" onclick="LIVE_APP.closeObsGuideModal()" title="Close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="live-modal-body" style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.5; padding-top: 1rem;">
+        <p style="margin-bottom: 1rem;">
+          Method 2 allows streaming directly from OBS using <b>RTMP Ingest</b> to an ingest server. The ingest server converts the feed into an <b>HLS playlist (.m3u8)</b> which EduPeak's custom video player plays directly with student watermarks.
+        </p>
+
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 1rem; margin-bottom: 1rem;">
+          <h4 style="color: #fff; font-size: 0.9rem; margin: 0 0 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="background: #227aff; color: #fff; width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem;">1</span>
+            Option A: Free Local Ingest Server (MediaMTX - Zero Cost)
+          </h4>
+          <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.5rem;">
+            Download <b>MediaMTX</b> (single free .exe). Run it on your computer or VPS.
+          </p>
+          <div style="background: #090d16; border-radius: 6px; padding: 0.5rem 0.75rem; font-family: monospace; font-size: 0.78rem; color: #38bdf8; display: flex; justify-content: space-between; align-items: center;">
+            <span>OBS Server: rtmp://localhost:1935/live</span>
+          </div>
+          <div style="background: #090d16; border-radius: 6px; padding: 0.5rem 0.75rem; font-family: monospace; font-size: 0.78rem; color: #10b981; display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+            <span>HLS URL: http://localhost:8888/live/index.m3u8</span>
+          </div>
+        </div>
+
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 1rem; margin-bottom: 1rem;">
+          <h4 style="color: #fff; font-size: 0.9rem; margin: 0 0 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="background: #a855f7; color: #fff; width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem;">2</span>
+            Option B: Cloud Ingest (Cloudflare Stream / LiveKit / Agora RTMP)
+          </h4>
+          <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.5rem;">
+            Create an RTMP live input in your cloud provider dashboard. Copy the RTMPS URL & Key into OBS, and copy the playback HLS URL (.m3u8) into EduPeak broadcast schedule.
+          </p>
+        </div>
+
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 1rem;">
+          <h4 style="color: #fff; font-size: 0.9rem; margin: 0 0 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="background: #10b981; color: #fff; width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem;">3</span>
+            OBS Video Encoder Settings
+          </h4>
+          <ul style="margin: 0; padding-left: 1.25rem; font-size: 0.78rem; color: #cbd5e1;">
+            <li>Output Mode: <b>Advanced</b> &gt; Rate Control: <b>CBR</b></li>
+            <li>Bitrate: <b>2500 - 4500 Kbps</b></li>
+            <li>Keyframe Interval: <b>2 seconds</b> (Required for smooth HLS chunking)</li>
+            <li>Audio Bitrate: <b>128 - 160 Kbps</b></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="live-modal-footer" style="padding: 0.85rem 1.25rem; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: flex-end;">
+        <button type="button" class="btn-live-schedule" onclick="LIVE_APP.closeObsGuideModal()">
+          Got It, Back to Hub
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Core JavaScript Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/data.js"></script>
@@ -1754,6 +1992,7 @@
   <script src="js/translations.js"></script>
   <script src="js/supabase.js"></script>
   <script src="js/auth.js"></script>
+  <script src="js/agora-broadcaster.js"></script>
   <script src="js/custom-player.js"></script>
 
   <!-- Live Classroom Application Engine -->
@@ -1926,10 +2165,26 @@
         // 6. Automatic stream conclusion event listener (when pre-recorded YT video ends or duration expires)
         window.addEventListener("edupeak-live-ended", (e) => {
           const sessId = e.detail?.sessionId || this.activeSessionId;
-          if (sessId && this.activeSession && this.activeSession.status === "live") {
+          if (sessId) {
             this.handleAutoEndStream(sessId);
           }
         });
+
+        // 6.1. Background auto-expiration and sync watchdog (automatically updates and expires stale sessions even if nobody is watching)
+        setInterval(async () => {
+          if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getLiveSessions === "function") {
+            try {
+              const fresh = await window.SUPABASE_HELPER.getLiveSessions();
+              this.renderStreamsList(fresh);
+              if (this.activeSessionId) {
+                const cur = fresh.find(s => s && s.id === this.activeSessionId);
+                if (cur && cur.status === "ended" && this.activeSession && this.activeSession.status !== "ended") {
+                  await this.loadSession(this.activeSessionId, false);
+                }
+              }
+            } catch(e) {}
+          }
+        }, 30000);
 
         // 7. Polling timer for real-time chat sync across separate windows/devices
         if (this.chatPollTimer) clearInterval(this.chatPollTimer);
@@ -2355,6 +2610,30 @@
         if (this.activeSession && this.activeSession.id === sessionId && this.activeSession.status === "ended") {
           session.status = "ended";
         }
+
+        // Auto-expire check: If session belongs to yesterday or past date, or live duration exceeded 4 hours, mark ended immediately
+        if (session && session.status !== "ended") {
+          const now = new Date();
+          const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+          const sDate = String(session.scheduleDate || session.schedule_date || "").trim();
+          let isStale = false;
+          if (sDate && sDate < todayStr) {
+            isStale = true;
+          } else if (session.status === "live" && session.startedAt) {
+            const sMs = new Date(session.startedAt).getTime();
+            if (!isNaN(sMs) && (now.getTime() - sMs > 4 * 60 * 60 * 1000)) {
+              isStale = true;
+            }
+          }
+          if (isStale) {
+            console.log("[EduPeak] Stale session loaded, auto-ending:", session.id);
+            session.status = "ended";
+            session.endedAt = session.endedAt || now.toISOString();
+            if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
+              window.SUPABASE_HELPER.updateLiveSessionStatus(session.id, "ended", { endedAt: session.endedAt });
+            }
+          }
+        }
         this.activeSession = session;
 
         // Highlight active card in grid
@@ -2438,6 +2717,18 @@
           if (!session.startedAt && cachedStartedAt) {
             session.startedAt = cachedStartedAt;
           } else if (!session.startedAt) {
+            const now = new Date();
+            const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+            const sDate = String(session.scheduleDate || session.schedule_date || "").trim();
+            if (sDate && sDate < todayStr) {
+              session.status = "ended";
+              session.endedAt = now.toISOString();
+              if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.updateLiveSessionStatus === "function") {
+                window.SUPABASE_HELPER.updateLiveSessionStatus(session.id, "ended", { endedAt: session.endedAt });
+              }
+              await this.loadSession(session.id, false);
+              return;
+            }
             session.startedAt = new Date().toISOString();
             if (session.id) {
               try { localStorage.setItem("edupeak_session_started_" + session.id, session.startedAt); } catch(e) {}
@@ -2459,9 +2750,22 @@
           }
 
           const streamSrc = session.rawUrl || session.rawurl || session.raw_url || session.embedUrl || session.embedurl || session.embed_url || "";
-          const isYouTube = !session.provider || session.provider === "youtube" || (streamSrc && (streamSrc.includes("youtube.com") || streamSrc.includes("youtu.be") || (streamSrc.length === 11 && !streamSrc.includes("/"))));
+          const isAgora = session.provider === "agora" || session.streamProvider === "agora";
+          const isHls = session.provider === "custom_hls" || session.streamProvider === "custom_hls" || (streamSrc && (streamSrc.includes(".m3u8") || streamSrc.includes(".mpd")));
+          const isYouTube = !isAgora && !isHls && (!session.provider || session.provider === "youtube" || (streamSrc && (streamSrc.includes("youtube.com") || streamSrc.includes("youtu.be") || (streamSrc.length === 11 && !streamSrc.includes("/")))));
 
-          if (isYouTube && window.EDUPEAK_LIVE_PLAYER) {
+          if ((isAgora || isHls) && window.EDUPEAK_LIVE_PLAYER) {
+            // Load in custom player with clean native Agora WebRTC or HLS stream (0 YouTube branding, 100% white-label)
+            if (customPlayer) customPlayer.style.display = "block";
+            if (iframe) {
+              iframe.style.display = "none";
+              iframe.src = "about:blank";
+            }
+            window.EDUPEAK_LIVE_PLAYER.loadCleanLiveStream(streamSrc, session, isAgora ? "agora" : "custom_hls");
+            if (typeof window.EDUPEAK_LIVE_PLAYER.triggerStartupBanners === "function") {
+              window.EDUPEAK_LIVE_PLAYER.triggerStartupBanners(10000);
+            }
+          } else if (isYouTube && window.EDUPEAK_LIVE_PLAYER) {
             // Load in custom player with cropped YouTube, disabled timeline scrubber & continuous playback offset
             if (customPlayer) customPlayer.style.display = "block";
             if (iframe) {
@@ -2691,8 +2995,20 @@
           if (clearChatBtn) clearChatBtn.style.display = "inline-flex";
 
           const isLive = session.status === "live";
+          const isAgora = session.provider === "agora" || session.streamProvider === "agora";
+          const isHls = session.provider === "custom_hls" || session.streamProvider === "custom_hls";
 
           actionsBox.innerHTML = `
+            ${isAgora ? `
+              <button class="btn-live-start" style="background: linear-gradient(135deg, #0284c7, #38bdf8); color: #fff; font-weight: 700; border: none; border-radius: 8px; padding: 0.5rem 0.9rem; display: inline-flex; align-items: center; gap: 0.45rem; cursor: pointer; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);" onclick="LIVE_APP.openBroadcasterStudio('${session.id}')">
+                <i class="fa-solid fa-headset"></i> Broadcaster Studio
+              </button>
+            ` : ''}
+            ${isHls ? `
+              <button class="live-nav-btn" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border-color: rgba(168, 85, 247, 0.4);" onclick="LIVE_APP.openObsGuideModal('${session.id}')">
+                <i class="fa-solid fa-video"></i> OBS RTMP Setup
+              </button>
+            ` : ''}
             ${isLive ? `
               <button class="btn-live-end" onclick="LIVE_APP.handleEndStream('${session.id}')">
                 <i class="fa-solid fa-stop"></i> End Broadcast
@@ -3570,7 +3886,14 @@
         document.getElementById("formDate").value = todayStr;
         document.getElementById("formStartTime").value = defStart;
         document.getElementById("formEndTime").value = defEnd;
-        document.getElementById("formProvider").value = "youtube";
+        document.getElementById("formProvider").value = "agora";
+        this.handleProviderChange("agora");
+        const agoraChanEl = document.getElementById("formAgoraChannel");
+        if (agoraChanEl) agoraChanEl.value = "edupeak_physics_live";
+        const agoraAppIdEl = document.getElementById("formAgoraAppId");
+        if (agoraAppIdEl) agoraAppIdEl.value = "4e3895bb73ba4faea39c0dc118efbf89";
+        const hlsUrlEl = document.getElementById("formHlsUrl");
+        if (hlsUrlEl) hlsUrlEl.value = "";
         document.getElementById("formStatus").value = "scheduled";
         document.getElementById("formStreamUrl").value = "";
         document.getElementById("formZoomUrl").value = "";
@@ -3663,7 +3986,18 @@
         }
         document.getElementById("formStartTime").value = s.scheduleStartTime || parsedStart || "08:30";
         document.getElementById("formEndTime").value   = s.scheduleEndTime   || parsedEnd   || "12:30";
-        document.getElementById("formProvider").value = s.provider || "youtube";
+        
+        const prov = s.provider || (s.streamProvider || "agora");
+        document.getElementById("formProvider").value = prov;
+        this.handleProviderChange(prov);
+
+        const agoraChanEl = document.getElementById("formAgoraChannel");
+        if (agoraChanEl) agoraChanEl.value = s.agoraChannel || s.channel || "edupeak_physics_live";
+        const agoraAppIdEl = document.getElementById("formAgoraAppId");
+        if (agoraAppIdEl) agoraAppIdEl.value = s.agoraAppId || "4e3895bb73ba4faea39c0dc118efbf89";
+        const hlsUrlEl = document.getElementById("formHlsUrl");
+        if (hlsUrlEl) hlsUrlEl.value = s.hlsUrl || (prov === "custom_hls" ? (s.rawUrl || "") : "");
+
         document.getElementById("formStatus").value = s.status || "scheduled";
         const streamUrlVal = s.rawUrl || s.rawurl || s.raw_url || s.embedUrl || s.embedurl || s.embed_url || "";
         document.getElementById("formStreamUrl").value = streamUrlVal;
@@ -3675,7 +4009,7 @@
         document.getElementById("formWatermarkToggle").checked = s.watermarkEnabled !== false;
         document.getElementById("formChatToggle").checked = s.chatEnabled !== false;
 
-        if (streamUrlVal) {
+        if (streamUrlVal && prov === "youtube") {
           this.handleStreamUrlInput(streamUrlVal);
         }
 
@@ -3687,9 +4021,19 @@
       },
 
       handleProviderChange(provider) {
+        const agoraBox = document.getElementById("agoraConfigBox");
+        const hlsBox = document.getElementById("hlsConfigBox");
+        const ytBox = document.getElementById("youtubeUrlFieldBox");
         const zoomBox = document.getElementById("zoomUrlFieldBox");
-        if (zoomBox) {
-          zoomBox.style.display = (provider === "zoom") ? "block" : "block";
+        const streamUrlInput = document.getElementById("formStreamUrl");
+
+        if (agoraBox) agoraBox.style.display = (provider === "agora") ? "block" : "none";
+        if (hlsBox) hlsBox.style.display = (provider === "custom_hls") ? "block" : "none";
+        if (ytBox) ytBox.style.display = (provider === "youtube") ? "block" : "none";
+        if (zoomBox) zoomBox.style.display = (provider === "zoom") ? "block" : "none";
+
+        if (streamUrlInput) {
+          streamUrlInput.required = (provider === "youtube");
         }
       },
 
@@ -3717,10 +4061,22 @@
         let courseTitle = selectedOption ? (selectedOption.getAttribute("data-title") || selectedOption.textContent.split("(")[0].trim()) : "";
 
         const provider = document.getElementById("formProvider").value;
-        const rawUrl = document.getElementById("formStreamUrl").value.trim();
+        const agoraChannel = document.getElementById("formAgoraChannel")?.value.trim() || "";
+        const agoraAppId = document.getElementById("formAgoraAppId")?.value.trim() || "";
+        const hlsUrl = document.getElementById("formHlsUrl")?.value.trim() || "";
+        let rawUrl = document.getElementById("formStreamUrl")?.value.trim() || "";
 
-        // Strict live URL validation for YouTube
-        if (provider === "youtube") {
+        if (provider === "agora") {
+          if (!rawUrl) rawUrl = `agora://${agoraChannel || 'edupeak_live'}`;
+        } else if (provider === "custom_hls") {
+          if (!hlsUrl) {
+            if (window.showToast) window.showToast("⚠️ Please enter an HLS Stream URL (.m3u8)", "warning");
+            else alert("Please enter an HLS Stream URL (.m3u8)");
+            document.getElementById("formHlsUrl")?.focus();
+            return;
+          }
+          rawUrl = hlsUrl;
+        } else if (provider === "youtube") {
           const check = this.validateLiveStreamUrl(rawUrl, "youtube");
           if (!check.valid) {
             if (window.showToast) window.showToast(check.error, "error");
@@ -3753,7 +4109,10 @@
           if (match && match[1]) videoId = match[1];
         }
         const thumbInput = document.getElementById("formThumbnailUrl");
-        const thumbnailUrl = (thumbInput && thumbInput.value) ? thumbInput.value : (videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : "");
+        let thumbnailUrl = (thumbInput && thumbInput.value) ? thumbInput.value : (videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : "");
+        if (!thumbnailUrl) {
+          thumbnailUrl = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80";
+        }
 
         // Auto format schedule string
         const scheduleTime = `${scheduleDate} • ${scheduleStartTime} - ${scheduleEndTime}`;
@@ -3786,6 +4145,10 @@
           scheduleEndTime,
           scheduleTime,
           provider,
+          streamProvider: provider,
+          agoraChannel,
+          agoraAppId,
+          hlsUrl,
           rawUrl,
           zoomUrl,
           status,
@@ -3807,6 +4170,228 @@
         }
 
         await this.loadInitialStreams(schedData.id);
+      },
+
+      // --- Method 1: Agora Broadcaster Studio Methods ---
+      async openBroadcasterStudio(sessionId) {
+        const modal = document.getElementById("broadcasterStudioModal");
+        if (!modal) return;
+        modal.classList.add("active");
+
+        const session = (this.allSchedules || []).find(s => s.id === sessionId) || this.activeSession;
+        this._currentStudioSession = session;
+
+        const channel = (session && (session.agoraChannel || session.channel)) || "edupeak_physics_live";
+        const channelDisplay = document.getElementById("studioChannelDisplay");
+        if (channelDisplay) channelDisplay.value = channel;
+
+        // Initialize Broadcaster devices and local preview
+        if (window.EDUPEAK_AGORA_BROADCASTER) {
+          window.EDUPEAK_AGORA_BROADCASTER.setChannel(channel);
+          if (session && session.agoraAppId) {
+            window.EDUPEAK_AGORA_BROADCASTER.setAppId(session.agoraAppId);
+          }
+
+          // Populate devices into select dropdowns
+          await this.refreshStudioDeviceList();
+
+          // Hook audio volume level to UI meter
+          window.EDUPEAK_AGORA_BROADCASTER.onAudioVolume((level) => {
+            const vuBar = document.getElementById("studioAudioVuBar");
+            const vuText = document.getElementById("studioAudioVuText");
+            if (vuBar) vuBar.style.width = Math.min(100, Math.round(level * 100)) + "%";
+            if (vuText) {
+              const db = level > 0 ? Math.round(20 * Math.log10(level)) : -60;
+              vuText.textContent = `${db} dB`;
+            }
+          });
+
+          // Start camera preview in local monitor
+          await window.EDUPEAK_AGORA_BROADCASTER.startPreview("broadcasterLocalVideoBox");
+        }
+      },
+
+      async refreshStudioDeviceList() {
+        if (!window.EDUPEAK_AGORA_BROADCASTER) return;
+        const devices = await window.EDUPEAK_AGORA_BROADCASTER.enumerateDevices();
+        const vSelect = document.getElementById("studioVideoSelect");
+        const aSelect = document.getElementById("studioAudioSelect");
+
+        if (vSelect) {
+          vSelect.innerHTML = "";
+          devices.video.forEach(dev => {
+            const opt = document.createElement("option");
+            opt.value = dev.deviceId;
+            opt.textContent = dev.isObsVirtual ? `🎥 ${dev.label} (RECOMMENDED)` : `📷 ${dev.label}`;
+            if (dev.isObsVirtual) opt.selected = true;
+            vSelect.appendChild(opt);
+          });
+          if (devices.video.length === 0) {
+            vSelect.innerHTML = `<option value="">No Camera Found</option>`;
+          }
+        }
+
+        if (aSelect) {
+          aSelect.innerHTML = "";
+          devices.audio.forEach(dev => {
+            const opt = document.createElement("option");
+            opt.value = dev.deviceId;
+            opt.textContent = `🎙️ ${dev.label}`;
+            aSelect.appendChild(opt);
+          });
+          if (devices.audio.length === 0) {
+            aSelect.innerHTML = `<option value="">Default Microphone</option>`;
+          }
+        }
+      },
+
+      async handleStudioDeviceChange() {
+        const vSelect = document.getElementById("studioVideoSelect");
+        const aSelect = document.getElementById("studioAudioSelect");
+        if (window.EDUPEAK_AGORA_BROADCASTER) {
+          if (vSelect && vSelect.value) {
+            await window.EDUPEAK_AGORA_BROADCASTER.switchCamera(vSelect.value);
+          }
+          if (aSelect && aSelect.value) {
+            await window.EDUPEAK_AGORA_BROADCASTER.switchMicrophone(aSelect.value);
+          }
+        }
+      },
+
+      handleStudioProfileChange(profile) {
+        if (window.EDUPEAK_AGORA_BROADCASTER) {
+          window.EDUPEAK_AGORA_BROADCASTER.setProfile(profile);
+        }
+        const badge = document.getElementById("studioResBadge");
+        if (badge) {
+          const map = { '1080p_2': '1080p 60fps', '1080p_1': '1080p 30fps', '720p_2': '720p 30fps', '480p_1': '480p SD' };
+          badge.innerHTML = `<i class="fa-solid fa-bolt"></i> ${map[profile] || profile}`;
+        }
+      },
+
+      async toggleStudioMic() {
+        if (!window.EDUPEAK_AGORA_BROADCASTER) return;
+        const isMuted = await window.EDUPEAK_AGORA_BROADCASTER.toggleAudioMute();
+        const btn = document.getElementById("studioMicToggleBtn");
+        if (btn) {
+          if (isMuted) {
+            btn.innerHTML = `<i class="fa-solid fa-microphone-slash"></i> Mic Muted`;
+            btn.style.background = "rgba(239, 68, 68, 0.15)";
+            btn.style.borderColor = "rgba(239, 68, 68, 0.35)";
+            btn.style.color = "#fca5a5";
+          } else {
+            btn.innerHTML = `<i class="fa-solid fa-microphone"></i> Mic On`;
+            btn.style.background = "rgba(16, 185, 129, 0.15)";
+            btn.style.borderColor = "rgba(16, 185, 129, 0.35)";
+            btn.style.color = "#6ee7b7";
+          }
+        }
+      },
+
+      async toggleStudioCam() {
+        if (!window.EDUPEAK_AGORA_BROADCASTER) return;
+        const isMuted = await window.EDUPEAK_AGORA_BROADCASTER.toggleVideoMute();
+        const btn = document.getElementById("studioCamToggleBtn");
+        if (btn) {
+          if (isMuted) {
+            btn.innerHTML = `<i class="fa-solid fa-video-slash"></i> Cam Off`;
+            btn.style.background = "rgba(239, 68, 68, 0.15)";
+            btn.style.borderColor = "rgba(239, 68, 68, 0.35)";
+            btn.style.color = "#fca5a5";
+          } else {
+            btn.innerHTML = `<i class="fa-solid fa-video"></i> Cam On`;
+            btn.style.background = "rgba(56, 189, 248, 0.15)";
+            btn.style.borderColor = "rgba(56, 189, 248, 0.35)";
+            btn.style.color = "#7dd3fc";
+          }
+        }
+      },
+
+      async toggleStudioScreenShare() {
+        if (!window.EDUPEAK_AGORA_BROADCASTER) return;
+        const isSharing = await window.EDUPEAK_AGORA_BROADCASTER.toggleScreenShare("broadcasterLocalVideoBox");
+        const btn = document.getElementById("studioShareScreenBtn");
+        if (btn) {
+          if (isSharing) {
+            btn.innerHTML = `<i class="fa-solid fa-stop"></i> Stop Share`;
+            btn.style.background = "rgba(239, 68, 68, 0.2)";
+            btn.style.color = "#fca5a5";
+          } else {
+            btn.innerHTML = `<i class="fa-solid fa-display"></i> Share Screen`;
+            btn.style.background = "rgba(168, 85, 247, 0.15)";
+            btn.style.color = "#d8b4fe";
+          }
+        }
+      },
+
+      async handleStudioGoLive() {
+        if (!window.EDUPEAK_AGORA_BROADCASTER) return;
+        const btn = document.getElementById("studioGoLiveBtn");
+        const statusDot = document.getElementById("studioStatusDot");
+        const statusText = document.getElementById("studioStatusText");
+
+        const isBroadcasting = window.EDUPEAK_AGORA_BROADCASTER.getIsBroadcasting();
+        const sess = this._currentStudioSession || this.activeSession;
+        const sessId = sess ? sess.id : null;
+
+        if (isBroadcasting) {
+          // Stop live stream
+          await window.EDUPEAK_AGORA_BROADCASTER.unpublishStream();
+          if (btn) {
+            btn.innerHTML = `<i class="fa-solid fa-tower-broadcast"></i> Start Real-Time Broadcast`;
+            btn.style.background = "";
+          }
+          if (statusDot) statusDot.style.background = "#64748b";
+          if (statusText) statusText.textContent = "OFFLINE (STANDBY)";
+
+          if (sessId) {
+            await this.handleEndStream(sessId);
+          }
+        } else {
+          // Go live
+          try {
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Connecting to Agora...`;
+            const pub = await window.EDUPEAK_AGORA_BROADCASTER.publishStream();
+            if (pub) {
+              if (btn) {
+                btn.innerHTML = `<i class="fa-solid fa-stop"></i> End Broadcast Live`;
+                btn.style.background = "#ef4444";
+              }
+              if (statusDot) statusDot.style.background = "#ef4444";
+              if (statusText) statusText.textContent = "🔴 ON AIR (LIVE)";
+
+              if (sessId) {
+                await this.handleStartStream(sessId);
+              }
+              if (window.showToast) {
+                window.showToast("🔴 Broadcaster Studio is LIVE! Students are connected.", "success");
+              }
+            }
+          } catch(err) {
+            console.error("Studio publish failed:", err);
+            if (window.showToast) window.showToast("Broadcaster start failed: " + err.message, "error");
+            if (btn) btn.innerHTML = `<i class="fa-solid fa-tower-broadcast"></i> Start Real-Time Broadcast`;
+          }
+        }
+      },
+
+      closeBroadcasterStudio() {
+        const modal = document.getElementById("broadcasterStudioModal");
+        if (modal) modal.classList.remove("active");
+        if (window.EDUPEAK_AGORA_BROADCASTER && !window.EDUPEAK_AGORA_BROADCASTER.getIsBroadcasting()) {
+          window.EDUPEAK_AGORA_BROADCASTER.stopPreview();
+        }
+      },
+
+      // --- Method 2: OBS Guide Modal Methods ---
+      openObsGuideModal(sessionId) {
+        const modal = document.getElementById("obsGuideModal");
+        if (modal) modal.classList.add("active");
+      },
+
+      closeObsGuideModal() {
+        const modal = document.getElementById("obsGuideModal");
+        if (modal) modal.classList.remove("active");
       }
     };
 

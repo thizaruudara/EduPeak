@@ -777,6 +777,12 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   let streamEndCallbacks = [];
   let durationCheckInterval = null;
 
+  // Clean Native Video State (Agora WebRTC & Direct OBS HLS)
+  let activeCleanMode = null; // 'agora' | 'custom_hls' | null
+  let agoraClient = null;
+  let hlsInstance = null;
+  let agoraRemoteAudioTracks = [];
+
   function initLivePlayer(videoUrl = "https://www.youtube.com/embed/dQw4w9WgXcQ", sessionData = null) {
     if (sessionData) activeSessionData = sessionData;
     const videoId = extractYouTubeId(videoUrl);
@@ -875,6 +881,19 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       try { liveYtPlayer.destroy(); } catch(e) {}
       liveYtPlayer = null;
     }
+    if (agoraClient) {
+      try { agoraClient.leave(); } catch(e) {}
+      agoraClient = null;
+    }
+    if (hlsInstance) {
+      try { hlsInstance.destroy(); } catch(e) {}
+      hlsInstance = null;
+    }
+    agoraRemoteAudioTracks = [];
+    const cleanVideo = document.getElementById("cleanLiveVideoElement");
+    if (cleanVideo) {
+      try { cleanVideo.pause(); cleanVideo.src = ""; } catch(e) {}
+    }
     // Hide big play btn — session is over, no replay
     const bigPlayBtn = document.getElementById("livePlayerBigPlayBtn");
     if (bigPlayBtn) bigPlayBtn.style.display = "none";
@@ -915,26 +934,40 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     }
   }
 
+  function checkAndEnforceLiveStream() {
+    if (!liveYtPlayer || isSessionEnded) return false;
+    const isLiveSession = !activeSessionData || activeSessionData.status === "live";
+    if (!isLiveSession) return false;
+
+    try {
+      const videoData = typeof liveYtPlayer.getVideoData === "function" ? liveYtPlayer.getVideoData() : null;
+      const vidDuration = typeof liveYtPlayer.getDuration === "function" ? liveYtPlayer.getDuration() : 0;
+
+      if (videoData && videoData.video_id) {
+        // YouTube API: isLive is true/1 during active live streams.
+        // For ended streams or recorded videos, isLive is false/0/undefined AND duration > 0.
+        const isRealLive = Boolean(videoData.isLive);
+        if (!isRealLive && vidDuration > 0) {
+          console.warn("[EduPeak Live Player] YouTube stream has concluded (isLive is false, duration > 0). Ending live session immediately:", activeSessionData?.id);
+          try { liveYtPlayer.stopVideo(); } catch(e) {}
+          triggerLiveEnded();
+          return true;
+        }
+      }
+    } catch(e) {}
+    return false;
+  }
+
   function startDurationWatchdog() {
     stopDurationWatchdog();
     durationCheckInterval = setInterval(() => {
       if (!liveYtPlayer) return;
       try {
-        const isLiveType = typeof liveYtPlayer.getVideoData === "function" && liveYtPlayer.getVideoData()?.isLive;
+        const videoData = typeof liveYtPlayer.getVideoData === "function" ? liveYtPlayer.getVideoData() : null;
+        const isLiveType = videoData && Boolean(videoData.isLive);
         const isLiveSession = !activeSessionData || activeSessionData.status === "live";
         const curTime = typeof liveYtPlayer.getCurrentTime === "function" ? liveYtPlayer.getCurrentTime() : 0;
         const vidDuration = typeof liveYtPlayer.getDuration === "function" ? liveYtPlayer.getDuration() : 0;
-
-        // If it's a concluded or non-live session, allow saving playback
-        if (!isLiveSession && curTime > 1) {
-          const sessId = (activeSessionData && (activeSessionData.id || activeSessionData.scheduleId))
-            || (window.LIVE_APP ? window.LIVE_APP.activeSessionId : null);
-          const vId = (typeof liveYtPlayer.getVideoData === "function" && liveYtPlayer.getVideoData()?.video_id) || "";
-          try {
-            if (sessId) localStorage.setItem("edupeak_live_playback_" + sessId, String(Math.floor(curTime)));
-            if (vId) localStorage.setItem("edupeak_live_playback_" + vId, String(Math.floor(curTime)));
-          } catch(e) {}
-        }
 
         const playerState = typeof liveYtPlayer.getPlayerState === "function" ? liveYtPlayer.getPlayerState() : -1;
         if (playerState === 0) {
@@ -942,22 +975,33 @@ const EDUPEAK_LIVE_PLAYER = (function() {
           return;
         }
 
+        // Strictly verify live status: if session is marked "live" but YouTube reports an ended archived video, conclude it immediately!
+        if (isLiveSession && videoData && videoData.video_id) {
+          if (!isLiveType && vidDuration > 0) {
+            console.warn("[EduPeak Watchdog] Stream is not live on YouTube. Ending broadcast:", activeSessionData?.id);
+            triggerLiveEnded();
+            return;
+          }
+        }
+
+        // If it's a concluded or non-live session, allow saving playback
+        if (!isLiveSession && curTime > 1) {
+          const sessId = (activeSessionData && (activeSessionData.id || activeSessionData.scheduleId))
+            || (window.LIVE_APP ? window.LIVE_APP.activeSessionId : null);
+          const vId = (videoData && videoData.video_id) || "";
+          try {
+            if (sessId) localStorage.setItem("edupeak_live_playback_" + sessId, String(Math.floor(curTime)));
+            if (vId) localStorage.setItem("edupeak_live_playback_" + vId, String(Math.floor(curTime)));
+          } catch(e) {}
+        }
+
         // Keep synchronized with live timing smoothly (NO micro-seeking while stream is healthy)
-        if (isLiveSession) {
+        if (isLiveSession && isLiveType) {
           const now = Date.now();
-          if (isLiveType) {
-            // Real YouTube live stream: only sync if student lagged behind significantly (> 25s) with 20s cooldown
-            if (vidDuration > 0 && curTime > 0 && (vidDuration - curTime > 25) && (now - lastLiveSyncTime > 20000)) {
-              lastLiveSyncTime = now;
-              try { liveYtPlayer.seekTo(vidDuration, true); } catch(e) {}
-            }
-          } else {
-            // Live broadcast with scheduled elapsed time: lock to exact elapsed seconds only if drift > 12s
-            const targetElapsed = getElapsedSeconds();
-            if (targetElapsed > 2 && Math.abs(curTime - targetElapsed) > 12 && (now - lastLiveSyncTime > 20000)) {
-              lastLiveSyncTime = now;
-              try { liveYtPlayer.seekTo(targetElapsed, true); } catch(e) {}
-            }
+          // Real YouTube live stream: only sync if student lagged behind significantly (> 25s) with 20s cooldown
+          if (vidDuration > 0 && curTime > 0 && (vidDuration - curTime > 25) && (now - lastLiveSyncTime > 20000)) {
+            lastLiveSyncTime = now;
+            try { liveYtPlayer.seekTo(vidDuration, true); } catch(e) {}
           }
         }
 
@@ -1084,6 +1128,9 @@ const EDUPEAK_LIVE_PLAYER = (function() {
               triggerStartupMask();
               _showUnmutePrompt();
               startDurationWatchdog();
+              setTimeout(() => {
+                checkAndEnforceLiveStream();
+              }, 600);
             } catch (e) {
               console.warn("Live player init notice:", e);
             }
@@ -1096,6 +1143,9 @@ const EDUPEAK_LIVE_PLAYER = (function() {
 
             if (event.data === PLAYING) {
               isLivePlaying = true;
+              if (checkAndEnforceLiveStream()) {
+                return;
+              }
               if (bigPlayBtn) bigPlayBtn.classList.add("hidden");
               updateLiveWatermark();
               startDurationWatchdog();
@@ -1162,6 +1212,19 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   }
 
   function loadLiveStream(url, sessionData = null) {
+    if (sessionData && (sessionData.streamProvider === "agora" || sessionData.provider === "agora" || sessionData.streamProvider === "custom_hls" || sessionData.provider === "custom_hls")) {
+      return loadCleanLiveStream(url, sessionData, sessionData.streamProvider || sessionData.provider);
+    }
+    // Switch off clean native player when returning to YouTube
+    activeCleanMode = null;
+    if (agoraClient) { try { agoraClient.leave(); } catch(e) {} agoraClient = null; }
+    if (hlsInstance) { try { hlsInstance.destroy(); } catch(e) {} hlsInstance = null; }
+    agoraRemoteAudioTracks = [];
+    const cleanMount = document.getElementById("cleanLiveVideoMount");
+    if (cleanMount) cleanMount.style.display = "none";
+    const ytCropper = document.getElementById("edupeakYtCropperWrapper");
+    if (ytCropper) ytCropper.style.display = "";
+
     setupLivePlayerEvents();
     isSessionEnded = false;
     if (sessionData) {
@@ -1213,10 +1276,205 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     updateLiveWatermark();
   }
 
+  async function loadCleanLiveStream(url, sessionData = null, mode = "agora") {
+    setupLivePlayerEvents();
+    isSessionEnded = false;
+    if (sessionData) {
+      activeSessionData = sessionData;
+      if (sessionData.id && sessionData.startedAt) {
+        try { localStorage.setItem("edupeak_session_started_" + sessionData.id, sessionData.startedAt); } catch(e) {}
+      }
+    }
+
+    const provider = mode || (sessionData && (sessionData.streamProvider || sessionData.provider)) || "agora";
+    activeCleanMode = provider;
+
+    // Shut down YouTube live player if active
+    if (liveYtPlayer) {
+      try { liveYtPlayer.stopVideo(); } catch(e) {}
+      try { liveYtPlayer.destroy(); } catch(e) {}
+      liveYtPlayer = null;
+    }
+
+    // Hide YouTube frame mount and display clean native video mount
+    const ytCropper = document.getElementById("edupeakYtCropperWrapper");
+    if (ytCropper) ytCropper.style.display = "none";
+
+    const cleanMount = document.getElementById("cleanLiveVideoMount");
+    if (cleanMount) cleanMount.style.display = "block";
+
+    // Clean up any existing Agora or HLS instances
+    if (agoraClient) { try { await agoraClient.leave(); } catch(e) {} agoraClient = null; }
+    if (hlsInstance) { try { hlsInstance.destroy(); } catch(e) {} hlsInstance = null; }
+    agoraRemoteAudioTracks = [];
+
+    if (provider === "agora") {
+      await initAgoraAudiencePlayback(sessionData);
+    } else {
+      initHlsPlayback(url || (sessionData && (sessionData.hlsUrl || sessionData.rawUrl)), sessionData);
+    }
+
+    isLivePlaying = true;
+    updateLiveWatermark();
+    startLiveWatermarkMovement();
+    startDurationWatchdog();
+    triggerStartupBanners(10000);
+    scheduleLiveControlsFade();
+  }
+
+  async function initAgoraAudiencePlayback(sessionData) {
+    const agoraBox = document.getElementById("agoraRemoteVideoBox");
+    const cleanVideo = document.getElementById("cleanLiveVideoElement");
+    if (cleanVideo) {
+      cleanVideo.style.display = "none";
+      try { cleanVideo.pause(); } catch(e) {}
+    }
+    if (agoraBox) {
+      agoraBox.style.display = "block";
+      agoraBox.innerHTML = "";
+    }
+
+    if (!window.AgoraRTC) {
+      console.warn("[Agora Audience] AgoraRTC SDK is loading or not available.");
+      if (agoraBox) {
+        agoraBox.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;text-align:center;padding:1.5rem;">
+            <div>
+              <i class="fa-solid fa-satellite-dish" style="font-size:2rem;margin-bottom:0.75rem;color:#f59e0b;"></i>
+              <p style="font-weight:600;color:#fff;">Connecting to Real-time Stream...</p>
+              <small style="color:#94a3b8;">Agora WebRTC Client initializing</small>
+            </div>
+          </div>`;
+      }
+      return;
+    }
+
+    const appId = (sessionData && sessionData.agoraAppId)
+      || localStorage.getItem("edupeak_agora_app_id")
+      || (window.EDUPEAK_AGORA_DEFAULT_APP_ID || "4e3895bb73ba4faea39c0dc118efbf89");
+    const channel = (sessionData && (sessionData.agoraChannel || sessionData.channel))
+      || (sessionData && sessionData.id ? `edupeak_${sessionData.id.replace(/[^a-zA-Z0-9_-]/g, '')}` : "edupeak_main_live");
+
+    try {
+      agoraClient = AgoraRTC.createClient({ mode: "live", codec: "vp8" });
+      await agoraClient.setClientRole("audience", { level: 1 });
+
+      agoraClient.on("user-published", async (user, mediaType) => {
+        try {
+          await agoraClient.subscribe(user, mediaType);
+          if (mediaType === "video") {
+            const remoteVideoTrack = user.videoTrack;
+            if (agoraBox) {
+              remoteVideoTrack.play("agoraRemoteVideoBox");
+            }
+          }
+          if (mediaType === "audio") {
+            const remoteAudioTrack = user.audioTrack;
+            if (!agoraRemoteAudioTracks.includes(remoteAudioTrack)) {
+              agoraRemoteAudioTracks.push(remoteAudioTrack);
+            }
+            remoteAudioTrack.play();
+            remoteAudioTrack.setVolume(liveVolume);
+          }
+          isLivePlaying = true;
+          const bigPlayBtn = document.getElementById("livePlayerBigPlayBtn");
+          if (bigPlayBtn) bigPlayBtn.classList.add("hidden");
+        } catch (subErr) {
+          console.error("[Agora Audience] Subscribe failed:", subErr);
+        }
+      });
+
+      agoraClient.on("user-unpublished", (user, mediaType) => {
+        if (mediaType === "audio" && user.audioTrack) {
+          agoraRemoteAudioTracks = agoraRemoteAudioTracks.filter(t => t !== user.audioTrack);
+        }
+      });
+
+      await agoraClient.join(appId, channel, null, null);
+      console.log(`[Agora Audience] Joined channel: ${channel}`);
+    } catch (err) {
+      console.error("[Agora Audience] Join error:", err);
+      if (agoraBox) {
+        agoraBox.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:center;height:100%;color:#f59e0b;text-align:center;padding:1.5rem;">
+            <div>
+              <i class="fa-solid fa-tower-broadcast" style="font-size:2.2rem;margin-bottom:0.75rem;color:#38bdf8;"></i>
+              <p style="font-weight:600;color:#fff;font-size:1.05rem;">Live Broadcast Standby</p>
+              <small style="color:#94a3b8;">Waiting for teacher broadcast on channel <b>${channel}</b></small>
+            </div>
+          </div>`;
+      }
+    }
+  }
+
+  function initHlsPlayback(streamUrl, sessionData) {
+    const agoraBox = document.getElementById("agoraRemoteVideoBox");
+    const cleanVideo = document.getElementById("cleanLiveVideoElement");
+    if (agoraBox) {
+      agoraBox.style.display = "none";
+      agoraBox.innerHTML = "";
+    }
+    if (!cleanVideo) return;
+    cleanVideo.style.display = "block";
+
+    const hlsUrl = streamUrl || (sessionData && (sessionData.hlsUrl || sessionData.rawUrl || sessionData.streamUrl)) || "";
+    if (!hlsUrl) {
+      console.warn("[EduPeak HLS] No HLS URL provided.");
+      return;
+    }
+
+    if (window.Hls && Hls.isSupported()) {
+      hlsInstance = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        liveSyncDurationCount: 3
+      });
+      hlsInstance.loadSource(hlsUrl);
+      hlsInstance.attachMedia(cleanVideo);
+      hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() {
+        cleanVideo.volume = (liveVolume / 100);
+        cleanVideo.play().catch(() => {
+          _showUnmutePrompt();
+        });
+      });
+      hlsInstance.on(Hls.Events.ERROR, function(event, data) {
+        if (data.fatal) {
+          switch(data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              console.warn("[EduPeak HLS] Network issue, reconnecting...", data);
+              hlsInstance.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              console.warn("[EduPeak HLS] Media decode issue, recovering...", data);
+              hlsInstance.recoverMediaError();
+              break;
+            default:
+              console.error("[EduPeak HLS] Fatal error:", data);
+              hlsInstance.destroy();
+              break;
+          }
+        }
+      });
+    } else if (cleanVideo.canPlayType("application/vnd.apple.mpegurl")) {
+      cleanVideo.src = hlsUrl;
+      cleanVideo.volume = (liveVolume / 100);
+      cleanVideo.play().catch(() => {
+        _showUnmutePrompt();
+      });
+    }
+  }
+
   // ── Unmute helpers ──────────────────────────────────────────────────────
   let _hasUserUnmuted = false;
 
   function _isMuted() {
+    if (activeCleanMode === "agora") {
+      return liveVolume === 0;
+    }
+    if (activeCleanMode === "custom_hls") {
+      const cleanVideo = document.getElementById("cleanLiveVideoElement");
+      return cleanVideo ? (cleanVideo.muted || cleanVideo.volume === 0) : false;
+    }
     try { return liveYtPlayer && liveYtPlayer.isMuted(); } catch(e) { return false; }
   }
 
@@ -1313,12 +1571,23 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     _hideUnmutePrompt();
     if (isSessionEnded) return;   // session over — no replay
     try {
+      const targetVol = (liveVolume && liveVolume > 0) ? liveVolume : 100;
+      liveVolume = targetVol;
+
       if (liveYtPlayer) {
         liveYtPlayer.unMute();
-        const targetVol = (liveVolume && liveVolume > 0) ? liveVolume : 100;
-        liveVolume = targetVol;
         liveYtPlayer.setVolume(targetVol);
         liveYtPlayer.playVideo();
+      }
+      if (activeCleanMode === "agora") {
+        agoraRemoteAudioTracks.forEach(t => { try { t.setVolume(targetVol); } catch(e) {} });
+      } else if (activeCleanMode === "custom_hls") {
+        const cleanVideo = document.getElementById("cleanLiveVideoElement");
+        if (cleanVideo) {
+          cleanVideo.muted = false;
+          cleanVideo.volume = targetVol / 100;
+          cleanVideo.play().catch(() => {});
+        }
       }
       const icon = document.getElementById("livePlayerVolumeIcon");
       if (icon) icon.className = (liveVolume < 50 ? "fa-solid fa-volume-low" : "fa-solid fa-volume-high");
@@ -1343,6 +1612,13 @@ const EDUPEAK_LIVE_PLAYER = (function() {
         liveYtPlayer.setVolume(liveVolume || 100);
       } catch (e) {}
     }
+    if (activeCleanMode === "custom_hls") {
+      const cleanVideo = document.getElementById("cleanLiveVideoElement");
+      if (cleanVideo) {
+        cleanVideo.muted = false;
+        cleanVideo.play().catch(() => {});
+      }
+    }
     isLivePlaying = true;
     const bigPlayBtn = document.getElementById("livePlayerBigPlayBtn");
     if (bigPlayBtn) bigPlayBtn.classList.add("hidden");
@@ -1357,7 +1633,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       shieldClickAttempts++;
       joinStream();
       // If user clicks 2+ times while not playing, disable pointer events on shield so direct clicks reach YouTube iframe (play button / sign in)
-      if (shieldClickAttempts >= 2) {
+      if (shieldClickAttempts >= 2 && !activeCleanMode) {
         const shield = document.getElementById("livePlayerClickShield");
         if (shield) {
           shield.style.pointerEvents = "none";
@@ -1394,6 +1670,12 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     if (liveYtPlayer && typeof liveYtPlayer.pauseVideo === "function") {
       try { liveYtPlayer.pauseVideo(); } catch (e) {}
     }
+    if (activeCleanMode === "custom_hls") {
+      const cleanVideo = document.getElementById("cleanLiveVideoElement");
+      if (cleanVideo) {
+        try { cleanVideo.pause(); } catch(e) {}
+      }
+    }
     isLivePlaying = false;
     const bigPlayBtn = document.getElementById("livePlayerBigPlayBtn");
     if (bigPlayBtn) bigPlayBtn.classList.remove("hidden");
@@ -1411,6 +1693,15 @@ const EDUPEAK_LIVE_PLAYER = (function() {
         liveYtPlayer.setVolume(liveVolume);
       }
     }
+    if (activeCleanMode === "agora") {
+      agoraRemoteAudioTracks.forEach(t => { try { t.setVolume(liveVolume); } catch(e) {} });
+    } else if (activeCleanMode === "custom_hls") {
+      const cleanVideo = document.getElementById("cleanLiveVideoElement");
+      if (cleanVideo) {
+        cleanVideo.volume = Math.max(0, Math.min(1, liveVolume / 100));
+        if (liveVolume > 0 && cleanVideo.muted) cleanVideo.muted = false;
+      }
+    }
     const icon = document.getElementById("livePlayerVolumeIcon");
     if (icon) {
       icon.className = liveVolume === 0 ? "fa-solid fa-volume-xmark" : (liveVolume < 50 ? "fa-solid fa-volume-low" : "fa-solid fa-volume-high");
@@ -1418,7 +1709,36 @@ const EDUPEAK_LIVE_PLAYER = (function() {
   }
 
   function toggleMute() {
-    if (!liveYtPlayer) return;
+    if (!liveYtPlayer && !activeCleanMode) return;
+    if (activeCleanMode === "agora") {
+      if (liveVolume === 0) {
+        liveVolume = 100;
+        agoraRemoteAudioTracks.forEach(t => { try { t.setVolume(100); } catch(e) {} });
+        const icon = document.getElementById("livePlayerVolumeIcon");
+        if (icon) icon.className = "fa-solid fa-volume-high";
+        const slider = document.getElementById("livePlayerVolumeSlider");
+        if (slider) slider.value = 100;
+      } else {
+        liveVolume = 0;
+        agoraRemoteAudioTracks.forEach(t => { try { t.setVolume(0); } catch(e) {} });
+        const icon = document.getElementById("livePlayerVolumeIcon");
+        if (icon) icon.className = "fa-solid fa-volume-xmark";
+        const slider = document.getElementById("livePlayerVolumeSlider");
+        if (slider) slider.value = 0;
+      }
+      return;
+    }
+    if (activeCleanMode === "custom_hls") {
+      const cleanVideo = document.getElementById("cleanLiveVideoElement");
+      if (cleanVideo) {
+        cleanVideo.muted = !cleanVideo.muted;
+        const icon = document.getElementById("livePlayerVolumeIcon");
+        if (icon) icon.className = cleanVideo.muted ? "fa-solid fa-volume-xmark" : (cleanVideo.volume < 0.5 ? "fa-solid fa-volume-low" : "fa-solid fa-volume-high");
+        const slider = document.getElementById("livePlayerVolumeSlider");
+        if (slider) slider.value = cleanVideo.muted ? 0 : Math.round(cleanVideo.volume * 100);
+      }
+      return;
+    }
     if (liveYtPlayer.isMuted()) {
       _unmute();
     } else {
@@ -1806,6 +2126,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     init: initLivePlayer,
     loadLiveStream: loadLiveStream,
     loadStream: loadLiveStream,
+    loadCleanLiveStream: loadCleanLiveStream,
     joinStream: joinStream,
     unmute: _unmute,
     onShieldClick: onShieldClick,

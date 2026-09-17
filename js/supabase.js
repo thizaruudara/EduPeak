@@ -1749,7 +1749,10 @@ const SUPABASE_HELPER = {
       examYear: normalized.examYear || "2027 A/L",
       startedAt: normalized.startedAt || null,
       endedAt: normalized.endedAt || null,
-      topic_si: normalized.topic_si || ""
+      topic_si: normalized.topic_si || "",
+      agoraChannel: normalized.agoraChannel || "",
+      agoraAppId: normalized.agoraAppId || "",
+      hlsUrl: normalized.hlsUrl || ""
     };
 
     return {
@@ -1913,6 +1916,9 @@ const SUPABASE_HELPER = {
         return sAt;
       })(),
       endedAt: merged.endedAt || merged.ended_at || null,
+      agoraChannel: merged.agoraChannel || merged.agora_channel || (merged.id ? `ch_${merged.id.replace(/[^a-zA-Z0-9_-]/g, "")}` : "edupeak_live"),
+      agoraAppId: merged.agoraAppId || merged.agora_app_id || "",
+      hlsUrl: merged.hlsUrl || merged.hls_url || (merged.provider === "custom_hls" ? (rawUrl || embedUrl) : ""),
       createdAt: merged.createdAt || merged.created_at || new Date().toISOString(),
       updatedAt: merged.updatedAt || merged.updated_at || new Date().toISOString()
     };
@@ -1942,6 +1948,128 @@ const SUPABASE_HELPER = {
 
   async getSchedules() {
     return this.getLiveSessions();
+  },
+
+  autoExpireStaleSessions(schedules) {
+    if (!Array.isArray(schedules) || schedules.length === 0) return schedules;
+    const now = new Date();
+    const nowIso = now.toISOString();
+
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const todayStr = `${year}-${month}-${day}`;
+    const nowMs = now.getTime();
+
+    let hasChanged = false;
+    const expiredList = [];
+
+    const updated = schedules.map(sched => {
+      if (!sched || !sched.id) return sched;
+      if (sched.status === "ended") return sched;
+
+      let isExpired = false;
+      let expireReason = "";
+
+      const schedDate = String(sched.scheduleDate || sched.schedule_date || "").trim();
+      const status = sched.status || "scheduled";
+
+      // 1. Date check: past date (< today) for live or scheduled broadcast
+      if (schedDate && schedDate < todayStr) {
+        isExpired = true;
+        expireReason = `Past date (${schedDate} < ${todayStr})`;
+      }
+
+      // 2. Max live duration check: if marked "live" and started more than 4 hours ago
+      if (!isExpired && status === "live") {
+        const startedAtStr = sched.startedAt || sched.started_at;
+        if (startedAtStr) {
+          const startMs = new Date(startedAtStr).getTime();
+          if (!isNaN(startMs) && (nowMs - startMs > 4 * 60 * 60 * 1000)) {
+            isExpired = true;
+            expireReason = `Live duration exceeded 4 hours (started at ${startedAtStr})`;
+          }
+        }
+      }
+
+      // 3. Today's schedule end time check: if end time + 45 minutes grace has passed
+      if (!isExpired && (!schedDate || schedDate === todayStr)) {
+        const endTimeStr = sched.scheduleEndTime || sched.schedule_end_time;
+        if (endTimeStr && typeof endTimeStr === "string") {
+          const parts = endTimeStr.split(":");
+          if (parts.length >= 2) {
+            const endH = parseInt(parts[0], 10);
+            const endM = parseInt(parts[1], 10);
+            if (!isNaN(endH) && !isNaN(endM)) {
+              const endDate = new Date(year, now.getMonth(), now.getDate(), endH, endM, 0, 0);
+              const gracePeriodMs = 45 * 60 * 1000; // 45m grace period
+              if (nowMs > endDate.getTime() + gracePeriodMs) {
+                isExpired = true;
+                expireReason = `Scheduled window + 45m grace passed (${endTimeStr})`;
+              }
+            }
+          }
+        }
+      }
+
+      if (isExpired) {
+        hasChanged = true;
+        expiredList.push(sched.id);
+        console.log(`[EduPeak AutoExpire] Expiring broadcast "${sched.topic}" (${sched.id}): ${expireReason}`);
+        return {
+          ...sched,
+          status: "ended",
+          endedAt: sched.endedAt || nowIso,
+          updatedAt: nowIso
+        };
+      }
+
+      return sched;
+    });
+
+    if (hasChanged) {
+      try {
+        localStorage.setItem("edupeak_schedules_db", JSON.stringify(updated));
+        this.setSharedData("edupeak_schedules_db", updated);
+      } catch (e) {}
+
+      try {
+        const single = JSON.parse(localStorage.getItem("edupeak_live_stream_config") || "null");
+        if (single && expiredList.includes(single.id || single.scheduleId)) {
+          single.status = "ended";
+          single.endedAt = nowIso;
+          localStorage.setItem("edupeak_live_stream_config", JSON.stringify(single));
+          this.setSharedData("edupeak_live_stream_config", single);
+        }
+      } catch (e) {}
+
+      if (this.isConnected && this.client) {
+        expiredList.forEach(id => {
+          try {
+            const s = updated.find(item => item.id === id);
+            if (s) {
+              const payload = this.formatSchedulePayload(s);
+              if (payload) {
+                this.client.from("broadcast_schedules").upsert([payload]).then(() => {}).catch(() => {});
+              }
+            }
+          } catch (e) {}
+        });
+      }
+
+      try {
+        window.dispatchEvent(new CustomEvent("edupeak-live-sessions-updated", { detail: { all: updated } }));
+      } catch (e) {}
+      try {
+        if (typeof BroadcastChannel !== "undefined") {
+          const ch = new BroadcastChannel("edupeak_live_sessions_channel");
+          ch.postMessage({ type: "LIVE_SESSION_UPDATED", all: updated });
+          ch.close();
+        }
+      } catch (e) {}
+    }
+
+    return updated;
   },
 
   async getLiveSessions() {
@@ -1985,8 +2113,8 @@ const SUPABASE_HELPER = {
             .map(s => this.normalizeLiveSession(s))
             .filter(s => s && s.id && !deletedIds.includes(s.id) && !this.isTestSchedule(s));
 
-          // Supabase Cloud is authoritative when connected — do NOT resurrect deleted/stale local sessions
-          const finalMerged = remoteNormalized;
+          // Auto-expire any stale past sessions before returning
+          const finalMerged = this.autoExpireStaleSessions(remoteNormalized);
           this.setSharedData("edupeak_schedules_db", finalMerged);
           try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(finalMerged)); } catch (e) {}
           return finalMerged;
@@ -1997,7 +2125,9 @@ const SUPABASE_HELPER = {
     }
 
     if (localSchedules.length > 0) {
-      const finalLocal = localSchedules.filter(s => s && s.id && !deletedIds.includes(s.id) && !this.isTestSchedule(s));
+      const finalLocal = this.autoExpireStaleSessions(
+        localSchedules.filter(s => s && s.id && !deletedIds.includes(s.id) && !this.isTestSchedule(s))
+      );
       this.setSharedData("edupeak_schedules_db", finalLocal);
       try { localStorage.setItem("edupeak_schedules_db", JSON.stringify(finalLocal)); } catch (e) {}
       return finalLocal;
