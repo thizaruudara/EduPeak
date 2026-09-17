@@ -272,6 +272,18 @@
             <span>Live Class Hub <span style="font-size: 0.65rem; background: #ef4444; color: #fff; padding: 2px 6px; border-radius: 9999px; margin-left: 4px;">LIVE</span></span>
           </div>
         </a>
+        <button class="admin-nav-item" data-tab="lessons" onclick="ADMIN_CONTROLLER.switchTab('lessons')">
+          <div class="admin-nav-item-left">
+            <i class="fa-solid fa-film"></i>
+            <span>Lessons & Curriculum</span>
+          </div>
+        </button>
+        <button class="admin-nav-item" data-tab="quizzes" onclick="ADMIN_CONTROLLER.switchTab('quizzes')">
+          <div class="admin-nav-item-left">
+            <i class="fa-solid fa-clipboard-question"></i>
+            <span>Speed MCQ Quizzes</span>
+          </div>
+        </button>
         <button class="admin-nav-item" data-tab="institutes" onclick="ADMIN_CONTROLLER.switchTab('institutes')">
           <div class="admin-nav-item-left">
             <i class="fa-solid fa-school-flag"></i>
@@ -412,6 +424,12 @@
               </button>
               <button type="button" class="btn-quick-pill" onclick="ADMIN_CONTROLLER.openAddTeacherModal()">
                 <i class="fa-solid fa-user-plus"></i> New Lecturer
+              </button>
+              <button type="button" class="btn-quick-pill" onclick="ADMIN_CONTROLLER.openAddLessonModal()">
+                <i class="fa-solid fa-film"></i> Add Lesson
+              </button>
+              <button type="button" class="btn-quick-pill" onclick="ADMIN_CONTROLLER.openAddQuizModal()">
+                <i class="fa-solid fa-clipboard-question"></i> Add MCQ
               </button>
               <button type="button" class="btn-quick-pill" onclick="ADMIN_CONTROLLER.openAddPaperModal()">
                 <i class="fa-solid fa-file-arrow-up"></i> Upload Paper PDF
@@ -778,6 +796,74 @@
                   <!-- Injected dynamically by admin.js -->
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: LESSONS & VIDEO CURRICULUM -->
+        <div class="admin-tab-pane" id="adminTab_lessons">
+          <div class="admin-card-container">
+            <div class="admin-card-header">
+              <div>
+                <h3 style="margin-bottom: 0.2rem;"><i class="fa-solid fa-film"></i> Course Video Lessons & Curriculum</h3>
+                <span id="adminLessonsCountLabel" style="font-size: 0.8rem; color: #64748b; font-weight: 600;">Manage video lectures, summary PDF handouts, anti-piracy watermarks, and chapter timelines</span>
+              </div>
+              <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <div class="admin-actions-bar">
+                  <select class="admin-filter-select" id="adminLessonCourseSelect" onchange="ADMIN_CONTROLLER.renderLessons()" style="min-width: 250px;">
+                    <!-- Populated dynamically with courses -->
+                  </select>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="ADMIN_CONTROLLER.openAddLessonModal()">
+                  <i class="fa-solid fa-plus"></i> Add Lesson
+                </button>
+              </div>
+            </div>
+
+            <div class="admin-table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Module #</th>
+                    <th>Lesson Title</th>
+                    <th>Target Course</th>
+                    <th>Chapter Markers</th>
+                    <th>Duration</th>
+                    <th>PDF Handout</th>
+                    <th>Anti-Piracy</th>
+                    <th style="text-align: right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="adminLessonsTbody">
+                  <!-- Injected by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: SPEED MCQ QUIZZES -->
+        <div class="admin-tab-pane" id="adminTab_quizzes">
+          <div class="admin-card-container">
+            <div class="admin-card-header">
+              <div>
+                <h3 style="margin-bottom: 0.2rem;"><i class="fa-solid fa-clipboard-question"></i> Speed MCQ Paper & Quiz Creator</h3>
+                <span id="adminQuizzesCountLabel" style="font-size: 0.8rem; color: #64748b; font-weight: 600;">Design timed MCQ examinations with automatic grading solutions</span>
+              </div>
+              <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <div class="admin-actions-bar">
+                  <select class="admin-filter-select" id="adminQuizCourseSelect" onchange="ADMIN_CONTROLLER.renderQuizzes()" style="min-width: 250px;">
+                    <!-- Populated dynamically with courses -->
+                  </select>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="ADMIN_CONTROLLER.openAddQuizModal()">
+                  <i class="fa-solid fa-plus"></i> Add New MCQ Question
+                </button>
+              </div>
+            </div>
+
+            <div id="adminQuizList" style="padding: 1.25rem 0;">
+              <!-- Injected by JS -->
             </div>
           </div>
         </div>
@@ -1324,6 +1410,196 @@
             </button>
             <button type="submit" class="btn btn-primary">
               <i class="fa-solid fa-cloud-arrow-up"></i> Save & Publish Branch
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       ADMIN DRAWER: ADD / EDIT LESSON MODAL
+       ========================================================================= -->
+  <div class="admin-drawer-modal" id="adminLessonDrawerModal">
+    <div class="admin-drawer-card" style="max-width: 650px;">
+      <div class="modal-header">
+        <h3 id="adminLessonModalTitle" style="font-size: 1.15rem; font-weight: 700; color: var(--text-main);">Add Lesson to Course</h3>
+        <button class="modal-close-btn" onclick="document.getElementById('adminLessonDrawerModal').classList.remove('active')">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="ADMIN_CONTROLLER.handleSaveLessonSubmit(event)">
+          <input type="hidden" id="adminLessonFormId">
+          
+          <div class="form-group">
+            <label class="form-label">Select Course *</label>
+            <select class="form-control" id="adminLessonFormCourse" required>
+              <!-- Populated by JS -->
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Lesson Title *</label>
+            <input type="text" class="form-control" id="adminLessonFormTitle" placeholder="e.g. Circular Motion & Gravitational Fields" required>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Duration</span>
+                <span id="adminLessonDurationAutoBadge" style="font-size: 0.72rem; font-weight: 600;"></span>
+              </label>
+              <input type="text" class="form-control" id="adminLessonFormDuration" placeholder="e.g. 50 mins" value="50 mins">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Video Embed / Stream URL *</label>
+              <input type="text" class="form-control" id="adminLessonFormVideoUrl" placeholder="https://www.youtube.com/watch?v=..." value="https://www.youtube.com/embed/dQw4w9WgXcQ" required oninput="ADMIN_CONTROLLER.autoDetectDuration('adminLessonFormVideoUrl', 'adminLessonFormDuration', 'adminLessonDurationAutoBadge')" onchange="ADMIN_CONTROLLER.autoDetectDuration('adminLessonFormVideoUrl', 'adminLessonFormDuration', 'adminLessonDurationAutoBadge')">
+            </div>
+          </div>
+
+          <div style="margin-bottom: 0.75rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+              <input type="checkbox" id="adminLessonHasPdfCheckbox" checked onchange="document.getElementById('adminLessonPdfFieldsRow').style.display = this.checked ? 'grid' : 'none'">
+              <span>Attach Summary PDF Handout for Students</span>
+            </label>
+          </div>
+
+          <div id="adminLessonPdfFieldsRow" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">PDF Handout File Name</label>
+              <input type="text" class="form-control" id="adminLessonPdfNameInput" placeholder="e.g. Circular_Motion_Theory_Notes.pdf" value="Lesson_Summary_Notes.pdf">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label"><i class="fa-brands fa-google-drive" style="color: #0f9d58;"></i> Google Drive / PDF URL</label>
+              <input type="url" class="form-control" id="adminLessonPdfUrlInput" placeholder="https://drive.google.com/file/d/.../view">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1rem; padding: 0.75rem 1rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; margin: 0;">
+              <input type="checkbox" id="adminLessonWatermarkCheckbox" style="width: 16px; height: 16px;">
+              <span style="font-size: 0.85rem; font-weight: 700; color: #1e293b;">
+                <i class="fa-solid fa-shield-halved" style="color: #227aff;"></i> Enable Student Anti-Piracy Watermark
+              </span>
+            </label>
+            <p style="font-size: 0.75rem; color: #64748b; margin: 0.35rem 0 0 1.6rem;">
+              When enabled, student's NIC number will be displayed over this video lesson during playback.
+            </p>
+          </div>
+
+          <!-- Chapter Timeline Builder -->
+          <div style="border-top: 1px solid #e2e8f0; padding-top: 1rem; margin-top: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+              <label class="form-label" style="margin: 0; font-weight: 800; color: #0f172a;">
+                <i class="fa-solid fa-list-ol" style="color: #227aff;"></i> Video Chapter Timeline Markers
+              </label>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="ADMIN_CONTROLLER.addChapterRowToModal()" style="color: #227aff; font-weight: 700; border: 1px solid #bfdbfe; font-size: 0.75rem;">
+                <i class="fa-solid fa-plus"></i> Add Marker
+              </button>
+            </div>
+            <div id="adminLessonChaptersContainer" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 180px; overflow-y: auto; padding-right: 0.25rem;">
+              <!-- Dynamic rows -->
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
+            <button type="button" class="btn btn-ghost" onclick="document.getElementById('adminLessonDrawerModal').classList.remove('active')">
+              Cancel
+            </button>
+            <button type="button" id="adminLessonDeleteBtn" class="btn btn-ghost" style="display: none; color: #ef4444; border: 1px solid #fecaca;" onclick="ADMIN_CONTROLLER.handleDeleteCurrentModalLesson()">
+              <i class="fa-solid fa-trash"></i> Delete Lesson
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Save & Sync with LMS
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       ADMIN DRAWER: ADD / EDIT MCQ QUIZ MODAL
+       ========================================================================= -->
+  <div class="admin-drawer-modal" id="adminQuizDrawerModal">
+    <div class="admin-drawer-card" style="max-width: 650px;">
+      <div class="modal-header">
+        <h3 id="adminQuizModalTitle" style="font-size: 1.15rem; font-weight: 700; color: var(--text-main);">Create Speed MCQ Question</h3>
+        <button class="modal-close-btn" onclick="document.getElementById('adminQuizDrawerModal').classList.remove('active')">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="ADMIN_CONTROLLER.handleSaveQuizSubmit(event)">
+          <input type="hidden" id="adminQuizFormId">
+
+          <div class="form-group">
+            <label class="form-label">Course for this Quiz / Question *</label>
+            <select class="form-control" id="adminQuizFormCourse" required>
+              <!-- Populated by JS -->
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Subject & Unit *</label>
+            <input type="text" class="form-control" id="adminQuizFormSubject" placeholder="e.g. Physics - Mechanics" required value="Physics - Mechanics">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Question Text (English) *</label>
+            <textarea class="form-control" id="adminQuizFormQText" rows="2" placeholder="e.g. What is the centripetal acceleration of an object moving in a circle of radius r with speed v?" required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Question Text (Sinhala - optional)</label>
+            <textarea class="form-control" id="adminQuizFormQTextSi" rows="2" placeholder="e.g. r අරයක් ඇති වෘත්තාකාර මාර්ගයක v ප්‍රවේගයෙන් ගමන් කරන වස්තුවක කේන්ද්‍රාභිසාරී ත්වරණය කුමක්ද?"></textarea>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+            <div>
+              <label class="form-label">Option A *</label>
+              <input type="text" class="form-control" id="adminQuizFormOptA" placeholder="Option A" required>
+            </div>
+            <div>
+              <label class="form-label">Option B *</label>
+              <input type="text" class="form-control" id="adminQuizFormOptB" placeholder="Option B" required>
+            </div>
+            <div>
+              <label class="form-label">Option C *</label>
+              <input type="text" class="form-control" id="adminQuizFormOptC" placeholder="Option C" required>
+            </div>
+            <div>
+              <label class="form-label">Option D *</label>
+              <input type="text" class="form-control" id="adminQuizFormOptD" placeholder="Option D" required>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Correct Option *</label>
+              <select class="form-control" id="adminQuizFormCorrect" style="font-weight: 700;">
+                <option value="0">Option A</option>
+                <option value="1">Option B</option>
+                <option value="2">Option C</option>
+                <option value="3">Option D</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Step-by-Step Explanation</label>
+              <input type="text" class="form-control" id="adminQuizFormExplanation" placeholder="e.g. a = v^2 / r from circular kinematics.">
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
+            <button type="button" class="btn btn-ghost" onclick="document.getElementById('adminQuizDrawerModal').classList.remove('active')">
+              Cancel
+            </button>
+            <button type="button" id="adminQuizDeleteBtn" class="btn btn-ghost" style="display: none; color: #ef4444; border: 1px solid #fecaca;" onclick="ADMIN_CONTROLLER.handleDeleteCurrentModalQuiz()">
+              <i class="fa-solid fa-trash"></i> Delete Question
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-check"></i> Save Question to Speed MCQ Engine
             </button>
           </div>
         </form>

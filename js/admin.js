@@ -48,7 +48,7 @@ const ADMIN_CONTROLLER = {
     if (hash.startsWith("#admin")) {
       if (hash.includes("/")) {
         const part = hash.split("/")[1].split("?")[0].trim().toLowerCase();
-        const validTabs = ["overview", "students", "courses", "teachers", "institutes", "papers", "supabase"];
+        const validTabs = ["overview", "students", "courses", "teachers", "lessons", "quizzes", "institutes", "papers", "supabase"];
         if (validTabs.includes(part)) return part;
       }
     }
@@ -147,6 +147,8 @@ const ADMIN_CONTROLLER = {
         overview: "Dashboard & Key Metrics",
         students: "Student Management & Enrollments",
         courses: "Course & Curriculum Directory",
+        lessons: "Course Video Lessons & Curriculum",
+        quizzes: "Speed MCQ Quizzes & Examination Papers",
         teachers: "Faculty & Master Lecturers",
         institutes: "Educational Institutes & Campus Branches",
         papers: "Past Paper & Model Exam PDF Vault",
@@ -159,6 +161,8 @@ const ADMIN_CONTROLLER = {
     if (tabId === "overview") return await this.renderOverview();
     if (tabId === "students") return this.renderStudents();
     if (tabId === "courses") return await this.renderCourses();
+    if (tabId === "lessons") return await this.renderLessons();
+    if (tabId === "quizzes") return await this.renderQuizzes();
     if (tabId === "teachers") return await this.renderTeachers();
     if (tabId === "institutes") return this.renderInstitutes();
     if (tabId === "papers") return this.renderPapers();
@@ -169,6 +173,8 @@ const ADMIN_CONTROLLER = {
     await this.renderOverview();
     this.renderStudents();
     await this.renderCourses();
+    await this.renderLessons();
+    await this.renderQuizzes();
     await this.renderTeachers();
     this.renderInstitutes();
     this.renderPapers();
@@ -990,9 +996,15 @@ const ADMIN_CONTROLLER = {
         <td><strong style="color: #1565d8;">${c.fee || c.price || 'LKR 3,500 / Month'}</strong></td>
         <td><span style="font-size: 0.8rem; color: #475569;">${c.liveTime || 'Every Sat 7:30 AM'}</span></td>
         <td>
-          <div style="display: flex; gap: 0.35rem; justify-content: flex-end;">
+          <div style="display: flex; gap: 0.35rem; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
+            <button class="btn btn-sm" style="background: #eff6ff; color: #227aff; border: 1px solid #bfdbfe; font-size: 0.75rem; padding: 0.25rem 0.5rem; font-weight: 700;" onclick="ADMIN_CONTROLLER.quickAddLessonForCourse('${c.id}')" title="Add Video Lesson for this course">
+              <i class="fa-solid fa-plus"></i> Lesson
+            </button>
+            <button class="btn btn-sm" style="background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; font-size: 0.75rem; padding: 0.25rem 0.5rem; font-weight: 700;" onclick="ADMIN_CONTROLLER.quickAddQuizForCourse('${c.id}')" title="Add MCQ Question for this course">
+              <i class="fa-solid fa-plus"></i> MCQ
+            </button>
             <button class="btn btn-ghost btn-sm" onclick="ADMIN_CONTROLLER.openEditCourseModal('${c.id}')" title="Edit Course">
-              <i class="fa-solid fa-pen-to-square"></i> Edit
+              <i class="fa-solid fa-pen-to-square"></i>
             </button>
             <button class="btn btn-ghost btn-sm" style="color: #ef4444;" onclick="ADMIN_CONTROLLER.deleteCourse('${c.id}')" title="Delete Course">
               <i class="fa-solid fa-trash"></i>
@@ -1001,6 +1013,9 @@ const ADMIN_CONTROLLER = {
         </td>
       </tr>
     `).join("");
+    
+    // Ensure dropdowns in lessons and quizzes stay populated
+    await this.populateCourseDropdowns();
   },
 
   toggleCourseCategoryCustom(val) {
@@ -2566,6 +2581,881 @@ const ADMIN_CONTROLLER = {
       window.open(cloudInfo.viewUrl || p.url, "_blank");
     } else {
       alert(`📄 PDF Document Preview:\n\nTitle: ${p.title}\nCategory: ${p.type.toUpperCase()}\nExam Year: ${p.year}\nUnit: ${p.unitName}\nFile: ${p.url || 'assets/docs/paper.pdf'}\nSize: ${p.size}\n\n✓ File is active and accessible in the Paper Vault!`);
+    }
+  },
+
+  // --------------------------------------------------------------------------
+  // YOUTUBE VIDEO DURATION & URL FORMATTING ENGINE
+  // --------------------------------------------------------------------------
+  extractYouTubeVideoId(url) {
+    if (!url) return null;
+    const trimmed = String(url).trim();
+    if (trimmed.length === 11 && !trimmed.includes("/") && !trimmed.includes(".")) {
+      return trimmed;
+    }
+    const match = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
+    return match ? match[1] : null;
+  },
+
+  formatDurationFromSeconds(seconds) {
+    if (!seconds || isNaN(seconds) || seconds <= 0) return "50 mins";
+    const totalSecs = Math.round(seconds);
+    const hrs = Math.floor(totalSecs / 3600);
+    const mins = Math.round((totalSecs % 3600) / 60);
+    const secs = totalSecs % 60;
+
+    if (hrs > 0) {
+      if (mins === 0) return `${hrs}h`;
+      return `${hrs}h ${mins < 10 ? '0' : ''}${mins}m`;
+    } else if (mins > 0) {
+      return `${mins} mins`;
+    } else {
+      return `${secs} secs`;
+    }
+  },
+
+  initYouTubeDurationProbe() {
+    if (this._ytProbeInitialized) return;
+    this._ytProbeInitialized = true;
+
+    if (!document.getElementById("ytDurationProbeMountAdmin")) {
+      const probeDiv = document.createElement("div");
+      probeDiv.id = "ytDurationProbeMountAdmin";
+      probeDiv.style.cssText = "position: fixed; left: -9999px; top: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; z-index: -1;";
+      document.body.appendChild(probeDiv);
+    }
+
+    const onApiReady = () => {
+      try {
+        if (!this._probePlayer && window.YT && window.YT.Player) {
+          this._probePlayer = new window.YT.Player("ytDurationProbeMountAdmin", {
+            height: "1",
+            width: "1",
+            videoId: "dQw4w9WgXcQ",
+            playerVars: { autoplay: 0, controls: 0, disablekb: 1, mute: 1, rel: 0, playsinline: 1 },
+            events: {
+              onReady: () => {
+                this._probePlayerReady = true;
+                if (this._pendingProbeVideoId) {
+                  const pending = this._pendingProbeVideoId;
+                  this._pendingProbeVideoId = null;
+                  this.probeVideoDuration(pending.videoId, pending.callback);
+                }
+              }
+            }
+          });
+        }
+      } catch (e) {
+        console.warn("YouTube probe player initialization notice:", e);
+      }
+    };
+
+    if (!window.YT) {
+      const tag = document.createElement("script");
+      tag.id = "yt-duration-probe-script-admin";
+      tag.src = "https://www.youtube.com/iframe_api";
+      const firstScriptTag = document.getElementsByTagName("script")[0];
+      if (firstScriptTag && firstScriptTag.parentNode) {
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      } else {
+        document.head.appendChild(tag);
+      }
+
+      const prevHandler = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (typeof prevHandler === "function") prevHandler();
+        onApiReady();
+      };
+    } else if (window.YT && window.YT.Player) {
+      onApiReady();
+    }
+  },
+
+  probeVideoDuration(videoId, callback) {
+    if (!videoId) return;
+    this.initYouTubeDurationProbe();
+
+    if (!this._probePlayerReady || !this._probePlayer) {
+      this._pendingProbeVideoId = { videoId, callback };
+      return;
+    }
+
+    try {
+      this._probePlayer.mute();
+      this._probePlayer.cueVideoById(videoId);
+      
+      let checkCount = 0;
+      const interval = setInterval(() => {
+        checkCount++;
+        try {
+          const duration = this._probePlayer.getDuration();
+          if (duration && duration > 0) {
+            clearInterval(interval);
+            callback(duration);
+            return;
+          }
+        } catch (e) {}
+
+        if (checkCount > 40) {
+          clearInterval(interval);
+        }
+      }, 100);
+    } catch (err) {
+      console.warn("Probing YouTube duration error:", err);
+    }
+  },
+
+  autoDetectDuration(urlInputId, durationInputId, badgeId) {
+    const urlInput = document.getElementById(urlInputId);
+    const durInput = document.getElementById(durationInputId);
+    const badge = document.getElementById(badgeId);
+    if (!urlInput || !durInput) return;
+
+    const rawUrl = urlInput.value.trim();
+    if (!rawUrl) {
+      if (badge) badge.innerHTML = "";
+      return;
+    }
+
+    const videoId = this.extractYouTubeVideoId(rawUrl);
+    if (videoId) {
+      if (badge) {
+        badge.innerHTML = `<span style="color: #227aff; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="fa-solid fa-spinner fa-spin"></i> Detecting...</span>`;
+      }
+      this.probeVideoDuration(videoId, (durationSecs) => {
+        if (durationSecs && durationSecs > 0) {
+          const formatted = this.formatDurationFromSeconds(durationSecs);
+          durInput.value = formatted;
+          if (badge) {
+            badge.innerHTML = `<span style="color: #10b981; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="fa-solid fa-wand-magic-sparkles"></i> Auto-calculated (${formatted})</span>`;
+          }
+        }
+      });
+    } else if (rawUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i)) {
+      if (badge) {
+        badge.innerHTML = `<span style="color: #227aff; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="fa-solid fa-spinner fa-spin"></i> Detecting...</span>`;
+      }
+      const v = document.createElement("video");
+      v.preload = "metadata";
+      v.src = rawUrl;
+      v.onloadedmetadata = () => {
+        if (v.duration && v.duration > 0) {
+          const formatted = this.formatDurationFromSeconds(v.duration);
+          durInput.value = formatted;
+          if (badge) {
+            badge.innerHTML = `<span style="color: #10b981; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="fa-solid fa-wand-magic-sparkles"></i> Auto-calculated (${formatted})</span>`;
+          }
+        }
+      };
+      v.onerror = () => {
+        if (badge) badge.innerHTML = "";
+      };
+    } else {
+      if (badge) badge.innerHTML = "";
+    }
+  },
+
+  formatEmbedUrl(url) {
+    const origin = (typeof window !== "undefined" && window.location && window.location.origin) ? encodeURIComponent(window.location.origin) : "";
+    const originSuffix = origin ? `?enablejsapi=1&origin=${origin}` : "";
+
+    if (!url) return `https://www.youtube.com/embed/dQw4w9WgXcQ${originSuffix}`;
+    
+    if (url.includes("youtube.com/watch?v=")) {
+      const videoId = url.split("v=")[1]?.split("&")[0];
+      if (videoId) return `https://www.youtube.com/embed/${videoId}${originSuffix}`;
+    }
+    if (url.includes("youtu.be/")) {
+      const videoId = url.split("youtu.be/")[1]?.split("?")[0];
+      if (videoId) return `https://www.youtube.com/embed/${videoId}${originSuffix}`;
+    }
+    if (url.includes("youtube.com/embed/") && !url.includes("origin=")) {
+      const sep = url.includes("?") ? "&" : "?";
+      return origin ? `${url}${sep}enablejsapi=1&origin=${origin}` : url;
+    }
+    if (url.includes("vimeo.com/") && !url.includes("player.vimeo.com")) {
+      const vimeoId = url.split("vimeo.com/")[1]?.split("?")[0];
+      if (vimeoId) return `https://player.vimeo.com/video/${vimeoId}`;
+    }
+    return url;
+  },
+
+  // --------------------------------------------------------------------------
+  // COURSE DROPDOWNS POPULATION (FOR LESSONS & QUIZZES)
+  // --------------------------------------------------------------------------
+  async populateCourseDropdowns() {
+    const courses = await window.SUPABASE_HELPER.getCourses();
+    const selects = [
+      { id: "adminLessonCourseSelect", hasAll: true, allLabel: "🌟 All Courses (View All Lessons)" },
+      { id: "adminQuizCourseSelect", hasAll: true, allLabel: "🌟 All Courses (View All Questions)" },
+      { id: "adminLessonFormCourse", hasAll: false },
+      { id: "adminQuizFormCourse", hasAll: false }
+    ];
+
+    selects.forEach(s => {
+      const el = document.getElementById(s.id);
+      if (el) {
+        const prevVal = el.value;
+        let optionsHtml = "";
+        if (s.hasAll) {
+          optionsHtml += `<option value="all">${s.allLabel}</option>`;
+        }
+        optionsHtml += courses.map(c => `<option value="${c.id}">${c.title} (${c.examYear || c.level || 'A/L'})</option>`).join("");
+        el.innerHTML = optionsHtml;
+        if (prevVal && (prevVal === "all" || courses.some(c => c.id === prevVal))) {
+          el.value = prevVal;
+        }
+      }
+    });
+  },
+
+  // --------------------------------------------------------------------------
+  // LESSONS & VIDEO CURRICULUM MANAGEMENT
+  // --------------------------------------------------------------------------
+  getAllLessons() {
+    let lessons = null;
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+      const shared = window.SUPABASE_HELPER.getSharedData("edupeak_lessons_db");
+      if (shared !== null && Array.isArray(shared)) {
+        lessons = shared;
+      }
+    }
+    if (lessons === null) {
+      const stored = localStorage.getItem("edupeak_lessons_db");
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) lessons = parsed;
+        } catch (e) {}
+      }
+    }
+    if (lessons === null) {
+      lessons = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.lmsLessons) ? window.EDUPEAK_DATA.lmsLessons : [];
+    }
+
+    try {
+      localStorage.setItem("edupeak_lessons_db", JSON.stringify(lessons));
+    } catch (e) {}
+    if (window.EDUPEAK_DATA) {
+      window.EDUPEAK_DATA.lmsLessons = lessons;
+    }
+    return lessons;
+  },
+
+  saveLessonsDatabase(lessonsList) {
+    try {
+      localStorage.setItem("edupeak_lessons_db", JSON.stringify(lessonsList));
+    } catch (e) {}
+    if (window.EDUPEAK_DATA) {
+      window.EDUPEAK_DATA.lmsLessons = lessonsList;
+    }
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+      window.SUPABASE_HELPER.setSharedData("edupeak_lessons_db", lessonsList);
+    }
+  },
+
+  async renderLessons() {
+    const tbody = document.getElementById("adminLessonsTbody");
+    if (!tbody) return;
+
+    await this.populateCourseDropdowns();
+    const courses = await window.SUPABASE_HELPER.getCourses();
+    const courseMap = {};
+    courses.forEach(c => { courseMap[c.id] = c; });
+
+    const selectedCourseId = document.getElementById("adminLessonCourseSelect")?.value || "all";
+    const allLessons = this.getAllLessons();
+
+    const filteredLessons = (selectedCourseId && selectedCourseId !== "all")
+      ? allLessons.filter(l => l.courseId === selectedCourseId)
+      : allLessons;
+
+    const countLabel = document.getElementById("adminLessonsCountLabel");
+    if (countLabel) {
+      countLabel.textContent = `Showing ${filteredLessons.length} published video lesson${filteredLessons.length === 1 ? '' : 's'}`;
+    }
+
+    if (!filteredLessons.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align: center; padding: 3rem; color: #64748b;">
+            <i class="fa-solid fa-film" style="font-size: 2rem; color: #94a3b8; margin-bottom: 0.5rem; display: block;"></i>
+            <div style="font-weight: 700; color: #0f172a; margin-bottom: 0.25rem;">No Lessons Uploaded for this Selection</div>
+            <p style="font-size: 0.825rem; margin-bottom: 1rem;">Click "Add Lesson" to upload video lecture recordings, handouts, and chapter timestamps.</p>
+            <button class="btn btn-primary btn-sm" onclick="ADMIN_CONTROLLER.openAddLessonModal()">
+              <i class="fa-solid fa-plus"></i> Add Lesson
+            </button>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = filteredLessons.map((l, idx) => {
+      const course = courseMap[l.courseId] || { title: l.courseId || "Physics Class" };
+      return `
+        <tr>
+          <td><strong>#${idx + 1}</strong></td>
+          <td>
+            <div style="font-weight: 700; color: #0f172a;">${l.title}</div>
+            <div style="font-size: 0.75rem; color: #64748b;">${l.title_si || ''}</div>
+          </td>
+          <td>
+            <span class="status-tag active" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-weight: 700; font-size: 0.725rem;">
+              ${course.title}
+            </span>
+          </td>
+          <td>
+            <button type="button" class="btn btn-sm" style="border-radius: 9999px; font-size: 0.75rem; background: #eff6ff; color: #227aff; border: 1px solid #bfdbfe; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; padding: 0.2rem 0.55rem;" onclick="ADMIN_CONTROLLER.openEditLessonModal('${l.id}')" title="Click to edit Chapter Markers">
+              <i class="fa-solid fa-list-ol"></i> ${(l.chapters && l.chapters.length) || 0} Chapters <i class="fa-solid fa-pen" style="font-size: 0.6rem; opacity: 0.7;"></i>
+            </button>
+          </td>
+          <td><span class="status-tag active">${l.duration || '50 mins'}</span></td>
+          <td>
+            ${l.hasPdf ? (
+              l.pdfUrl ?
+                `<a href="${l.pdfUrl}" target="_blank" rel="noopener noreferrer" style="color: #059669; font-weight: 600; font-size: 0.8rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;" title="Open in Google Drive / PDF Viewer">
+                  <i class="fa-brands fa-google-drive" style="color: #0f9d58;"></i>
+                  <span>${l.pdfName || 'Notes.pdf'}</span>
+                  <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.65rem; color: #64748b;"></i>
+                </a>` :
+                `<span style="color: #10b981; font-weight: 600; font-size: 0.8rem;"><i class="fa-solid fa-file-pdf"></i> ${l.pdfName || 'Notes.pdf'}</span>`
+            ) : '<span style="color: #94a3b8; font-size: 0.8rem;">No Handout</span>'}
+          </td>
+          <td>
+            ${l.watermarkEnabled ? 
+              `<span style="color: #0284c7; font-weight: 700; font-size: 0.75rem; background: #e0f2fe; padding: 2px 6px; border-radius: 6px;"><i class="fa-solid fa-shield-halved"></i> Protected</span>` : 
+              `<span style="color: #94a3b8; font-size: 0.75rem;">Default</span>`}
+          </td>
+          <td>
+            <div style="display: flex; gap: 0.35rem; justify-content: flex-end;">
+              <button class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;" onclick="ADMIN_CONTROLLER.openEditLessonModal('${l.id}')" title="Edit Lesson & Chapters">
+                <i class="fa-solid fa-pen-to-square"></i> Edit
+              </button>
+              <button class="btn btn-ghost btn-sm" style="color: #ef4444; border: 1px solid #fecaca; font-size: 0.75rem; padding: 0.3rem 0.5rem;" onclick="ADMIN_CONTROLLER.deleteLesson('${l.id}')" title="Delete Lesson">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  },
+
+  async openAddLessonModal(preselectedCourseId = null) {
+    await this.populateCourseDropdowns();
+    document.getElementById("adminLessonModalTitle").textContent = "Add Lesson to Course";
+    document.getElementById("adminLessonFormId").value = "";
+    document.getElementById("adminLessonFormTitle").value = "";
+    document.getElementById("adminLessonFormDuration").value = "50 mins";
+    document.getElementById("adminLessonFormVideoUrl").value = "https://www.youtube.com/embed/dQw4w9WgXcQ";
+    
+    const courseSelect = document.getElementById("adminLessonFormCourse");
+    const filterSelect = document.getElementById("adminLessonCourseSelect");
+    const targetCourseId = preselectedCourseId || (filterSelect && filterSelect.value !== "all" ? filterSelect.value : null);
+    if (courseSelect && targetCourseId) {
+      courseSelect.value = targetCourseId;
+    }
+
+    if (document.getElementById("adminLessonHasPdfCheckbox")) {
+      document.getElementById("adminLessonHasPdfCheckbox").checked = true;
+    }
+    if (document.getElementById("adminLessonPdfFieldsRow")) {
+      document.getElementById("adminLessonPdfFieldsRow").style.display = "grid";
+    }
+    if (document.getElementById("adminLessonPdfNameInput")) {
+      document.getElementById("adminLessonPdfNameInput").value = "Lesson_Summary_Notes.pdf";
+    }
+    if (document.getElementById("adminLessonPdfUrlInput")) {
+      document.getElementById("adminLessonPdfUrlInput").value = "";
+    }
+    if (document.getElementById("adminLessonWatermarkCheckbox")) {
+      document.getElementById("adminLessonWatermarkCheckbox").checked = false;
+    }
+    if (document.getElementById("adminLessonDurationAutoBadge")) {
+      document.getElementById("adminLessonDurationAutoBadge").innerHTML = "";
+    }
+
+    const container = document.getElementById("adminLessonChaptersContainer");
+    if (container) container.innerHTML = "";
+
+    const deleteBtn = document.getElementById("adminLessonDeleteBtn");
+    if (deleteBtn) deleteBtn.style.display = "none";
+
+    document.getElementById("adminLessonDrawerModal").classList.add("active");
+
+    setTimeout(() => {
+      this.autoDetectDuration("adminLessonFormVideoUrl", "adminLessonFormDuration", "adminLessonDurationAutoBadge");
+    }, 150);
+  },
+
+  quickAddLessonForCourse(courseId) {
+    this.switchTab("lessons");
+    const select = document.getElementById("adminLessonCourseSelect");
+    if (select) select.value = courseId;
+    this.renderLessons();
+    this.openAddLessonModal(courseId);
+  },
+
+  async openEditLessonModal(lessonId) {
+    await this.populateCourseDropdowns();
+    const lessons = this.getAllLessons();
+    const l = lessons.find(item => item.id === lessonId);
+    if (!l) return;
+
+    this.currentEditingLessonId = lessonId;
+    document.getElementById("adminLessonModalTitle").textContent = "Edit Lesson & Chapter Timeline";
+    document.getElementById("adminLessonFormId").value = l.id;
+    document.getElementById("adminLessonFormTitle").value = l.title || "";
+    document.getElementById("adminLessonFormDuration").value = l.duration || "50 mins";
+    document.getElementById("adminLessonFormVideoUrl").value = l.videoUrl || "";
+
+    const courseSelect = document.getElementById("adminLessonFormCourse");
+    if (courseSelect) courseSelect.value = l.courseId;
+
+    const isPdfActive = Boolean(l.hasPdf || l.pdfName || l.pdfUrl);
+    if (document.getElementById("adminLessonHasPdfCheckbox")) {
+      document.getElementById("adminLessonHasPdfCheckbox").checked = isPdfActive;
+    }
+    if (document.getElementById("adminLessonPdfFieldsRow")) {
+      document.getElementById("adminLessonPdfFieldsRow").style.display = isPdfActive ? "grid" : "none";
+    }
+    if (document.getElementById("adminLessonPdfNameInput")) {
+      document.getElementById("adminLessonPdfNameInput").value = l.pdfName || "";
+    }
+    if (document.getElementById("adminLessonPdfUrlInput")) {
+      document.getElementById("adminLessonPdfUrlInput").value = l.pdfUrl || "";
+    }
+    if (document.getElementById("adminLessonWatermarkCheckbox")) {
+      document.getElementById("adminLessonWatermarkCheckbox").checked = Boolean(l.watermarkEnabled);
+    }
+    if (document.getElementById("adminLessonDurationAutoBadge")) {
+      document.getElementById("adminLessonDurationAutoBadge").innerHTML = "";
+    }
+
+    // Populate chapters
+    const container = document.getElementById("adminLessonChaptersContainer");
+    if (container) {
+      container.innerHTML = "";
+      const chapters = l.chapters || [];
+      chapters.forEach(ch => {
+        this.addChapterRowToModal(ch.time, ch.title);
+      });
+    }
+
+    const deleteBtn = document.getElementById("adminLessonDeleteBtn");
+    if (deleteBtn) deleteBtn.style.display = "inline-block";
+
+    document.getElementById("adminLessonDrawerModal").classList.add("active");
+  },
+
+  addChapterRowToModal(timeVal = "00:00", titleVal = "") {
+    const container = document.getElementById("adminLessonChaptersContainer");
+    if (!container) return;
+
+    const row = document.createElement("div");
+    row.className = "chapter-edit-row";
+    row.style.cssText = "display: flex; gap: 0.5rem; align-items: center;";
+    row.innerHTML = `
+      <input type="text" class="form-control chapter-time-input" placeholder="00:00" value="${timeVal}" style="width: 85px; font-family: monospace; font-weight: 700; text-align: center; padding: 0.35rem 0.5rem; font-size: 0.85rem;" required>
+      <input type="text" class="form-control chapter-title-input" placeholder="Chapter Topic Title" value="${titleVal}" style="flex: 1; padding: 0.35rem 0.6rem; font-size: 0.85rem;" required>
+      <button type="button" class="btn btn-ghost btn-sm" style="color: #ef4444; padding: 0.35rem 0.5rem;" onclick="this.closest('.chapter-edit-row').remove()" title="Delete Marker">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    `;
+    container.appendChild(row);
+  },
+
+  handleSaveLessonSubmit(e) {
+    e.preventDefault();
+    const lessonId = document.getElementById("adminLessonFormId").value;
+    const courseId = document.getElementById("adminLessonFormCourse").value;
+    const title = document.getElementById("adminLessonFormTitle").value.trim();
+    const rawVideoUrl = document.getElementById("adminLessonFormVideoUrl").value.trim();
+    const duration = document.getElementById("adminLessonFormDuration").value.trim();
+    const hasPdfChecked = document.getElementById("adminLessonHasPdfCheckbox")?.checked;
+    const pdfName = document.getElementById("adminLessonPdfNameInput")?.value.trim() || "";
+    const pdfUrl = document.getElementById("adminLessonPdfUrlInput")?.value.trim() || "";
+    const hasPdf = hasPdfChecked && Boolean(pdfName || pdfUrl);
+    const watermarkEnabled = Boolean(document.getElementById("adminLessonWatermarkCheckbox")?.checked);
+    const videoUrl = this.formatEmbedUrl(rawVideoUrl);
+
+    // Collect chapters
+    const chapters = [];
+    const chapterRows = document.querySelectorAll("#adminLessonChaptersContainer .chapter-edit-row");
+    chapterRows.forEach(row => {
+      const time = row.querySelector(".chapter-time-input")?.value.trim() || "00:00";
+      const chTitle = row.querySelector(".chapter-title-input")?.value.trim() || "";
+      if (chTitle) {
+        chapters.push({ time, title: chTitle });
+      }
+    });
+
+    const lessons = this.getAllLessons();
+
+    if (lessonId) {
+      // Editing existing lesson
+      const idx = lessons.findIndex(l => l.id === lessonId);
+      if (idx !== -1) {
+        lessons[idx] = {
+          ...lessons[idx],
+          courseId,
+          title,
+          title_si: title,
+          duration: duration || "50 mins",
+          videoUrl,
+          hasPdf,
+          pdfName: hasPdf ? (pdfName || "Notes.pdf") : "",
+          pdfUrl: hasPdf ? pdfUrl : "",
+          watermarkEnabled,
+          chapters
+        };
+      }
+    } else {
+      // New lesson
+      const newLesson = {
+        id: "lsn-" + Date.now().toString(36),
+        courseId,
+        title,
+        title_si: title,
+        duration: duration || "50 mins",
+        videoUrl,
+        hasPdf,
+        pdfName: hasPdf ? (pdfName || "Lesson_Summary_Notes.pdf") : "",
+        pdfUrl: hasPdf ? pdfUrl : "",
+        watermarkEnabled,
+        chapters
+      };
+      lessons.push(newLesson);
+    }
+
+    this.saveLessonsDatabase(lessons);
+
+    if (window.showToast) {
+      window.showToast(`✓ Lesson "${title}" saved and synced with LMS!`, "success");
+    }
+
+    document.getElementById("adminLessonDrawerModal").classList.remove("active");
+    this.renderLessons();
+  },
+
+  handleDeleteCurrentModalLesson() {
+    const id = document.getElementById("adminLessonFormId").value;
+    if (id) {
+      document.getElementById("adminLessonDrawerModal").classList.remove("active");
+      this.deleteLesson(id);
+    }
+  },
+
+  deleteLesson(lessonId) {
+    const lessons = this.getAllLessons();
+    const l = lessons.find(item => item.id === lessonId);
+    if (!l) return;
+
+    if (confirm(`Are you sure you want to permanently delete lesson "${l.title}"?`)) {
+      const updated = lessons.filter(item => item.id !== lessonId);
+      this.saveLessonsDatabase(updated);
+
+      if (window.showToast) {
+        window.showToast(`🗑️ Lesson "${l.title}" deleted.`, "info");
+      }
+      this.renderLessons();
+    }
+  },
+
+  // --------------------------------------------------------------------------
+  // SPEED MCQ QUIZ & PAPERS MANAGEMENT
+  // --------------------------------------------------------------------------
+  getAllQuizzes() {
+    let quizzes = null;
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.getSharedData === "function") {
+      const shared = window.SUPABASE_HELPER.getSharedData("edupeak_quizzes_db");
+      if (shared !== null && Array.isArray(shared)) {
+        quizzes = shared;
+      }
+    }
+    if (quizzes === null) {
+      const stored = localStorage.getItem("edupeak_quizzes_db");
+      if (stored !== null) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) quizzes = parsed;
+        } catch (e) {}
+      }
+    }
+    if (quizzes === null) {
+      quizzes = (window.EDUPEAK_DATA && window.EDUPEAK_DATA.quizQuestions) 
+        ? JSON.parse(JSON.stringify(window.EDUPEAK_DATA.quizQuestions)) 
+        : [];
+      try {
+        const custom = JSON.parse(localStorage.getItem("edupeak_custom_quizzes") || "[]");
+        custom.forEach(cq => {
+          if (!quizzes.find(item => item.id == cq.id)) quizzes.push(cq);
+        });
+      } catch (e) {}
+    }
+
+    quizzes.forEach((q, idx) => {
+      if (!q.id) q.id = idx + 1;
+    });
+
+    try {
+      localStorage.setItem("edupeak_quizzes_db", JSON.stringify(quizzes));
+    } catch (e) {}
+    if (window.EDUPEAK_DATA) {
+      window.EDUPEAK_DATA.quizQuestions = quizzes;
+    }
+    return quizzes;
+  },
+
+  saveQuizzesDatabase(quizzesList) {
+    try {
+      localStorage.setItem("edupeak_quizzes_db", JSON.stringify(quizzesList));
+      localStorage.setItem("edupeak_custom_quizzes", JSON.stringify(quizzesList));
+    } catch (e) {}
+    if (window.EDUPEAK_DATA) {
+      window.EDUPEAK_DATA.quizQuestions = quizzesList;
+    }
+    if (window.SUPABASE_HELPER && typeof window.SUPABASE_HELPER.setSharedData === "function") {
+      window.SUPABASE_HELPER.setSharedData("edupeak_quizzes_db", quizzesList);
+    }
+  },
+
+  async renderQuizzes() {
+    const list = document.getElementById("adminQuizList");
+    if (!list) return;
+
+    await this.populateCourseDropdowns();
+    const courses = await window.SUPABASE_HELPER.getCourses();
+    const courseMap = {};
+    courses.forEach(c => { courseMap[c.id] = c; });
+
+    const selectedCourseId = document.getElementById("adminQuizCourseSelect")?.value || "all";
+    const questions = this.getAllQuizzes();
+
+    const filteredQuestions = (selectedCourseId && selectedCourseId !== "all")
+      ? questions.filter(q => {
+          if (!q.courseId) return false;
+          if (q.courseId === selectedCourseId) return true;
+          if (q.courseId.startsWith(selectedCourseId) || selectedCourseId.startsWith(q.courseId)) return true;
+          const cleanQ = (q.courseId || "").replace("-theory", "").replace("-revision", "").replace("-papers", "");
+          const cleanSel = (selectedCourseId || "").replace("-theory", "").replace("-revision", "").replace("-papers", "");
+          return cleanQ === cleanSel;
+        })
+      : questions;
+
+    const countLabel = document.getElementById("adminQuizzesCountLabel");
+    if (countLabel) {
+      countLabel.textContent = `Showing ${filteredQuestions.length} speed MCQ question${filteredQuestions.length === 1 ? '' : 's'}`;
+    }
+
+    if (!filteredQuestions.length) {
+      list.innerHTML = `
+        <div style="text-align: center; padding: 3rem; background: #f8fafc; border-radius: var(--radius-lg); border: 1px dashed var(--border-color);">
+          <i class="fa-solid fa-clipboard-question" style="font-size: 2rem; color: #94a3b8; margin-bottom: 0.5rem; display: block;"></i>
+          <div style="font-weight: 700; color: #0f172a; margin-bottom: 0.25rem;">No MCQ Questions Added Yet</div>
+          <p style="font-size: 0.825rem; color: #64748b; margin-bottom: 1rem;">Create online timed MCQs with 4 options and automatic grading solutions.</p>
+          <button class="btn btn-primary btn-sm" onclick="ADMIN_CONTROLLER.openAddQuizModal()">
+            <i class="fa-solid fa-plus"></i> Add First MCQ Question
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    list.innerHTML = filteredQuestions.map((q, idx) => {
+      const course = courseMap[q.courseId] || { title: q.courseId || "Physics" };
+      return `
+        <div class="quiz-question-builder-card" id="adminQuizCard_${q.id}">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <span style="font-size: 0.75rem; font-weight: 700; color: #227aff; background: #eff6ff; padding: 0.2rem 0.5rem; border-radius: 6px;">
+                Question #${idx + 1} (${q.subject || 'Speed Exam'})
+              </span>
+              <span style="font-size: 0.75rem; color: #475569; background: #f1f5f9; padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 600;">
+                <i class="fa-solid fa-book"></i> ${course.title}
+              </span>
+              <span style="font-size: 0.75rem; color: #10b981; font-weight: 700; background: #ecfdf5; padding: 0.2rem 0.5rem; border-radius: 6px;">
+                <i class="fa-solid fa-check"></i> Correct: Option ${q.correctAnswer + 1} (${String.fromCharCode(65 + q.correctAnswer)})
+              </span>
+            </div>
+            <div style="display: flex; gap: 0.35rem; align-items: center;">
+              <button type="button" class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;" onclick="ADMIN_CONTROLLER.openEditQuizModal('${q.id}')" title="Edit Question">
+                <i class="fa-solid fa-pen-to-square"></i> Edit
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm" style="color: #ef4444; border: 1px solid #fecaca; font-size: 0.75rem; padding: 0.3rem 0.55rem;" onclick="ADMIN_CONTROLLER.deleteQuiz('${q.id}')" title="Delete Question">
+                <i class="fa-solid fa-trash"></i> Delete
+              </button>
+            </div>
+          </div>
+          <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin-bottom: 0.35rem;">${q.question}</h4>
+          ${q.question_si ? `<p style="font-size: 0.825rem; color: #64748b; margin-bottom: 0.75rem;">${q.question_si}</p>` : ''}
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.8rem; margin-bottom: 0.75rem;">
+            ${(q.options || []).map((opt, optIdx) => `
+              <div style="padding: 0.4rem 0.65rem; border-radius: 6px; background: ${optIdx === q.correctAnswer ? '#dcfce7; border: 1px solid #86efac; font-weight: 700; color: #166534;' : '#ffffff; border: 1px solid #e2e8f0; color: #334155;'}">
+                (${String.fromCharCode(65 + optIdx)}) ${opt}
+              </div>
+            `).join("")}
+          </div>
+
+          <div style="font-size: 0.775rem; color: #475569; background: #ffffff; padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+            <strong>💡 Explanation:</strong> ${q.explanation || q.explanation_si || 'Step-by-step evaluation.'}
+          </div>
+        </div>
+      `;
+    }).join("");
+  },
+
+  async openAddQuizModal(preselectedCourseId = null) {
+    await this.populateCourseDropdowns();
+    document.getElementById("adminQuizModalTitle").textContent = "Create Speed MCQ Question";
+    document.getElementById("adminQuizFormId").value = "";
+    document.getElementById("adminQuizFormSubject").value = "Physics - Mechanics";
+    document.getElementById("adminQuizFormQText").value = "";
+    document.getElementById("adminQuizFormQTextSi").value = "";
+    document.getElementById("adminQuizFormOptA").value = "";
+    document.getElementById("adminQuizFormOptB").value = "";
+    document.getElementById("adminQuizFormOptC").value = "";
+    document.getElementById("adminQuizFormOptD").value = "";
+    document.getElementById("adminQuizFormCorrect").value = "0";
+    document.getElementById("adminQuizFormExplanation").value = "";
+
+    const courseSelect = document.getElementById("adminQuizFormCourse");
+    const filterSelect = document.getElementById("adminQuizCourseSelect");
+    const targetCourseId = preselectedCourseId || (filterSelect && filterSelect.value !== "all" ? filterSelect.value : null);
+    if (courseSelect && targetCourseId) {
+      courseSelect.value = targetCourseId;
+    }
+
+    const deleteBtn = document.getElementById("adminQuizDeleteBtn");
+    if (deleteBtn) deleteBtn.style.display = "none";
+
+    document.getElementById("adminQuizDrawerModal").classList.add("active");
+  },
+
+  quickAddQuizForCourse(courseId) {
+    this.switchTab("quizzes");
+    const select = document.getElementById("adminQuizCourseSelect");
+    if (select) select.value = courseId;
+    this.renderQuizzes();
+    this.openAddQuizModal(courseId);
+  },
+
+  async openEditQuizModal(quizId) {
+    await this.populateCourseDropdowns();
+    const questions = this.getAllQuizzes();
+    const q = questions.find(item => item.id == quizId);
+    if (!q) {
+      if (window.showToast) window.showToast("Question not found.", "error");
+      return;
+    }
+
+    this.currentEditingQuizId = q.id;
+    document.getElementById("adminQuizModalTitle").textContent = "Edit MCQ Quiz Question";
+    document.getElementById("adminQuizFormId").value = q.id;
+    
+    const courseSelect = document.getElementById("adminQuizFormCourse");
+    if (courseSelect) courseSelect.value = q.courseId;
+
+    document.getElementById("adminQuizFormSubject").value = q.subject || "Physics - Mechanics";
+    document.getElementById("adminQuizFormQText").value = q.question || "";
+    document.getElementById("adminQuizFormQTextSi").value = q.question_si || "";
+    
+    const opts = q.options || ["", "", "", ""];
+    document.getElementById("adminQuizFormOptA").value = opts[0] || "";
+    document.getElementById("adminQuizFormOptB").value = opts[1] || "";
+    document.getElementById("adminQuizFormOptC").value = opts[2] || "";
+    document.getElementById("adminQuizFormOptD").value = opts[3] || "";
+
+    document.getElementById("adminQuizFormCorrect").value = (q.correctAnswer !== undefined) ? q.correctAnswer : 0;
+    document.getElementById("adminQuizFormExplanation").value = q.explanation || q.explanation_si || "";
+
+    const deleteBtn = document.getElementById("adminQuizDeleteBtn");
+    if (deleteBtn) deleteBtn.style.display = "inline-block";
+
+    document.getElementById("adminQuizDrawerModal").classList.add("active");
+  },
+
+  handleSaveQuizSubmit(e) {
+    e.preventDefault();
+    const quizId = document.getElementById("adminQuizFormId").value;
+    const courseId = document.getElementById("adminQuizFormCourse").value;
+    const subject = document.getElementById("adminQuizFormSubject").value.trim();
+    const qText = document.getElementById("adminQuizFormQText").value.trim();
+    const qTextSi = document.getElementById("adminQuizFormQTextSi").value.trim();
+    const optA = document.getElementById("adminQuizFormOptA").value.trim();
+    const optB = document.getElementById("adminQuizFormOptB").value.trim();
+    const optC = document.getElementById("adminQuizFormOptC").value.trim();
+    const optD = document.getElementById("adminQuizFormOptD").value.trim();
+    const correctIdx = parseInt(document.getElementById("adminQuizFormCorrect").value, 10);
+    const explanation = document.getElementById("adminQuizFormExplanation").value.trim();
+
+    const questions = this.getAllQuizzes();
+
+    if (quizId) {
+      // Edit existing
+      const idx = questions.findIndex(item => item.id == quizId);
+      if (idx !== -1) {
+        questions[idx] = {
+          ...questions[idx],
+          courseId,
+          subject: subject || "Physics",
+          question: qText,
+          question_si: qTextSi || qText,
+          options: [optA, optB, optC, optD],
+          correctAnswer: correctIdx,
+          explanation: explanation,
+          explanation_si: explanation
+        };
+      }
+    } else {
+      // New quiz
+      const newQuestion = {
+        id: Date.now(),
+        courseId,
+        subject: subject || "Physics",
+        question: qText,
+        question_si: qTextSi || qText,
+        options: [optA, optB, optC, optD],
+        correctAnswer: correctIdx,
+        explanation: explanation,
+        explanation_si: explanation
+      };
+      questions.push(newQuestion);
+    }
+
+    this.saveQuizzesDatabase(questions);
+
+    if (window.showToast) {
+      window.showToast("✓ MCQ Question saved to Speed Engine!", "success");
+    }
+
+    document.getElementById("adminQuizDrawerModal").classList.remove("active");
+    this.renderQuizzes();
+  },
+
+  handleDeleteCurrentModalQuiz() {
+    const id = document.getElementById("adminQuizFormId").value;
+    if (id) {
+      document.getElementById("adminQuizDrawerModal").classList.remove("active");
+      this.deleteQuiz(id);
+    }
+  },
+
+  deleteQuiz(quizId) {
+    const questions = this.getAllQuizzes();
+    const q = questions.find(item => item.id == quizId);
+    if (!q) return;
+
+    if (confirm("Are you sure you want to permanently delete this MCQ question?")) {
+      const updated = questions.filter(item => item.id != quizId);
+      this.saveQuizzesDatabase(updated);
+
+      if (window.showToast) {
+        window.showToast("🗑️ MCQ Question deleted.", "info");
+      }
+      this.renderQuizzes();
     }
   }
 };

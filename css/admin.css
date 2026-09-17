@@ -952,6 +952,28 @@
   color: #ef4444;
 }
 
+/* Quiz Question Builder Cards & Chapter Rows in Admin */
+.quiz-question-builder-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.quiz-question-builder-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.chapter-edit-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 /* --------------------------------------------------------------------------
    9. RESPONSIVE BREAKPOINTS
    -------------------------------------------------------------------------- */

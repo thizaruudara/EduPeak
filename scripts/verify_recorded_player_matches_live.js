@@ -34,9 +34,9 @@ async function verify() {
     if (typeof window.openLMSPortal === 'function') {
       window.openLMSPortal('video-classroom');
     }
-    // Select first lesson and display video classroom view
-    if (typeof window.showLessonVideo === 'function') {
-      window.showLessonVideo(0);
+    // Launch curriculum lesson 0
+    if (typeof window.launchCurriculumLesson === 'function') {
+      window.launchCurriculumLesson(0);
     } else if (typeof window.renderLMSLesson === 'function') {
       window.renderLMSLesson(0);
     }
