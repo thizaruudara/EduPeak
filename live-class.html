@@ -1021,6 +1021,17 @@
         grid-template-columns: 1fr !important;
         gap: 0.75rem !important;
       }
+      /* Suppress bulky top/bottom startup overlay banners on mobile for clean playback */
+      .edupeak-startup-banner,
+      #liveStartupTopBanner,
+      #liveStartupBottomBanner {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        height: 0 !important;
+        max-height: 0 !important;
+      }
     }
 
     @media (max-width: 640px) {

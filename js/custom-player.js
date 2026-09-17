@@ -402,27 +402,47 @@ const EDUPEAK_PLAYER = (function() {
     if (!playerWrapper) return;
 
     const icon = document.getElementById("ctrlFullscreenIcon");
+    const isPseudoFs = playerWrapper.classList.contains("fullscreen-mode");
+    const fsElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
 
-    if (!document.fullscreenElement) {
-      if (playerWrapper.requestFullscreen) {
-        playerWrapper.requestFullscreen();
-      } else if (playerWrapper.webkitRequestFullscreen) {
-        playerWrapper.webkitRequestFullscreen();
-      } else if (playerWrapper.msRequestFullscreen) {
-        playerWrapper.msRequestFullscreen();
-      }
+    if (!fsElement && !isPseudoFs) {
       if (icon) icon.className = "fa-solid fa-compress";
       playerWrapper.classList.add("fullscreen-mode");
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
+      document.body.classList.add("edupeak-fullscreen-locked");
+
+      const isPortrait = window.matchMedia && window.matchMedia("(orientation: portrait)").matches;
+      const isMobile = window.innerWidth <= 900 || window.innerHeight <= 900;
+      if (isPortrait && isMobile) {
+        playerWrapper.classList.add("mobile-landscape-rotate");
       }
+
+      if (screen.orientation && typeof screen.orientation.lock === "function") {
+        screen.orientation.lock("landscape").catch(() => {});
+      }
+
+      if (playerWrapper.requestFullscreen) {
+        playerWrapper.requestFullscreen().catch(() => {});
+      } else if (playerWrapper.webkitRequestFullscreen) {
+        try { playerWrapper.webkitRequestFullscreen(); } catch(e) {}
+      } else if (playerWrapper.msRequestFullscreen) {
+        try { playerWrapper.msRequestFullscreen(); } catch(e) {}
+      }
+    } else {
       if (icon) icon.className = "fa-solid fa-expand";
-      playerWrapper.classList.remove("fullscreen-mode");
+      playerWrapper.classList.remove("fullscreen-mode", "mobile-landscape-rotate");
+      document.body.classList.remove("edupeak-fullscreen-locked");
+
+      if (screen.orientation && typeof screen.orientation.unlock === "function") {
+        try { screen.orientation.unlock(); } catch(e) {}
+      }
+
+      if (document.exitFullscreen && fsElement) {
+        document.exitFullscreen().catch(() => {});
+      } else if (document.webkitExitFullscreen && fsElement) {
+        try { document.webkitExitFullscreen(); } catch(e) {}
+      } else if (document.msExitFullscreen && fsElement) {
+        try { document.msExitFullscreen(); } catch(e) {}
+      }
     }
   }
 
@@ -894,6 +914,9 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     if (cleanVideo) {
       try { cleanVideo.pause(); cleanVideo.src = ""; } catch(e) {}
     }
+    isLivePlaying = false;
+    releaseLiveWakeLock();
+
     // Hide big play btn — session is over, no replay
     const bigPlayBtn = document.getElementById("livePlayerBigPlayBtn");
     if (bigPlayBtn) bigPlayBtn.style.display = "none";
@@ -1143,6 +1166,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
 
             if (event.data === PLAYING) {
               isLivePlaying = true;
+              requestLiveWakeLock();
               if (checkAndEnforceLiveStream()) {
                 return;
               }
@@ -1377,6 +1401,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
             remoteAudioTrack.setVolume(liveVolume);
           }
           isLivePlaying = true;
+          requestLiveWakeLock();
           const bigPlayBtn = document.getElementById("livePlayerBigPlayBtn");
           if (bigPlayBtn) bigPlayBtn.classList.add("hidden");
         } catch (subErr) {
@@ -1429,6 +1454,10 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     }
     if (!cleanVideo) return;
     cleanVideo.style.display = "block";
+    cleanVideo.onplaying = () => {
+      isLivePlaying = true;
+      requestLiveWakeLock();
+    };
 
     const hlsUrl = streamUrl || (sessionData && (sessionData.hlsUrl || sessionData.rawUrl || sessionData.streamUrl)) || "";
     if (!hlsUrl) {
@@ -1813,9 +1842,86 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     }
   }
 
+  // =========================================================================
+  // SCREEN WAKE LOCK & ORIENTATION MANAGEMENT
+  // =========================================================================
+  let liveWakeLock = null;
+
+  async function requestLiveWakeLock() {
+    if ("wakeLock" in navigator && typeof navigator.wakeLock.request === "function") {
+      try {
+        if (!liveWakeLock || liveWakeLock.released) {
+          liveWakeLock = await navigator.wakeLock.request("screen");
+          liveWakeLock.addEventListener("release", () => {
+            console.log("[EduPeak Live] Screen Wake Lock released");
+            liveWakeLock = null;
+          });
+          console.log("[EduPeak Live] Screen Wake Lock active - screen timeout prevented");
+        }
+      } catch (err) {
+        console.warn("[EduPeak Live] Screen Wake Lock error:", err);
+      }
+    }
+  }
+
+  function releaseLiveWakeLock() {
+    if (liveWakeLock !== null) {
+      try {
+        liveWakeLock.release().then(() => {
+          liveWakeLock = null;
+        }).catch(() => {
+          liveWakeLock = null;
+        });
+      } catch (e) {
+        liveWakeLock = null;
+      }
+    }
+  }
+
+  async function lockOrientationLandscape() {
+    try {
+      if (screen.orientation && typeof screen.orientation.lock === "function") {
+        await screen.orientation.lock("landscape");
+        return true;
+      } else if (screen.lockOrientation) {
+        screen.lockOrientation("landscape");
+        return true;
+      } else if (screen.webkitLockOrientation) {
+        screen.webkitLockOrientation("landscape");
+        return true;
+      } else if (screen.mozLockOrientation) {
+        screen.mozLockOrientation("landscape");
+        return true;
+      } else if (screen.msLockOrientation) {
+        screen.msLockOrientation("landscape");
+        return true;
+      }
+    } catch (err) {
+      console.log("[EduPeak Live] Native orientation lock not permitted or supported on device:", err.message || err);
+    }
+    return false;
+  }
+
+  function unlockOrientation() {
+    try {
+      if (screen.orientation && typeof screen.orientation.unlock === "function") {
+        screen.orientation.unlock();
+      } else if (screen.unlockOrientation) {
+        screen.unlockOrientation();
+      } else if (screen.webkitUnlockOrientation) {
+        screen.webkitUnlockOrientation();
+      } else if (screen.mozUnlockOrientation) {
+        screen.mozUnlockOrientation();
+      } else if (screen.msUnlockOrientation) {
+        screen.msUnlockOrientation();
+      }
+    } catch (err) {}
+  }
+
   function toggleFullscreen() {
     const wrapper = document.getElementById("edupeakLivePlayerWrapper");
     if (!wrapper) return;
+    const theaterContainer = document.getElementById("theaterPlayerContainer");
 
     const fsElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
     const isPseudoFs = wrapper.classList.contains("fullscreen-mode");
@@ -1829,20 +1935,52 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     };
 
     if (!fsElement && !isPseudoFs) {
+      // ENTER FULLSCREEN
       wrapper.classList.add("fullscreen-mode");
+      document.body.classList.add("edupeak-fullscreen-locked");
+      if (theaterContainer) theaterContainer.classList.add("fullscreen-active");
       updateFsIcon(true);
+
+      // Keep screen awake (no timeout during live)
+      requestLiveWakeLock();
+
+      // Check orientation & apply rotation for mobile portrait
+      const isPortrait = window.matchMedia && window.matchMedia("(orientation: portrait)").matches;
+      const isMobile = window.innerWidth <= 900 || window.innerHeight <= 900;
+      if (isPortrait && isMobile) {
+        wrapper.classList.add("mobile-landscape-rotate");
+      }
+
+      // Try native screen orientation lock
+      lockOrientationLandscape().then((locked) => {
+        if (!locked && isPortrait && isMobile) {
+          wrapper.classList.add("mobile-landscape-rotate");
+        }
+      });
+
+      // Request native browser fullscreen if supported
       if (typeof wrapper.requestFullscreen === "function") {
         wrapper.requestFullscreen().catch(() => {});
       } else if (typeof wrapper.webkitRequestFullscreen === "function") {
         try { wrapper.webkitRequestFullscreen(); } catch(e) {}
       }
     } else {
-      wrapper.classList.remove("fullscreen-mode");
+      // EXIT FULLSCREEN
+      wrapper.classList.remove("fullscreen-mode", "mobile-landscape-rotate");
+      document.body.classList.remove("edupeak-fullscreen-locked");
+      if (theaterContainer) theaterContainer.classList.remove("fullscreen-active");
       updateFsIcon(false);
+
+      unlockOrientation();
+
       if (document.exitFullscreen && fsElement) {
         document.exitFullscreen().catch(() => {});
       } else if (document.webkitExitFullscreen && fsElement) {
         try { document.webkitExitFullscreen(); } catch(e) {}
+      }
+
+      if (!isLivePlaying) {
+        releaseLiveWakeLock();
       }
     }
   }
@@ -2013,19 +2151,62 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       const handleNativeFullscreenChange = () => {
         const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
         const wrapper = document.getElementById("edupeakLivePlayerWrapper");
+        const theaterContainer = document.getElementById("theaterPlayerContainer");
         if (!fsEl && wrapper) {
-          wrapper.classList.remove("fullscreen-mode");
+          wrapper.classList.remove("fullscreen-mode", "mobile-landscape-rotate");
+          document.body.classList.remove("edupeak-fullscreen-locked");
+          if (theaterContainer) theaterContainer.classList.remove("fullscreen-active");
+          unlockOrientation();
           const fsBtns = document.querySelectorAll("#edupeakLivePlayerWrapper button[title='Fullscreen'], #livePlayerControlsOverlay .fa-expand, #livePlayerControlsOverlay .fa-compress");
           fsBtns.forEach(btn => {
             const icon = btn.tagName === "I" ? btn : btn.querySelector("i");
             if (icon) icon.className = "fa-solid fa-expand";
           });
+          if (!isLivePlaying) {
+            releaseLiveWakeLock();
+          }
         }
       };
       document.addEventListener("fullscreenchange", handleNativeFullscreenChange);
       document.addEventListener("webkitfullscreenchange", handleNativeFullscreenChange);
       document.addEventListener("mozfullscreenchange", handleNativeFullscreenChange);
       document.addEventListener("MSFullscreenChange", handleNativeFullscreenChange);
+
+      // Re-acquire Screen Wake Lock when tab becomes visible during live broadcast
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          const wrapper = document.getElementById("edupeakLivePlayerWrapper");
+          const isFs = wrapper && wrapper.classList.contains("fullscreen-mode");
+          if (isLivePlaying || isFs) {
+            requestLiveWakeLock();
+          }
+        }
+      });
+
+      // Handle orientation changes while in fullscreen
+      window.addEventListener("orientationchange", () => {
+        const wrapper = document.getElementById("edupeakLivePlayerWrapper");
+        if (wrapper && wrapper.classList.contains("fullscreen-mode")) {
+          setTimeout(() => {
+            const isLandscape = window.innerWidth > window.innerHeight;
+            if (isLandscape) {
+              wrapper.classList.remove("mobile-landscape-rotate");
+            } else {
+              wrapper.classList.add("mobile-landscape-rotate");
+            }
+          }, 150);
+        }
+      });
+
+      // Escape key exits fullscreen
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          const wrapper = document.getElementById("edupeakLivePlayerWrapper");
+          if (wrapper && wrapper.classList.contains("fullscreen-mode")) {
+            toggleFullscreen();
+          }
+        }
+      });
     }
   }
 
@@ -2071,6 +2252,19 @@ const EDUPEAK_LIVE_PLAYER = (function() {
     clearTimeout(startupBannerHideTimer);
 
     updateLiveWatermark();
+
+    // On mobile devices (<= 768px), keep banners hidden for clean view (matches 2nd screenshot)
+    if (window.innerWidth <= 768) {
+      if (topBanner) {
+        topBanner.style.display = "none";
+        topBanner.style.visibility = "hidden";
+      }
+      if (bottomBanner) {
+        bottomBanner.style.display = "none";
+        bottomBanner.style.visibility = "hidden";
+      }
+      return;
+    }
 
     if (topBanner) {
       topBanner.classList.remove("banner-fade-out", "mask-faded", "fade-out");

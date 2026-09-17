@@ -159,7 +159,7 @@ function startServer() {
     console.log('Mobile Fullscreen Test:', fsTestResult);
     console.log('\n--- 3. Testing Top Startup Mask, Solid Opaque Footer & Zero Duplicate Clutter ---');
     const maskAndLinkTest = await page.evaluate(() => {
-      const topMask = document.getElementById('livePlayerTopMask');
+      const topMask = document.getElementById('liveStartupTopBanner') || document.getElementById('livePlayerTopMask');
       const bottomControls = document.querySelector('.live-player-wrapper .edupeak-player-controls-overlay');
       const broadcastBug = document.getElementById('livePlayerBroadcastBug');
       const bottomMask = document.getElementById('livePlayerBottomMask');
