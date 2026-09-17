@@ -47,15 +47,23 @@
 
     async getMediaDevices() {
       if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
-        return { cameras: [], mics: [] };
+        return { cameras: [], mics: [], video: [], audio: [] };
       }
 
-      // Prompt camera/mic permissions once so device labels (e.g. "OBS Virtual Camera") become readable
+      // Probe video permission separately
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        stream.getTracks().forEach(t => t.stop());
+        const vStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        vStream.getTracks().forEach(t => t.stop());
       } catch (e) {
-        console.warn("[Agora Broadcaster] Initial permission probe notice:", e);
+        console.warn("[Agora Broadcaster] Video permission probe notice:", e);
+      }
+
+      // Probe audio permission separately
+      try {
+        const aStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        aStream.getTracks().forEach(t => t.stop());
+      } catch (e) {
+        console.warn("[Agora Broadcaster] Audio permission probe notice:", e);
       }
 
       try {
@@ -63,17 +71,22 @@
         const cameras = devices.filter(d => d.kind === "videoinput").map(d => ({
           deviceId: d.deviceId,
           label: d.label || `Camera ${d.deviceId.slice(0, 5)}...`,
+          isObsVirtual: /obs|virtual/i.test(d.label || ""),
           isObs: /obs|virtual/i.test(d.label || "")
         }));
         const mics = devices.filter(d => d.kind === "audioinput").map(d => ({
           deviceId: d.deviceId,
           label: d.label || `Microphone ${d.deviceId.slice(0, 5)}...`
         }));
-        return { cameras, mics };
+        return { cameras, mics, video: cameras, audio: mics };
       } catch (err) {
         console.warn("[Agora Broadcaster] Failed to enumerate devices:", err);
-        return { cameras: [], mics: [] };
+        return { cameras: [], mics: [], video: [], audio: [] };
       }
+    },
+
+    async enumerateDevices() {
+      return this.getMediaDevices();
     },
 
     async startCameraPreview(containerEl, videoDeviceId = null, audioDeviceId = null) {

@@ -4228,18 +4228,11 @@
             }
           });
 
-          // Populate devices into select dropdowns
+          // Populate devices into select dropdowns and auto-start preview
           try {
             await this.refreshStudioDeviceList();
           } catch(e) {
             console.warn("Device list warning:", e);
-          }
-
-          // Start camera preview in local monitor
-          try {
-            await window.EDUPEAK_AGORA_BROADCASTER.startPreview("broadcasterLocalVideoBox");
-          } catch(e) {
-            console.warn("Camera preview start warning:", e);
           }
         }
       },
@@ -4250,30 +4243,44 @@
         const vSelect = document.getElementById("studioVideoSelect");
         const aSelect = document.getElementById("studioAudioSelect");
 
+        const videoList = (devices && (devices.video || devices.cameras)) || [];
+        const audioList = (devices && (devices.audio || devices.mics)) || [];
+
         if (vSelect) {
           vSelect.innerHTML = "";
-          devices.video.forEach(dev => {
+          videoList.forEach(dev => {
             const opt = document.createElement("option");
             opt.value = dev.deviceId;
-            opt.textContent = dev.isObsVirtual ? `🎥 ${dev.label} (RECOMMENDED)` : `📷 ${dev.label}`;
-            if (dev.isObsVirtual) opt.selected = true;
+            opt.textContent = (dev.isObsVirtual || /obs|virtual/i.test(dev.label || ""))
+              ? `🎥 ${dev.label} (RECOMMENDED)`
+              : `📷 ${dev.label}`;
+            if (dev.isObsVirtual || /obs|virtual/i.test(dev.label || "")) opt.selected = true;
             vSelect.appendChild(opt);
           });
-          if (devices.video.length === 0) {
+          if (videoList.length === 0) {
             vSelect.innerHTML = `<option value="">No Camera Found</option>`;
           }
         }
 
         if (aSelect) {
           aSelect.innerHTML = "";
-          devices.audio.forEach(dev => {
+          audioList.forEach(dev => {
             const opt = document.createElement("option");
             opt.value = dev.deviceId;
             opt.textContent = `🎙️ ${dev.label}`;
             aSelect.appendChild(opt);
           });
-          if (devices.audio.length === 0) {
+          if (audioList.length === 0) {
             aSelect.innerHTML = `<option value="">Default Microphone</option>`;
+          }
+        }
+
+        // Auto trigger camera preview with selected camera deviceId
+        if (vSelect && vSelect.value) {
+          try {
+            await window.EDUPEAK_AGORA_BROADCASTER.startPreview("broadcasterLocalVideoBox", vSelect.value, aSelect ? aSelect.value : null);
+          } catch(err) {
+            console.warn("[Broadcaster Studio] Preview error:", err);
           }
         }
       },
