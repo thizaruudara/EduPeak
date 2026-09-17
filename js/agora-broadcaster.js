@@ -88,7 +88,7 @@
 
       try {
         const videoConfig = {
-          encoderConfig: "1080p_1",
+          encoderConfig: this.currentProfile || "1080p_1",
           optimizationMode: "detail"
         };
         if (videoDeviceId) videoConfig.cameraId = videoDeviceId;
@@ -96,18 +96,42 @@
         const audioConfig = {};
         if (audioDeviceId) audioConfig.microphoneId = audioDeviceId;
 
-        // Create tracks via Agora SDK
-        [this.localAudioTrack, this.localVideoTrack] = await window.AgoraRTC.createMicrophoneAndCameraTracks(audioConfig, videoConfig);
+        // Create camera track independently
+        try {
+          this.localVideoTrack = await window.AgoraRTC.createCameraVideoTrack(videoConfig);
+        } catch (vErr) {
+          console.warn("[Agora Broadcaster] Camera track creation notice:", vErr);
+        }
+
+        // Create audio track independently
+        try {
+          this.localAudioTrack = await window.AgoraRTC.createMicrophoneAudioTrack(audioConfig);
+        } catch (aErr) {
+          console.warn("[Agora Broadcaster] Mic track creation notice:", aErr);
+        }
+
         this.currentVideoDeviceId = videoDeviceId;
         this.currentAudioDeviceId = audioDeviceId;
 
-        if (containerEl && this.localVideoTrack) {
-          containerEl.innerHTML = "";
-          this.localVideoTrack.play(containerEl);
+        const targetEl = typeof containerEl === 'string' ? document.getElementById(containerEl) : containerEl;
+        if (targetEl) {
+          if (this.localVideoTrack) {
+            targetEl.innerHTML = "";
+            this.localVideoTrack.play(targetEl);
+          } else {
+            targetEl.innerHTML = `
+              <div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;text-align:center;padding:1.5rem;">
+                <div>
+                  <i class="fa-solid fa-camera-slash" style="font-size:2.2rem;margin-bottom:0.75rem;color:#f59e0b;"></i>
+                  <p style="font-weight:600;color:#fff;font-size:0.95rem;margin-bottom:0.25rem;">Camera Permission Required</p>
+                  <small style="color:#94a3b8;line-height:1.4;display:block;">Please allow camera & microphone permissions in Chrome, or select OBS Virtual Camera on the right.</small>
+                </div>
+              </div>`;
+          }
         }
 
         this.startAudioMeter();
-        return { success: true };
+        return { success: true, hasVideo: !!this.localVideoTrack, hasAudio: !!this.localAudioTrack };
       } catch (err) {
         console.error("[Agora Broadcaster] Error starting camera preview:", err);
         throw err;
