@@ -20,7 +20,38 @@ const MIME_TYPES = {
   '.ttf': 'font/ttf'
 };
 
+const { generateAgoraRtcToken, AGORA_APP_ID } = require('./scripts/generate_agora_token');
+
 const server = http.createServer((req, res) => {
+  // CORS Headers for API
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  // API Endpoint: /api/agora/token?channel=...&uid=...&role=...
+  if (req.url.startsWith('/api/agora/token')) {
+    try {
+      const urlObj = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+      const channel = urlObj.searchParams.get('channel') || 'edupeak_physics_live';
+      const uid = urlObj.searchParams.get('uid') || '0';
+      const role = urlObj.searchParams.get('role') || 'publisher';
+      const days = parseInt(urlObj.searchParams.get('days') || '30', 10);
+      const tokenData = generateAgoraRtcToken({ channel, uid, role, expireDays: days });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(tokenData));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: err.message }));
+    }
+    return;
+  }
+
   let reqPath = decodeURI(req.url.split('?')[0].split('#')[0]);
   if (reqPath === '/') reqPath = '/index.html';
   let filePath = path.join(ROOT, reqPath);

@@ -1351,7 +1351,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
 
     const appId = (sessionData && sessionData.agoraAppId)
       || localStorage.getItem("edupeak_agora_app_id")
-      || (window.EDUPEAK_AGORA_DEFAULT_APP_ID || "4e3895bb73ba4faea39c0dc118efbf89");
+      || (window.EDUPEAK_AGORA_DEFAULT_APP_ID || "13256742c55e4a7687838c72cd148cad");
     const channel = (sessionData && (sessionData.agoraChannel || sessionData.channel))
       || (sessionData && sessionData.id ? `edupeak_${sessionData.id.replace(/[^a-zA-Z0-9_-]/g, '')}` : "edupeak_main_live");
 
@@ -1390,7 +1390,20 @@ const EDUPEAK_LIVE_PLAYER = (function() {
         }
       });
 
-      await agoraClient.join(appId, channel, null, null);
+      let rtcToken = (sessionData && (sessionData.agoraToken || sessionData.token)) || null;
+      if (!rtcToken) {
+        try {
+          const tokRes = await fetch(`/api/agora/token?channel=${encodeURIComponent(channel)}&role=subscriber`);
+          if (tokRes.ok) {
+            const tokJson = await tokRes.json();
+            if (tokJson && tokJson.token) rtcToken = tokJson.token;
+          }
+        } catch (tokErr) {
+          console.warn("[Agora Audience] Token endpoint fallback:", tokErr);
+        }
+      }
+
+      await agoraClient.join(appId, channel, rtcToken || null, null);
       console.log(`[Agora Audience] Joined channel: ${channel}`);
     } catch (err) {
       console.error("[Agora Audience] Join error:", err);

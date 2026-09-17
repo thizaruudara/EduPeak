@@ -4,10 +4,14 @@
   "description": "EduPeak - Advanced Physics Masterclass & Educational Management System",
   "scripts": {
     "start": "node server.js",
+    "generate-agora-token": "node scripts/generate_agora_token.js",
     "deploy": "git add -A && git commit -m \"deploy: platform updates\" && git push origin main"
   },
   "devDependencies": {
     "pg": "^8.23.0",
     "playwright-core": "^1.62.1"
+  },
+  "dependencies": {
+    "agora-token": "^2.0.6"
   }
 }

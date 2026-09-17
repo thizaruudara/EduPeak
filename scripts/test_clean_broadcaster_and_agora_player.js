@@ -16,7 +16,29 @@ const mimeTypes = {
   '.svg': 'image/svg+xml'
 };
 
+const { generateAgoraRtcToken, AGORA_APP_ID } = require('./generate_agora_token');
+
 const server = http.createServer((req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  if (req.url.startsWith('/api/agora/token')) {
+    const urlObj = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    const channel = urlObj.searchParams.get('channel') || 'edupeak_physics_live';
+    const role = urlObj.searchParams.get('role') || 'publisher';
+    const tok = generateAgoraRtcToken({ channel, role });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(tok));
+    return;
+  }
+
   let filePath = path.join(ROOT, req.url.split('?')[0]);
   if (filePath.endsWith('/') || (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory())) {
     filePath = path.join(filePath, 'index.html');
@@ -109,6 +131,7 @@ server.listen(PORT, async () => {
 
     console.log('\n--- TEST 3: METHOD 1 (AGORA WEBRTC) PLAYBACK & CLEAN MOUNT ---');
     // Mock user as teacher and seed an Agora live session
+    const tokenInfo = generateAgoraRtcToken({ channel: "edupeak_test_clean_channel" });
     const agoraSession = {
       id: "sched-test-agora-1",
       topic: "2027 A/L Physics Mechanics - Clean WebRTC Broadcast",
@@ -118,7 +141,8 @@ server.listen(PORT, async () => {
       provider: "agora",
       streamProvider: "agora",
       agoraChannel: "edupeak_test_clean_channel",
-      agoraAppId: "4e3895bb73ba4faea39c0dc118efbf89",
+      agoraAppId: AGORA_APP_ID,
+      agoraToken: tokenInfo.token,
       teacherId: "tch-amalsha",
       teacherName: "Amalsha Wanniarachchi",
       courseId: "crs-phy-2027-theory",

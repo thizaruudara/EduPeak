@@ -10,7 +10,7 @@
 (function(window) {
   'use strict';
 
-  const DEFAULT_TESTING_APP_ID = "4e3895bb73ba4faea39c0dc118efbf89"; // Public testing App ID or fallback
+  const DEFAULT_TESTING_APP_ID = "13256742c55e4a7687838c72cd148cad"; // EduPeak Live Agora App ID
 
   const EDUPEAK_AGORA_BROADCASTER = {
     client: null,
@@ -177,9 +177,21 @@
         // Set as Broadcaster / Host
         await this.client.setClientRole("host");
 
-        // Join channel
+        // Join channel with Token authentication if required
         const uid = Math.floor(Math.random() * 900000) + 100000;
-        await this.client.join(finalAppId, finalChannel, null, uid);
+        let rtcToken = options.token || options.agoraToken || null;
+        if (!rtcToken) {
+          try {
+            const tokRes = await fetch(`/api/agora/token?channel=${encodeURIComponent(finalChannel)}&role=publisher`);
+            if (tokRes.ok) {
+              const tokJson = await tokRes.json();
+              if (tokJson && tokJson.token) rtcToken = tokJson.token;
+            }
+          } catch(tokErr) {
+            console.warn("[Agora Broadcaster] Token endpoint fallback:", tokErr);
+          }
+        }
+        await this.client.join(finalAppId, finalChannel, rtcToken || null, uid);
 
         // Make sure tracks exist
         if (!this.localVideoTrack && !this.localScreenTrack) {

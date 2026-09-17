@@ -1677,9 +1677,21 @@
                 <input type="text" class="live-form-input" id="formAgoraChannel" placeholder="e.g. edupeak_physics_live" value="edupeak_physics_live">
               </div>
               <div>
-                <label class="live-form-label">Agora App ID (Optional / Testing)</label>
-                <input type="text" class="live-form-input" id="formAgoraAppId" placeholder="4e3895bb73ba4faea39c0dc118efbf89" value="4e3895bb73ba4faea39c0dc118efbf89">
+                <label class="live-form-label">Agora App ID</label>
+                <input type="text" class="live-form-input" id="formAgoraAppId" placeholder="13256742c55e4a7687838c72cd148cad" value="13256742c55e4a7687838c72cd148cad">
               </div>
+            </div>
+            <div style="margin-top: 0.65rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
+                <label class="live-form-label" style="margin-bottom: 0;">Agora RTC Token (Auto-Generated / 30 Days)</label>
+                <button type="button" class="btn-live-schedule" style="padding: 0.18rem 0.5rem; font-size: 0.7rem; background: rgba(56, 189, 248, 0.2); border: 1px solid rgba(56, 189, 248, 0.4); color: #bae6fd;" onclick="LIVE_APP.generateAgoraTokenForForm()">
+                  <i class="fa-solid fa-arrows-rotate"></i> Refresh Token
+                </button>
+              </div>
+              <input type="text" class="live-form-input" id="formAgoraToken" placeholder="Paste RTC Token or click Refresh Token" style="font-family: monospace; font-size: 0.74rem;">
+              <span style="font-size: 0.68rem; color: #94a3b8;">
+                <i class="fa-solid fa-shield-check" style="color: #10b981;"></i> Primary Certificate is active. Tokens are automatically attached so students can connect instantly.
+              </span>
             </div>
           </div>
 
@@ -3891,7 +3903,11 @@
         const agoraChanEl = document.getElementById("formAgoraChannel");
         if (agoraChanEl) agoraChanEl.value = "edupeak_physics_live";
         const agoraAppIdEl = document.getElementById("formAgoraAppId");
-        if (agoraAppIdEl) agoraAppIdEl.value = "4e3895bb73ba4faea39c0dc118efbf89";
+        if (agoraAppIdEl) agoraAppIdEl.value = "13256742c55e4a7687838c72cd148cad";
+        const agoraTokenEl = document.getElementById("formAgoraToken");
+        if (agoraTokenEl && !agoraTokenEl.value.trim()) {
+          agoraTokenEl.value = "007eJxTYBB873PnqweP74G7rr90mFcn2yybfEJHzdBBUex+NN8NbnkFBkNjI1MzcxOjZFPTVJNEczMLcwtji2Rzo+QUQxOL5MSUSymrsxh61RnO7dvHyMjAyMDCwMgA4jOBSWYwyQImRRhSU0oLUhOz4wsyKoszk4vjczLLUhkYAPpiJmM=";
+        }
         const hlsUrlEl = document.getElementById("formHlsUrl");
         if (hlsUrlEl) hlsUrlEl.value = "";
         document.getElementById("formStatus").value = "scheduled";
@@ -3994,7 +4010,9 @@
         const agoraChanEl = document.getElementById("formAgoraChannel");
         if (agoraChanEl) agoraChanEl.value = s.agoraChannel || s.channel || "edupeak_physics_live";
         const agoraAppIdEl = document.getElementById("formAgoraAppId");
-        if (agoraAppIdEl) agoraAppIdEl.value = s.agoraAppId || "4e3895bb73ba4faea39c0dc118efbf89";
+        if (agoraAppIdEl) agoraAppIdEl.value = s.agoraAppId || "13256742c55e4a7687838c72cd148cad";
+        const agoraTokenEl = document.getElementById("formAgoraToken");
+        if (agoraTokenEl) agoraTokenEl.value = s.agoraToken || "";
         const hlsUrlEl = document.getElementById("formHlsUrl");
         if (hlsUrlEl) hlsUrlEl.value = s.hlsUrl || (prov === "custom_hls" ? (s.rawUrl || "") : "");
 
@@ -4062,7 +4080,8 @@
 
         const provider = document.getElementById("formProvider").value;
         const agoraChannel = document.getElementById("formAgoraChannel")?.value.trim() || "";
-        const agoraAppId = document.getElementById("formAgoraAppId")?.value.trim() || "";
+        const agoraAppId = document.getElementById("formAgoraAppId")?.value.trim() || "13256742c55e4a7687838c72cd148cad";
+        const agoraToken = document.getElementById("formAgoraToken")?.value.trim() || "";
         const hlsUrl = document.getElementById("formHlsUrl")?.value.trim() || "";
         let rawUrl = document.getElementById("formStreamUrl")?.value.trim() || "";
 
@@ -4148,6 +4167,7 @@
           streamProvider: provider,
           agoraChannel,
           agoraAppId,
+          agoraToken,
           hlsUrl,
           rawUrl,
           zoomUrl,
@@ -4351,7 +4371,11 @@
           // Go live
           try {
             btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Connecting to Agora...`;
-            const pub = await window.EDUPEAK_AGORA_BROADCASTER.publishStream();
+            const pub = await window.EDUPEAK_AGORA_BROADCASTER.publishStream({
+              token: sess?.agoraToken || sess?.token,
+              channel: sess?.agoraChannel,
+              appId: sess?.agoraAppId
+            });
             if (pub) {
               if (btn) {
                 btn.innerHTML = `<i class="fa-solid fa-stop"></i> End Broadcast Live`;
@@ -4392,6 +4416,32 @@
       closeObsGuideModal() {
         const modal = document.getElementById("obsGuideModal");
         if (modal) modal.classList.remove("active");
+      },
+
+      async generateAgoraTokenForForm(customChannel) {
+        const chanInput = document.getElementById("formAgoraChannel");
+        const tokenInput = document.getElementById("formAgoraToken");
+        const channel = customChannel || (chanInput ? chanInput.value.trim() : "edupeak_physics_live") || "edupeak_physics_live";
+        if (tokenInput) tokenInput.placeholder = "Generating secure Agora token...";
+        
+        try {
+          const res = await fetch(`/api/agora/token?channel=${encodeURIComponent(channel)}&role=publisher&days=30`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.token) {
+              if (tokenInput) tokenInput.value = data.token;
+              if (window.showToast) window.showToast("✅ Agora RTC Token generated successfully (valid 30 days)!", "success");
+              return data.token;
+            }
+          }
+        } catch(e) {
+          console.warn("[Agora Token] API fetch notice:", e);
+        }
+        
+        if (channel === "edupeak_physics_live" && tokenInput) {
+          tokenInput.value = "007eJxTYBB873PnqweP74G7rr90mFcn2yybfEJHzdBBUex+NN8NbnkFBkNjI1MzcxOjZFPTVJNEczMLcwtji2Rzo+QUQxOL5MSUSymrsxh61RnO7dvHyMjAyMDCwMgA4jOBSWYwyQImRRhSU0oLUhOz4wsyKoszk4vjczLLUhkYAPpiJmM=";
+          if (window.showToast) window.showToast("✅ Default channel Agora token applied!", "info");
+        }
       }
     };
 

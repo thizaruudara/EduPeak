@@ -1752,6 +1752,7 @@ const SUPABASE_HELPER = {
       topic_si: normalized.topic_si || "",
       agoraChannel: normalized.agoraChannel || "",
       agoraAppId: normalized.agoraAppId || "",
+      agoraToken: normalized.agoraToken || "",
       hlsUrl: normalized.hlsUrl || ""
     };
 
@@ -1918,6 +1919,7 @@ const SUPABASE_HELPER = {
       endedAt: merged.endedAt || merged.ended_at || null,
       agoraChannel: merged.agoraChannel || merged.agora_channel || (merged.id ? `ch_${merged.id.replace(/[^a-zA-Z0-9_-]/g, "")}` : "edupeak_live"),
       agoraAppId: merged.agoraAppId || merged.agora_app_id || "",
+      agoraToken: merged.agoraToken || merged.agora_token || "",
       hlsUrl: merged.hlsUrl || merged.hls_url || (merged.provider === "custom_hls" ? (rawUrl || embedUrl) : ""),
       createdAt: merged.createdAt || merged.created_at || new Date().toISOString(),
       updatedAt: merged.updatedAt || merged.updated_at || new Date().toISOString()
