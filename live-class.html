@@ -856,23 +856,26 @@
     }
 
     /* Modal Styling */
-    .live-modal-overlay {
+    .live-modal-overlay,
+    .live-modal-wrapper {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.85);
       backdrop-filter: blur(8px);
-      z-index: 2000;
+      z-index: 9999;
       display: none;
       align-items: center;
       justify-content: center;
       padding: 1.5rem;
     }
 
-    .live-modal-overlay.active {
-      display: flex;
+    .live-modal-overlay.active,
+    .live-modal-wrapper.active {
+      display: flex !important;
     }
 
-    .live-modal-box {
+    .live-modal-box,
+    .live-modal-content {
       background: var(--live-surface);
       border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 16px;
@@ -881,6 +884,7 @@
       max-height: 90vh;
       overflow-y: auto;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+      position: relative;
     }
 
     .live-modal-header {
@@ -1817,8 +1821,8 @@
   </div>
 
   <!-- Method 1: Agora Broadcaster Studio Modal (OBS Virtual Camera & Screen Share Live Studio) -->
-  <div class="live-modal-wrapper" id="broadcasterStudioModal">
-    <div class="live-modal-content" style="max-width: 960px; width: 95%;">
+  <div class="live-modal-overlay live-modal-wrapper" id="broadcasterStudioModal">
+    <div class="live-modal-box live-modal-content" style="max-width: 960px; width: 95%; background: #0f172a; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; padding: 1.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); max-height: 92vh; overflow-y: auto;">
       <div class="live-modal-header" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.85rem;">
         <div>
           <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -1930,8 +1934,8 @@
   </div>
 
   <!-- Method 2: Direct OBS RTMP Streaming Guide Modal -->
-  <div class="live-modal-wrapper" id="obsGuideModal">
-    <div class="live-modal-content" style="max-width: 680px; width: 90%;">
+  <div class="live-modal-overlay live-modal-wrapper" id="obsGuideModal">
+    <div class="live-modal-box live-modal-content" style="max-width: 680px; width: 90%; background: #0f172a; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; padding: 1.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); max-height: 92vh; overflow-y: auto;">
       <div class="live-modal-header" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.75rem;">
         <div style="display: flex; align-items: center; gap: 0.5rem;">
           <span style="background: #9333ea; color: #fff; font-size: 0.7rem; font-weight: 800; padding: 0.2rem 0.6rem; border-radius: 4px; letter-spacing: 0.5px;">METHOD 2</span>
@@ -4197,6 +4201,7 @@
         const modal = document.getElementById("broadcasterStudioModal");
         if (!modal) return;
         modal.classList.add("active");
+        modal.style.display = "flex";
 
         const session = (this.allSchedules || []).find(s => s.id === sessionId) || this.activeSession;
         this._currentStudioSession = session;
@@ -4212,9 +4217,6 @@
             window.EDUPEAK_AGORA_BROADCASTER.setAppId(session.agoraAppId);
           }
 
-          // Populate devices into select dropdowns
-          await this.refreshStudioDeviceList();
-
           // Hook audio volume level to UI meter
           window.EDUPEAK_AGORA_BROADCASTER.onAudioVolume((level) => {
             const vuBar = document.getElementById("studioAudioVuBar");
@@ -4226,8 +4228,19 @@
             }
           });
 
+          // Populate devices into select dropdowns
+          try {
+            await this.refreshStudioDeviceList();
+          } catch(e) {
+            console.warn("Device list warning:", e);
+          }
+
           // Start camera preview in local monitor
-          await window.EDUPEAK_AGORA_BROADCASTER.startPreview("broadcasterLocalVideoBox");
+          try {
+            await window.EDUPEAK_AGORA_BROADCASTER.startPreview("broadcasterLocalVideoBox");
+          } catch(e) {
+            console.warn("Camera preview start warning:", e);
+          }
         }
       },
 
@@ -4401,7 +4414,10 @@
 
       closeBroadcasterStudio() {
         const modal = document.getElementById("broadcasterStudioModal");
-        if (modal) modal.classList.remove("active");
+        if (modal) {
+          modal.classList.remove("active");
+          modal.style.display = "none";
+        }
         if (window.EDUPEAK_AGORA_BROADCASTER && !window.EDUPEAK_AGORA_BROADCASTER.getIsBroadcasting()) {
           window.EDUPEAK_AGORA_BROADCASTER.stopPreview();
         }
@@ -4410,12 +4426,18 @@
       // --- Method 2: OBS Guide Modal Methods ---
       openObsGuideModal(sessionId) {
         const modal = document.getElementById("obsGuideModal");
-        if (modal) modal.classList.add("active");
+        if (modal) {
+          modal.classList.add("active");
+          modal.style.display = "flex";
+        }
       },
 
       closeObsGuideModal() {
         const modal = document.getElementById("obsGuideModal");
-        if (modal) modal.classList.remove("active");
+        if (modal) {
+          modal.classList.remove("active");
+          modal.style.display = "none";
+        }
       },
 
       async generateAgoraTokenForForm(customChannel) {
