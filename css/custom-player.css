@@ -424,90 +424,19 @@ body.edupeak-fullscreen-locked .site-header {
   overflow: hidden !important;
 }
 
-/* Mobile Pseudo-Fullscreen Portrait-to-Landscape 90-degree Rotation Fallback (for iOS Safari & non-locking browsers) */
-@media (orientation: portrait) and (max-width: 900px) {
-  .edupeak-player-wrapper.fullscreen-mode.mobile-landscape-rotate {
-    position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    right: auto !important;
-    bottom: auto !important;
-    width: 100dvh !important;
-    height: 100dvw !important;
-    max-width: 100dvh !important;
-    max-height: 100dvw !important;
-    transform: translate(-50%, -50%) rotate(90deg) !important;
-    transform-origin: center center !important;
-    z-index: 2147483647 !important;
-    background: #000000 !important;
-    overflow: hidden !important;
-    border-radius: 0 !important;
-  }
-
-  .edupeak-player-wrapper.fullscreen-mode.mobile-landscape-rotate .edupeak-player-viewport {
-    width: 100% !important;
-    height: 100% !important;
-    max-width: 100% !important;
-    max-height: 100% !important;
-  }
-
-  .edupeak-player-wrapper.fullscreen-mode.mobile-landscape-rotate .edupeak-player-controls-overlay {
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    width: 100% !important;
-  }
-}
-
-.edupeak-player-wrapper.fullscreen-mode .edupeak-player-viewport {
-  width: 100% !important;
-  height: 100% !important;
-  border-radius: 0 !important;
-}
-
-.edupeak-player-wrapper.fullscreen-mode .edupeak-yt-frame-cropper iframe,
-.edupeak-player-wrapper.fullscreen-mode .edupeak-yt-frame-cropper #edupeakYTPlayerMount,
-.edupeak-player-wrapper.fullscreen-mode .edupeak-yt-frame-cropper #edupeakLiveYTPlayerMount {
-  width: 100% !important;
-  height: 100% !important;
-  top: 0 !important;
-  left: 0 !important;
-  transform: none !important;
-}
-
-/* Transparent click shield on top of YouTube */
-.edupeak-player-click-shield {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  cursor: pointer;
-  background: transparent;
-}
-
-/* Permanent Sleek Top Mask: Completely blocks YouTube title, avatar & channel info across all devices */
+/* Permanent Top Mask: Disabled so top of video is 100% clean and unblocked during playback */
 .edupeak-player-permanent-top-mask {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 56px;
-  background: linear-gradient(180deg, #000000 0%, #000000 80%, rgba(0, 0, 0, 0.92) 90%, transparent 100%) !important;
-  pointer-events: none;
-  z-index: 12;
+  display: none !important;
 }
 
 @media (max-width: 768px) {
-  .edupeak-player-permanent-top-mask {
-    height: 52px;
-    background: linear-gradient(180deg, #000000 0%, #000000 82%, rgba(0, 0, 0, 0.94) 92%, transparent 100%) !important;
-  }
-
   .edupeak-player-top-bar {
-    height: 48px !important;
+    height: 44px !important;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, transparent 100%) !important;
   }
 
   .edupeak-player-top-bar .top-bar-inner {
-    padding: 0.5rem 0.75rem 0 !important;
+    padding: 0.4rem 0.75rem 0 !important;
   }
 
   /* Hide lesson title on mobile so it never collides or peeks out behind/underneath the pill */
@@ -527,9 +456,9 @@ body.edupeak-fullscreen-locked .site-header {
   top: 0;
   left: 0;
   right: 0;
-  height: 80px;
+  height: 56px;
   padding: 0;
-  background: transparent;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, transparent 100%);
   display: flex;
   flex-direction: column;
   justify-content: flex-start;

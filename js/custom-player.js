@@ -410,12 +410,6 @@ const EDUPEAK_PLAYER = (function() {
       playerWrapper.classList.add("fullscreen-mode");
       document.body.classList.add("edupeak-fullscreen-locked");
 
-      const isPortrait = window.matchMedia && window.matchMedia("(orientation: portrait)").matches;
-      const isMobile = window.innerWidth <= 900 || window.innerHeight <= 900;
-      if (isPortrait && isMobile) {
-        playerWrapper.classList.add("mobile-landscape-rotate");
-      }
-
       if (screen.orientation && typeof screen.orientation.lock === "function") {
         screen.orientation.lock("landscape").catch(() => {});
       }
@@ -429,7 +423,7 @@ const EDUPEAK_PLAYER = (function() {
       }
     } else {
       if (icon) icon.className = "fa-solid fa-expand";
-      playerWrapper.classList.remove("fullscreen-mode", "mobile-landscape-rotate");
+      playerWrapper.classList.remove("fullscreen-mode");
       document.body.classList.remove("edupeak-fullscreen-locked");
 
       if (screen.orientation && typeof screen.orientation.unlock === "function") {
@@ -1952,29 +1946,24 @@ const EDUPEAK_LIVE_PLAYER = (function() {
       // Keep screen awake (no timeout during live)
       requestLiveWakeLock();
 
-      // Check orientation & apply rotation for mobile portrait
-      const isPortrait = window.matchMedia && window.matchMedia("(orientation: portrait)").matches;
-      const isMobile = window.innerWidth <= 900 || window.innerHeight <= 900;
-      if (isPortrait && isMobile) {
-        wrapper.classList.add("mobile-landscape-rotate");
-      }
+      // Lock orientation if supported by device (e.g. Android Chrome)
+      lockOrientationLandscape();
 
-      // Try native screen orientation lock
-      lockOrientationLandscape().then((locked) => {
-        if (!locked && isPortrait && isMobile) {
-          wrapper.classList.add("mobile-landscape-rotate");
-        }
-      });
-
-      // Request native browser fullscreen if supported
+      // Request native browser fullscreen if supported (Desktop, Android, iPad)
       if (typeof wrapper.requestFullscreen === "function") {
         wrapper.requestFullscreen().catch(() => {});
       } else if (typeof wrapper.webkitRequestFullscreen === "function") {
         try { wrapper.webkitRequestFullscreen(); } catch(e) {}
+      } else {
+        // Native video element fullscreen on iOS Safari (Agora WebRTC / HLS stream)
+        const cleanVid = document.getElementById("cleanLiveVideoElement");
+        if (cleanVid && typeof cleanVid.webkitEnterFullscreen === "function" && (cleanVid.srcObject || cleanVid.src)) {
+          try { cleanVid.webkitEnterFullscreen(); } catch(e) {}
+        }
       }
     } else {
       // EXIT FULLSCREEN
-      wrapper.classList.remove("fullscreen-mode", "mobile-landscape-rotate");
+      wrapper.classList.remove("fullscreen-mode");
       document.body.classList.remove("edupeak-fullscreen-locked");
       if (theaterContainer) theaterContainer.classList.remove("fullscreen-active");
       updateFsIcon(false);
@@ -2161,7 +2150,7 @@ const EDUPEAK_LIVE_PLAYER = (function() {
         const wrapper = document.getElementById("edupeakLivePlayerWrapper");
         const theaterContainer = document.getElementById("theaterPlayerContainer");
         if (!fsEl && wrapper) {
-          wrapper.classList.remove("fullscreen-mode", "mobile-landscape-rotate");
+          wrapper.classList.remove("fullscreen-mode");
           document.body.classList.remove("edupeak-fullscreen-locked");
           if (theaterContainer) theaterContainer.classList.remove("fullscreen-active");
           unlockOrientation();
@@ -2188,21 +2177,6 @@ const EDUPEAK_LIVE_PLAYER = (function() {
           if (isLivePlaying || isFs) {
             requestLiveWakeLock();
           }
-        }
-      });
-
-      // Handle orientation changes while in fullscreen
-      window.addEventListener("orientationchange", () => {
-        const wrapper = document.getElementById("edupeakLivePlayerWrapper");
-        if (wrapper && wrapper.classList.contains("fullscreen-mode")) {
-          setTimeout(() => {
-            const isLandscape = window.innerWidth > window.innerHeight;
-            if (isLandscape) {
-              wrapper.classList.remove("mobile-landscape-rotate");
-            } else {
-              wrapper.classList.add("mobile-landscape-rotate");
-            }
-          }, 150);
         }
       });
 

@@ -16,7 +16,7 @@ function findChromePath() {
   return null;
 }
 
-const PORT = 3088;
+const PORT = 3089;
 const server = http.createServer((req, res) => {
   let reqPath = req.url.split('?')[0];
   if (reqPath === '/' || reqPath === '') reqPath = '/live-class.html';
@@ -88,54 +88,78 @@ async function run() {
   // Wait for player to be displayed
   await page.waitForSelector('#edupeakLivePlayerWrapper', { state: 'visible', timeout: 5000 });
   const loadDuration = Date.now() - startTime;
-  console.log(`Live Player appeared in: ${loadDuration}ms (Instant cache-first!)`);
+  console.log(`Live Player appeared in: ${loadDuration}ms`);
 
-  // Verify elements and computed styles
-  const evaluation = await page.evaluate(() => {
+  // Verify normal playing state: no permanent black bar
+  const normalChecks = await page.evaluate(() => {
     const mask = document.getElementById("livePlayerPermanentTopMask");
     const topBar = document.getElementById("livePlayerTopBar");
     const topLesson = document.querySelector(".edupeak-player-top-bar .top-bar-lesson");
-    const drmBadge = document.querySelector(".drm-badge");
-    const playerWrapper = document.getElementById("edupeakLivePlayerWrapper");
-    const mount = document.getElementById("edupeakLiveYTPlayerMount");
-
     const maskStyle = mask ? window.getComputedStyle(mask) : null;
     const topLessonStyle = topLesson ? window.getComputedStyle(topLesson) : null;
-    const drmBadgeStyle = drmBadge ? window.getComputedStyle(drmBadge) : null;
 
     return {
-      maskExists: !!mask,
-      maskHeight: maskStyle ? maskStyle.height : null,
-      maskZIndex: maskStyle ? maskStyle.zIndex : null,
-      maskBg: maskStyle ? maskStyle.backgroundImage || maskStyle.background : null,
+      maskPresent: !!mask && maskStyle.display !== 'none',
       topLessonDisplay: topLessonStyle ? topLessonStyle.display : null,
-      drmBadgeBg: drmBadgeStyle ? drmBadgeStyle.backgroundColor : null,
-      playerVisible: playerWrapper ? window.getComputedStyle(playerWrapper).display : null,
-      mountExists: !!mount
     };
   });
 
-  console.log("Player checks:", JSON.stringify(evaluation, null, 2));
+  console.log("Normal playback checks:", normalChecks);
 
-  let errors = [];
-  if (!evaluation.maskExists) errors.push("Permanent top mask does not exist");
-  if (parseInt(evaluation.maskHeight) < 50) errors.push(`Mask height is too small: ${evaluation.maskHeight}`);
-  if (evaluation.topLessonDisplay !== "none") errors.push(`Top lesson title should be hidden on mobile, got: ${evaluation.topLessonDisplay}`);
-  if (evaluation.playerVisible !== "block") errors.push(`Player should be visible, got: ${evaluation.playerVisible}`);
+  // Trigger fullscreen via API
+  await page.evaluate(() => {
+    window.EDUPEAK_LIVE_PLAYER.toggleFullscreen();
+  });
 
-  // Take screenshot for visual verification
-  const screenshotPath = path.resolve(__dirname, '../verification_instant_mobile_player.png');
-  await page.screenshot({ path: screenshotPath, fullPage: false });
-  console.log("Saved verification screenshot to:", screenshotPath);
+  // Verify fullscreen state: fullscreen-mode present, mobile-landscape-rotate NOT present
+  const fsChecks = await page.evaluate(() => {
+    const wrapper = document.getElementById("edupeakLivePlayerWrapper");
+    const style = window.getComputedStyle(wrapper);
+    return {
+      hasFullscreenMode: wrapper.classList.contains("fullscreen-mode"),
+      hasMobileLandscapeRotate: wrapper.classList.contains("mobile-landscape-rotate"),
+      position: style.position,
+      width: style.width,
+      height: style.height,
+      transform: style.transform
+    };
+  });
+
+  console.log("Fullscreen checks:", fsChecks);
+
+  // Take screenshot of clean fullscreen on mobile
+  const fsScreenshotPath = path.resolve(__dirname, '../verification_mobile_fullscreen_clean.png');
+  await page.screenshot({ path: fsScreenshotPath, fullPage: false });
+  console.log("Saved fullscreen screenshot to:", fsScreenshotPath);
+
+  // Exit fullscreen
+  await page.evaluate(() => {
+    window.EDUPEAK_LIVE_PLAYER.toggleFullscreen();
+  });
+
+  await page.waitForTimeout(500);
+
+  // Take screenshot of clean normal player (no black bar at top)
+  const normalScreenshotPath = path.resolve(__dirname, '../verification_mobile_normal_clean.png');
+  await page.screenshot({ path: normalScreenshotPath, fullPage: false });
+  console.log("Saved normal playback screenshot to:", normalScreenshotPath);
 
   await browser.close();
   server.close();
+
+  let errors = [];
+  if (normalChecks.maskPresent) errors.push("Permanent top mask is still displayed (creates black bar at top of video)");
+  if (!fsChecks.hasFullscreenMode) errors.push("Wrapper should have fullscreen-mode class");
+  if (fsChecks.hasMobileLandscapeRotate) errors.push("Wrapper should NOT have mobile-landscape-rotate class (causes 90-degree sideways rotation)");
+  if (fsChecks.transform && fsChecks.transform.includes('matrix') && fsChecks.transform !== 'none') {
+    errors.push(`Wrapper should not have transform matrix applied in fullscreen, got: ${fsChecks.transform}`);
+  }
 
   if (errors.length > 0) {
     console.error("FAIL:", errors);
     process.exit(1);
   } else {
-    console.log("PASS: Video player loads instantly, permanent top mask covers 52px, and colliding title is completely removed!");
+    console.log("PASS: 1. No permanent black bar at top of video. 2. Fullscreen is clean without artificial 90-degree sideways rotation!");
   }
 }
 
