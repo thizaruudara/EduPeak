@@ -1251,6 +1251,10 @@ function simulatePeakBotMsg(topic) {
     zoom: {
       user: "📹 අද රෑ Zoom Live Link එක ගන්න පුළුවන්ද?",
       bot: "🔗 ඔබේ <strong>Student ID (EP-2025-...)</strong> තහවුරු විය. අද රෑ 7.30 Live Revision Session එක සඳහා Direct Portal Pass එක LMS Dashboard එකට එක් කර ඇත!"
+    },
+    app: {
+      user: "📱 EduPeak Android Mobile App එක Download කරගන්නේ කෙසේද?",
+      bot: "🚀 <strong>EduPeak Mobile App v1.0.0</strong> දැන් නිකුත් කර ඇත! Daily 5-MCQ Sprint, සජීවී විභාග සහ 24/7 AI Tutor තාක්ෂණය ඔබගේ දුරකථනයටම ලබාගැනීමට <a href='app.html' style='color: #227aff; font-weight: 800; text-decoration: underline;'>මෙතැනින් Download (.APK) කරගන්න</a> 📲"
     }
   };
 

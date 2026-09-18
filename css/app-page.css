@@ -1,0 +1,1519 @@
+/* ==========================================================================
+   EduPeak Mobile App – Official Release Landing Page Stylesheet
+   Theme: eWings.lk Palette (#227AFF, #1565D8, #06B6D4, #F6FAFF, #0F172A)
+   Bilingual Sinhala & English Smart Hybrid LMS Platform
+   ========================================================================== */
+
+/* Hero Section */
+.app-hero-section {
+  position: relative;
+  padding: 6.5rem 0 5rem;
+  overflow: hidden;
+  background: radial-gradient(circle at 85% 15%, rgba(34, 122, 255, 0.12) 0%, rgba(255, 255, 255, 0) 60%),
+              radial-gradient(circle at 10% 70%, rgba(6, 182, 212, 0.08) 0%, rgba(255, 255, 255, 0) 50%),
+              linear-gradient(180deg, #ffffff 0%, #f6faff 100%);
+}
+
+.app-hero-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 3.5rem;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+/* Release Pill Badge */
+.app-release-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #bfdbfe;
+  padding: 0.45rem 1.15rem;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: 0.3px;
+  box-shadow: 0 4px 12px rgba(34, 122, 255, 0.1);
+  margin-bottom: 1.25rem;
+  animation: badgeBounce 3s ease-in-out infinite;
+}
+
+.app-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: pulseDot 2s infinite;
+}
+
+@keyframes pulseDot {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+@keyframes badgeBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+/* Hero Titles */
+.app-hero-title {
+  font-family: var(--font-heading);
+  font-size: 3.25rem;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -1px;
+  line-height: 1.15;
+  margin: 0 0 0.85rem 0;
+}
+
+.app-hero-highlight {
+  background: linear-gradient(135deg, #227aff 0%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+.app-hero-tagline {
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.app-hero-sinhala-tagline {
+  font-family: var(--font-sinhala), sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2563eb;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.app-hero-desc {
+  font-size: 1.05rem;
+  color: #475569;
+  line-height: 1.7;
+  margin-bottom: 1.25rem;
+}
+
+.app-hero-desc-sinhala {
+  font-family: var(--font-sinhala), sans-serif;
+  font-size: 0.975rem;
+  color: #334155;
+  line-height: 1.75;
+  background: rgba(255, 255, 255, 0.7);
+  border-left: 3.5px solid var(--primary);
+  padding: 0.85rem 1.15rem;
+  border-radius: 0 12px 12px 0;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(34, 122, 255, 0.05);
+}
+
+/* Hero Actions */
+.app-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.btn-apk-download {
+  background: linear-gradient(135deg, #227aff 0%, #1565d8 100%);
+  color: #ffffff !important;
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  font-weight: 800;
+  padding: 1rem 2rem;
+  border-radius: 14px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 8px 24px rgba(34, 122, 255, 0.35);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-apk-download::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  transform: skewX(-20deg);
+  animation: buttonShine 4s infinite;
+}
+
+@keyframes buttonShine {
+  0% { left: -100%; }
+  30%, 100% { left: 150%; }
+}
+
+.btn-apk-download:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 14px 30px rgba(34, 122, 255, 0.45);
+  color: #ffffff !important;
+}
+
+.btn-telegram-large {
+  background: linear-gradient(135deg, #229ed9 0%, #0088cc 100%);
+  color: #ffffff !important;
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 700;
+  padding: 1rem 1.65rem;
+  border-radius: 14px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  box-shadow: 0 6px 20px rgba(34, 158, 217, 0.3);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-telegram-large:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 25px rgba(0, 136, 204, 0.4);
+  color: #ffffff !important;
+}
+
+.app-trust-pills {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.app-trust-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.app-trust-pill i {
+  color: #10b981;
+}
+
+/* ==========================================================================
+   Interactive Smartphone 3D Mockup
+   ========================================================================== */
+.app-mockup-column {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.app-mockup-column::before {
+  content: '';
+  position: absolute;
+  width: 440px;
+  height: 580px;
+  background: radial-gradient(circle, rgba(34, 122, 255, 0.22) 0%, rgba(6, 182, 212, 0.12) 50%, rgba(255, 255, 255, 0) 70%);
+  border-radius: 50%;
+  filter: blur(40px);
+  z-index: 0;
+  animation: pulseGlow 6s ease-in-out infinite alternate;
+}
+
+@keyframes pulseGlow {
+  0% { transform: scale(0.9) rotate(0deg); opacity: 0.7; }
+  100% { transform: scale(1.1) rotate(10deg); opacity: 1; }
+}
+
+.app-phone-container {
+  position: relative;
+  z-index: 2;
+  width: 330px;
+  height: 660px;
+  background: #0f172a;
+  border-radius: 46px;
+  padding: 12px;
+  box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.35),
+              0 0 0 2px rgba(255, 255, 255, 0.15) inset,
+              0 0 35px rgba(34, 122, 255, 0.25);
+  animation: floatPhone 6s ease-in-out infinite;
+  transition: transform 0.4s ease;
+}
+
+.app-phone-container:hover {
+  transform: translateY(-8px) scale(1.02);
+}
+
+@keyframes floatPhone {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+/* Phone Bezel & Screen */
+.app-phone-screen {
+  width: 100%;
+  height: 100%;
+  background: #f8fafc;
+  border-radius: 36px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1) inset;
+}
+
+/* Phone Notch / Island */
+.phone-island {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 22px;
+  background: #0f172a;
+  border-radius: 14px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.phone-cam-lens {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+
+.phone-speaker-bar {
+  width: 28px;
+  height: 3px;
+  background: #334155;
+  border-radius: 2px;
+}
+
+/* Inside Phone App Topbar */
+.phone-app-topbar {
+  background: #ffffff;
+  padding: 2.25rem 1rem 0.65rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.phone-app-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.phone-app-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  object-fit: contain;
+  background: #eff6ff;
+  border: 1px solid rgba(34, 122, 255, 0.2);
+  padding: 2px;
+}
+
+.phone-app-name {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.phone-app-name span {
+  color: var(--primary);
+}
+
+.phone-app-user-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 0.2rem 0.55rem;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* Inside Phone App Body */
+.phone-app-scroll-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  scrollbar-width: none;
+}
+
+.phone-app-scroll-body::-webkit-scrollbar {
+  display: none;
+}
+
+/* Phone Daily Sprint Card */
+.phone-card-sprint {
+  background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+  border: 1.5px solid #bfdbfe;
+  border-radius: 18px;
+  padding: 0.85rem;
+  box-shadow: 0 4px 12px rgba(34, 122, 255, 0.08);
+}
+
+.phone-sprint-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.phone-sprint-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #2563eb;
+  background: #ffffff;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #bfdbfe;
+}
+
+.phone-sprint-timer {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.phone-mcq-question {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.35;
+  margin-bottom: 0.5rem;
+}
+
+.phone-mcq-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.phone-option-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #334155;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+}
+
+.phone-option-btn.selected-correct {
+  background: #ecfdf5;
+  border-color: #10b981;
+  color: #065f46;
+  font-weight: 700;
+}
+
+.phone-option-btn.selected-correct i {
+  color: #10b981;
+}
+
+.phone-explanation-pill {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  padding: 0.45rem;
+  font-size: 0.68rem;
+  color: #166534;
+  line-height: 1.4;
+  font-family: var(--font-sinhala), sans-serif;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Phone Live Paper Card */
+.phone-live-paper-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: 16px;
+  padding: 0.85rem;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);
+}
+
+.phone-live-paper-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.phone-live-tag {
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.phone-live-title {
+  font-size: 0.8rem;
+  font-weight: 800;
+  margin: 0 0 0.3rem 0;
+  color: #ffffff;
+}
+
+.phone-live-meta {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Phone AI Tutor Mini Bubble */
+.phone-ai-tutor-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.phone-ai-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #227aff 0%, #06b6d4 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  flex-shrink: 0;
+}
+
+.phone-ai-text {
+  font-size: 0.7rem;
+  color: #334155;
+  line-height: 1.4;
+  font-family: var(--font-sinhala), sans-serif;
+}
+
+/* Phone App Bottom Navigation */
+.phone-app-nav {
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  padding: 0.45rem 0.85rem;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.phone-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.62rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.phone-nav-item.active {
+  color: var(--primary);
+  font-weight: 800;
+}
+
+.phone-nav-item i {
+  font-size: 0.85rem;
+}
+
+/* Floating UI Badges outside Phone */
+.app-floating-pill {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(34, 122, 255, 0.25);
+  border-radius: 16px;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 12px 28px rgba(34, 122, 255, 0.18);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.app-pill-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.app-pill-text h5 {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.app-pill-text p {
+  margin: 0;
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.pill-xp {
+  top: 12%;
+  left: -48px;
+  animation: floatPill1 5s ease-in-out infinite;
+}
+
+.pill-xp .app-pill-icon {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.pill-ai {
+  bottom: 22%;
+  right: -42px;
+  animation: floatPill2 6s ease-in-out infinite 1s;
+}
+
+.pill-ai .app-pill-icon {
+  background: linear-gradient(135deg, #227aff 0%, #1565d8 100%);
+}
+
+.pill-exam {
+  bottom: 6%;
+  left: -32px;
+  animation: floatPill3 5.5s ease-in-out infinite 0.5s;
+}
+
+.pill-exam .app-pill-icon {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+@keyframes floatPill1 {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-8px) rotate(1deg); }
+}
+
+@keyframes floatPill2 {
+  0%, 100% { transform: translateY(0) rotate(1deg); }
+  50% { transform: translateY(-10px) rotate(-1deg); }
+}
+
+@keyframes floatPill3 {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-7px) rotate(1deg); }
+}
+
+/* ==========================================================================
+   Live A/L Exam Countdown Widget
+   ========================================================================== */
+.countdown-section {
+  padding: 3rem 0;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+.countdown-section::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(34, 122, 255, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.countdown-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.countdown-info-box h3 {
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 0.4rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.countdown-info-box p {
+  font-size: 0.95rem;
+  color: #94a3b8;
+  margin: 0;
+  font-family: var(--font-sinhala), sans-serif;
+}
+
+.countdown-batch-selector {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.batch-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #cbd5e1;
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.4rem 0.95rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.batch-btn.active,
+.batch-btn:hover {
+  background: #227aff;
+  border-color: #227aff;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(34, 122, 255, 0.4);
+}
+
+.countdown-digits-grid {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.countdown-unit-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  min-width: 80px;
+  text-align: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  transition: transform 0.25s ease;
+}
+
+.countdown-unit-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(34, 122, 255, 0.5);
+}
+
+.countdown-num {
+  font-family: var(--font-heading);
+  font-size: 2.25rem;
+  font-weight: 900;
+  color: #60a5fa;
+  line-height: 1;
+  display: block;
+  margin-bottom: 0.35rem;
+  text-shadow: 0 0 15px rgba(96, 165, 250, 0.4);
+}
+
+.countdown-lbl {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #94a3b8;
+}
+
+.countdown-colon {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.3);
+  animation: blinkColon 1.5s infinite;
+}
+
+@keyframes blinkColon {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ==========================================================================
+   7 Key Features Section
+   ========================================================================== */
+.app-features-section {
+  padding: 6rem 0;
+  background: #ffffff;
+}
+
+.section-header-center {
+  text-align: center;
+  max-width: 780px;
+  margin: 0 auto 3.5rem;
+}
+
+.section-tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 0.35rem 0.95rem;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.75rem;
+}
+
+.section-main-heading {
+  font-family: var(--font-heading);
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  margin: 0 0 0.85rem 0;
+}
+
+.section-sinhala-sub {
+  font-family: var(--font-sinhala), sans-serif;
+  font-size: 1.15rem;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.features-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.75rem;
+}
+
+.feature-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 2rem;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary), #06b6d4);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(34, 122, 255, 0.35);
+  box-shadow: 0 20px 35px -10px rgba(34, 122, 255, 0.12);
+}
+
+.feature-card:hover::before {
+  opacity: 1;
+}
+
+.feature-card-icon-box {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 1.35rem;
+  border: 1px solid #bfdbfe;
+  transition: all 0.3s ease;
+}
+
+.feature-card:hover .feature-card-icon-box {
+  background: linear-gradient(135deg, #227aff 0%, #1565d8 100%);
+  color: #ffffff;
+  transform: scale(1.05);
+}
+
+.feature-card-number {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #e2e8f0;
+}
+
+.feature-card-title {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 0.25rem 0;
+}
+
+.feature-card-sinhala-title {
+  font-family: var(--font-sinhala), sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 0.85rem;
+}
+
+.feature-card-desc {
+  font-size: 0.925rem;
+  color: #475569;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.feature-card-highlights {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
+.feature-card-highlights li {
+  font-size: 0.825rem;
+  color: #334155;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-sinhala), sans-serif;
+}
+
+.feature-card-highlights li i {
+  color: #10b981;
+  font-size: 0.85rem;
+}
+
+/* ==========================================================================
+   Interactive App Feature Simulator
+   ========================================================================== */
+.app-simulator-section {
+  padding: 5.5rem 0;
+  background: #f8fafc;
+  position: relative;
+}
+
+.sim-container {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 24px;
+  padding: 2.5rem;
+  box-shadow: 0 20px 45px -15px rgba(15, 23, 42, 0.08);
+}
+
+.sim-tabs-row {
+  display: flex;
+  gap: 0.65rem;
+  overflow-x: auto;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 2rem;
+  scrollbar-width: thin;
+}
+
+.sim-tab-btn {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.65rem 1.25rem;
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  transition: all 0.25s ease;
+}
+
+.sim-tab-btn.active,
+.sim-tab-btn:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(34, 122, 255, 0.3);
+}
+
+.sim-content-pane {
+  display: none;
+  animation: fadeIn 0.35s ease;
+}
+
+.sim-content-pane.active {
+  display: block;
+}
+
+/* MCQ Interactive Engine inside Simulator */
+.sim-mcq-box {
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 18px;
+  padding: 1.75rem;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.sim-mcq-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.sim-batch-tag {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #2563eb;
+  padding: 0.3rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.sim-timer-pill {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #ef4444;
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.sim-question-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+
+.sim-question-sinhala {
+  font-family: var(--font-sinhala), sans-serif;
+  font-size: 1.05rem;
+  color: #334155;
+  line-height: 1.65;
+  margin-bottom: 1.5rem;
+}
+
+.sim-options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.sim-option-card {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 0.85rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+}
+
+.sim-option-card:hover {
+  border-color: var(--primary);
+  background: #eff6ff;
+}
+
+.sim-option-card.correct {
+  background: #ecfdf5;
+  border-color: #10b981;
+  color: #065f46;
+  font-weight: 700;
+}
+
+.sim-option-card.wrong {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #991b1b;
+}
+
+.sim-explanation-panel {
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-top: 1rem;
+  font-family: var(--font-sinhala), sans-serif;
+  font-size: 0.95rem;
+  color: #166534;
+  line-height: 1.6;
+}
+
+/* ==========================================================================
+   App Specifications Table
+   ========================================================================== */
+.app-specs-section {
+  padding: 5.5rem 0;
+  background: #ffffff;
+}
+
+.specs-card-table {
+  max-width: 900px;
+  margin: 0 auto;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 15px 35px -10px rgba(15, 23, 42, 0.07);
+}
+
+.specs-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.specs-table th {
+  background: #f8fafc;
+  padding: 1.15rem 1.75rem;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+  border-bottom: 2px solid #e2e8f0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.specs-table td {
+  padding: 1.15rem 1.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.95rem;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.specs-table tr:last-child td {
+  border-bottom: none;
+}
+
+.specs-table tr:hover td {
+  background: #f8fafc;
+}
+
+.specs-label {
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.specs-badge-val {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: var(--primary);
+  padding: 0.25rem 0.65rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+/* ==========================================================================
+   Step-by-Step Installation Guide
+   ========================================================================== */
+.app-install-section {
+  padding: 6rem 0;
+  background: radial-gradient(circle at 50% 10%, rgba(34, 122, 255, 0.05) 0%, rgba(255, 255, 255, 0) 70%),
+              linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+}
+
+.install-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.75rem;
+  position: relative;
+  margin-top: 2rem;
+}
+
+.install-step-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 2.25rem 1.75rem;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+}
+
+.install-step-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--primary);
+  box-shadow: 0 16px 30px rgba(34, 122, 255, 0.1);
+}
+
+.install-step-num {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #227aff 0%, #1565d8 100%);
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 6px 16px rgba(34, 122, 255, 0.3);
+}
+
+.install-step-card h4 {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 0.3rem 0;
+}
+
+.install-step-sinhala {
+  font-family: var(--font-sinhala), sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 0.75rem;
+}
+
+.install-step-card p {
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ==========================================================================
+   Download Center & QR Code Station
+   ========================================================================== */
+.app-download-station-section {
+  padding: 6rem 0;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+.download-station-wrapper {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 28px;
+  padding: 3.5rem 3rem;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 3.5rem;
+  align-items: center;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.station-info-col h2 {
+  font-family: var(--font-heading);
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: #ffffff;
+  margin: 0 0 0.75rem 0;
+}
+
+.station-sinhala-lead {
+  font-family: var(--font-sinhala), sans-serif;
+  font-size: 1.15rem;
+  color: #93c5fd;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.station-features-check {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 2.25rem;
+}
+
+.station-check-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.95rem;
+  color: #cbd5e1;
+}
+
+.station-check-item i {
+  color: #10b981;
+}
+
+/* QR Code Station Card */
+.station-qr-card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 2rem;
+  text-align: center;
+  color: #0f172a;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.qr-box-wrap {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  display: inline-block;
+  position: relative;
+}
+
+.qr-code-img {
+  width: 170px;
+  height: 170px;
+  display: block;
+}
+
+.qr-scan-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--primary);
+  background: #eff6ff;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+/* Responsive Rules */
+@media (max-width: 991px) {
+  .app-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+
+  .app-hero-title {
+    font-size: 2.5rem;
+  }
+
+  .download-station-wrapper {
+    grid-template-columns: 1fr;
+    padding: 2.5rem 1.75rem;
+  }
+
+  .app-mockup-column {
+    margin-top: 2rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-hero-title {
+    font-size: 2rem;
+  }
+
+  .app-phone-container {
+    width: 290px;
+    height: 600px;
+  }
+
+  .pill-xp {
+    left: -10px;
+    top: 5%;
+  }
+
+  .pill-ai {
+    right: -10px;
+    bottom: 15%;
+  }
+
+  .pill-exam {
+    display: none;
+  }
+
+  .countdown-digits-grid {
+    gap: 0.5rem;
+  }
+
+  .countdown-unit-card {
+    min-width: 65px;
+    padding: 0.75rem 0.5rem;
+  }
+
+  .countdown-num {
+    font-size: 1.6rem;
+  }
+
+  .sim-container {
+    padding: 1.5rem 1rem;
+  }
+}
+
+/* ==========================================================================
+   Hero App Icon Spotlight & Balanced Wide Feature Card
+   ========================================================================== */
+.app-hero-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.app-hero-icon-card {
+  width: 90px;
+  height: 90px;
+  border-radius: 22px;
+  background: #ffffff;
+  padding: 8px;
+  box-shadow: 0 12px 30px rgba(34, 122, 255, 0.25), 0 0 0 1px rgba(34, 122, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+  animation: badgeBounce 4s ease-in-out infinite;
+}
+
+.app-hero-icon-card:hover {
+  transform: scale(1.05) rotate(-2deg);
+}
+
+.app-hero-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 14px;
+}
+
+.app-hero-icon-glow {
+  position: absolute;
+  inset: -4px;
+  border-radius: 26px;
+  background: linear-gradient(135deg, rgba(34, 122, 255, 0.4), rgba(6, 182, 212, 0.3));
+  z-index: -1;
+  filter: blur(8px);
+}
+
+@media (min-width: 992px) {
+  .feature-card.feature-card-wide {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2.5rem;
+    padding: 2.25rem 3rem;
+    background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 50%, #eff6ff 100%);
+    border: 1.5px solid #86efac;
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.08);
+  }
+
+  .feature-card.feature-card-wide .feature-card-icon-box {
+    width: 68px;
+    height: 68px;
+    font-size: 1.85rem;
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    color: #059669;
+    flex-shrink: 0;
+  }
+
+  .feature-card.feature-card-wide .feature-card-body {
+    flex: 1;
+  }
+
+  .feature-card.feature-card-wide .feature-card-highlights {
+    flex-shrink: 0;
+    min-width: 320px;
+    margin: 0;
+  }
+}
+
+

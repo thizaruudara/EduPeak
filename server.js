@@ -17,7 +17,8 @@ const MIME_TYPES = {
   '.ico': 'image/x-icon',
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
-  '.ttf': 'font/ttf'
+  '.ttf': 'font/ttf',
+  '.apk': 'application/vnd.android.package-archive'
 };
 
 const { generateAgoraRtcToken, AGORA_APP_ID } = require('./scripts/generate_agora_token');
@@ -62,30 +63,47 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  fs.stat(filePath, (err, stats) => {
-    if (err) {
-      res.statusCode = 404;
-      res.end('Not Found: ' + reqPath);
-      return;
-    }
-
-    if (stats.isDirectory()) {
-      filePath = path.join(filePath, 'index.html');
-    }
-
-    const ext = path.extname(filePath).toLowerCase();
-    const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-
-    fs.readFile(filePath, (err, content) => {
+  function serveFile(targetPath) {
+    fs.stat(targetPath, (err, stats) => {
       if (err) {
-        res.statusCode = 500;
-        res.end('Error loading ' + reqPath);
+        if (!path.extname(targetPath)) {
+          const htmlAlternative = targetPath + '.html';
+          if (fs.existsSync(htmlAlternative)) {
+            return serveFile(htmlAlternative);
+          }
+        }
+        res.statusCode = 404;
+        res.end('Not Found: ' + reqPath);
         return;
       }
-      res.writeHead(200, { 'Content-Type': contentType });
-      res.end(content);
+
+      if (stats.isDirectory()) {
+        targetPath = path.join(targetPath, 'index.html');
+      }
+
+      const ext = path.extname(targetPath).toLowerCase();
+      const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+
+      fs.readFile(targetPath, (err, content) => {
+        if (err) {
+          res.statusCode = 500;
+          res.end('Error loading ' + reqPath);
+          return;
+        }
+
+        const headers = { 'Content-Type': contentType };
+        if (ext === '.apk') {
+          headers['Content-Disposition'] = 'attachment; filename="edupeak-latest.apk"';
+          headers['Content-Length'] = content.length;
+        }
+
+        res.writeHead(200, headers);
+        res.end(content);
+      });
     });
-  });
+  }
+
+  serveFile(filePath);
 });
 
 server.listen(PORT, () => {

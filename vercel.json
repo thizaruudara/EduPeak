@@ -24,7 +24,7 @@
       "destination": "/teacher-portal.html"
     },
     {
-      "source": "/((?!css/|js/|assets/|screenshots/|favicon\\.ico|manifest\\.json|robots\\.txt|sitemap\\.xml).*)",
+      "source": "/((?!css/|js/|assets/|downloads/|screenshots/|favicon\\.ico|manifest\\.json|robots\\.txt|sitemap\\.xml).*)",
       "has": [
         {
           "type": "host",
@@ -34,7 +34,7 @@
       "destination": "/admin.html"
     },
     {
-      "source": "/((?!css/|js/|assets/|screenshots/|favicon\\.ico|manifest\\.json|robots\\.txt|sitemap\\.xml).*)",
+      "source": "/((?!css/|js/|assets/|downloads/|screenshots/|favicon\\.ico|manifest\\.json|robots\\.txt|sitemap\\.xml).*)",
       "has": [
         {
           "type": "host",
@@ -64,7 +64,7 @@
       "destination": "/teacher-portal.html"
     },
     {
-      "source": "/((?!css/|js/|assets/|screenshots/|favicon\\.ico|manifest\\.json|robots\\.txt|sitemap\\.xml).*)",
+      "source": "/((?!css/|js/|assets/|downloads/|screenshots/|favicon\\.ico|manifest\\.json|robots\\.txt|sitemap\\.xml).*)",
       "has": [
         {
           "type": "host",
@@ -74,7 +74,7 @@
       "destination": "/admin.html"
     },
     {
-      "source": "/((?!css/|js/|assets/|screenshots/|favicon\\.ico|manifest\\.json|robots\\.txt|sitemap\\.xml).*)",
+      "source": "/((?!css/|js/|assets/|downloads/|screenshots/|favicon\\.ico|manifest\\.json|robots\\.txt|sitemap\\.xml).*)",
       "has": [
         {
           "type": "host",
