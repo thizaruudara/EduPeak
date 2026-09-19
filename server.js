@@ -84,6 +84,17 @@ const server = http.createServer((req, res) => {
       const ext = path.extname(targetPath).toLowerCase();
       const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
+      if (ext === '.apk') {
+        const filename = path.basename(targetPath) || 'EduPeak_v1.0.0.apk';
+        res.writeHead(200, {
+          'Content-Type': contentType,
+          'Content-Disposition': `attachment; filename="${filename}"`,
+          'Content-Length': stats.size
+        });
+        fs.createReadStream(targetPath).pipe(res);
+        return;
+      }
+
       fs.readFile(targetPath, (err, content) => {
         if (err) {
           res.statusCode = 500;
@@ -92,11 +103,6 @@ const server = http.createServer((req, res) => {
         }
 
         const headers = { 'Content-Type': contentType };
-        if (ext === '.apk') {
-          headers['Content-Disposition'] = 'attachment; filename="edupeak-latest.apk"';
-          headers['Content-Length'] = content.length;
-        }
-
         res.writeHead(200, headers);
         res.end(content);
       });

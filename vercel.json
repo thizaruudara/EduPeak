@@ -2,6 +2,23 @@
   "version": 2,
   "cleanUrls": true,
   "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/downloads/EduPeak_v1.0.0.apk",
+      "destination": "https://github.com/thizaruudara/EduPeak/releases/download/v1.0.0/EduPeak_v1.0.0.apk",
+      "permanent": false
+    },
+    {
+      "source": "/downloads/edupeak-latest.apk",
+      "destination": "https://github.com/thizaruudara/EduPeak/releases/download/v1.0.0/EduPeak_v1.0.0.apk",
+      "permanent": false
+    },
+    {
+      "source": "/downloads/edupeak.apk",
+      "destination": "https://github.com/thizaruudara/EduPeak/releases/download/v1.0.0/EduPeak_v1.0.0.apk",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/",

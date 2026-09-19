@@ -7,6 +7,11 @@ scratch/
 test-screenshots/
 artifacts/
 
+# Large binary files (Host on GitHub Releases to bypass GitHub 100MB push limit)
+*.apk
+/EduPeak_v1.0.0.apk
+/downloads/*.apk
+
 # Logs
 *.log
 npm-debug.log*

@@ -54,8 +54,8 @@
       <!-- Header Action Area -->
       <div class="header-actions">
         <div class="guest-actions-group">
-          <a href="/downloads/edupeak-latest.apk" download class="btn btn-primary btn-sm" style="box-shadow: 0 4px 14px rgba(34, 122, 255, 0.35);">
-            <i class="fa-solid fa-download"></i> Download APK
+          <a href="/downloads/EduPeak_v1.0.0.apk" download="EduPeak_v1.0.0.apk" class="btn btn-primary btn-sm" style="box-shadow: 0 4px 14px rgba(34, 122, 255, 0.35);">
+            <i class="fa-solid fa-download"></i> Download APK v1.0.0
           </a>
         </div>
       </div>
@@ -107,9 +107,9 @@
 
           <!-- Hero Action Buttons -->
           <div class="app-hero-actions">
-            <a href="/downloads/edupeak-latest.apk" download class="btn-apk-download" id="heroDownloadApkBtn" onclick="trackDownloadEvent('hero_button')">
+            <a href="/downloads/EduPeak_v1.0.0.apk" download="EduPeak_v1.0.0.apk" class="btn-apk-download" id="heroDownloadApkBtn" onclick="trackDownloadEvent('hero_button')">
               <i class="fa-solid fa-bolt"></i>
-              <span>⚡ Download EduPeak APK</span>
+              <span>⚡ Download EduPeak APK v1.0.0</span>
             </a>
 
             <a href="https://t.me/edupeakbot" target="_blank" rel="noopener noreferrer" class="btn-telegram-large">
@@ -130,7 +130,7 @@
             </div>
             <div class="app-trust-pill">
               <i class="fa-solid fa-bolt-lightning"></i>
-              <span>Direct Fast Download (~28.4 MB)</span>
+              <span>Direct Fast Download (~158 MB &bull; v1.0.0 Official)</span>
             </div>
           </div>
 
@@ -174,7 +174,7 @@
 
           <!-- Phone Chassis -->
           <div class="app-phone-container">
-            <div class="app-phone-screen">
+            <div class="app-phone-screen" style="padding: 0; background: #0b1a48;">
               
               <!-- Dynamic Island / Speaker Notch -->
               <div class="phone-island">
@@ -182,111 +182,8 @@
                 <span class="phone-speaker-bar"></span>
               </div>
 
-              <!-- Inside Phone Topbar with EduPeak Logo Icon -->
-              <div class="phone-app-topbar">
-                <div class="phone-app-brand">
-                  <img src="assets/img/edupeak_logo.png" alt="EduPeak App Icon" class="phone-app-logo">
-                  <div class="phone-app-name">
-                    EduPeak <span>App</span>
-                  </div>
-                </div>
-                <div class="phone-app-user-pill">
-                  <i class="fa-solid fa-fire" style="color: #f59e0b;"></i>
-                  <span>7 Day Streak</span>
-                </div>
-              </div>
-
-              <!-- Phone Screen Scroll Body -->
-              <div class="phone-app-scroll-body">
-                
-                <!-- Phone Card 1: Interactive Daily 5-MCQ Sprint -->
-                <div class="phone-card-sprint">
-                  <div class="phone-sprint-header">
-                    <span class="phone-sprint-badge">
-                      <i class="fa-solid fa-fire"></i> Daily 5-MCQ Sprint (2026 A/L)
-                    </span>
-                    <span class="phone-sprint-timer" id="mockupTimer">
-                      <i class="fa-regular fa-clock"></i> <span id="mockupTimerDigits">01:42</span>
-                    </span>
-                  </div>
-
-                  <div class="phone-mcq-question">
-                    Q3: සරල අවලම්භයක ආවර්ත කාලය (T) එහි දිග (L) මත රඳා පවතින සබඳතාවය කුමක්ද?
-                  </div>
-
-                  <!-- Options Buttons -->
-                  <div class="phone-mcq-options">
-                    <button class="phone-option-btn" onclick="selectMockupOption(this, false)">
-                      <span>A) T ∝ L</span>
-                      <i class="fa-regular fa-circle"></i>
-                    </button>
-                    <button class="phone-option-btn selected-correct" onclick="selectMockupOption(this, true)">
-                      <span>B) T ∝ √L (නිවැරදි පිළිතුර)</span>
-                      <i class="fa-solid fa-circle-check"></i>
-                    </button>
-                    <button class="phone-option-btn" onclick="selectMockupOption(this, false)">
-                      <span>C) T ∝ L²</span>
-                      <i class="fa-regular fa-circle"></i>
-                    </button>
-                  </div>
-
-                  <!-- Instant Sinhala Step Explanation -->
-                  <div class="phone-explanation-pill" id="phoneMockupExplanation">
-                    💡 <strong>විවරණය:</strong> T = 2π√(L/g) සූත්‍රයට අනුව g නියතව පවතින විට ආවර්ත කාලය දිගෙහි වර්ගමූලයට අනුලෝමව සමානුපාතික වේ (T ∝ √L).
-                  </div>
-                </div>
-
-                <!-- Phone Card 2: Live Exam Session -->
-                <div class="phone-live-paper-card">
-                  <div class="phone-live-paper-top">
-                    <span class="phone-live-tag">
-                      <span style="width:6px;height:6px;border-radius:50%;background:#fff;display:inline-block;animation:pulseDot 1.5s infinite;"></span>
-                      LIVE EXAM
-                    </span>
-                    <span style="font-size: 0.65rem; color: #94a3b8;"><i class="fa-solid fa-shield-halved"></i> Proctored</span>
-                  </div>
-                  <h4 class="phone-live-title">2026 A/L Physics Model Paper 08</h4>
-                  <div class="phone-live-meta">
-                    <span><i class="fa-solid fa-user-clock"></i> Time Left: 42m 18s</span>
-                    <span style="color: #34d399; font-weight: 700;">Rank: #04 / 350</span>
-                  </div>
-                </div>
-
-                <!-- Phone Card 3: AI Tutor Bubble -->
-                <div class="phone-ai-tutor-box">
-                  <div class="phone-ai-avatar">
-                    <i class="fa-solid fa-robot"></i>
-                  </div>
-                  <div class="phone-ai-text">
-                    <strong>AI Tutor:</strong> "ඩොප්ලර් ආචරණයේදී ප්‍රභවය නිශ්චල නිරීක්ෂකයා දෙසට චලනය වන විට සංඛ්‍යාතය වැඩි වන බව මතක තබාගන්න!"
-                  </div>
-                </div>
-
-              </div>
-
-              <!-- Phone Bottom Navigation Bar -->
-              <div class="phone-app-nav">
-                <div class="phone-nav-item active">
-                  <i class="fa-solid fa-house"></i>
-                  <span>Home</span>
-                </div>
-                <div class="phone-nav-item">
-                  <i class="fa-solid fa-stopwatch"></i>
-                  <span>Sprint</span>
-                </div>
-                <div class="phone-nav-item">
-                  <i class="fa-solid fa-file-pen"></i>
-                  <span>Exams</span>
-                </div>
-                <div class="phone-nav-item">
-                  <i class="fa-solid fa-robot"></i>
-                  <span>AI Tutor</span>
-                </div>
-                <div class="phone-nav-item">
-                  <i class="fa-solid fa-trophy"></i>
-                  <span>Rank</span>
-                </div>
-              </div>
+              <!-- Genuine High-Res EduPeak Mobile App Screen Graphic -->
+              <img src="assets/img/edupeak_app_ui_screen.png" alt="EduPeak Mobile App Interface" style="width: 100%; height: 100%; object-fit: cover; border-radius: 36px; display: block;">
 
             </div>
           </div>
@@ -570,8 +467,8 @@
               </div>
             </div>
             <div style="text-align: center;">
-              <a href="/downloads/edupeak-latest.apk" download class="btn btn-primary" style="font-size: 0.95rem; padding: 0.75rem 2rem;">
-                <i class="fa-solid fa-mobile-screen-button"></i> Launch Live Paper in EduPeak App
+              <a href="/downloads/EduPeak_v1.0.0.apk" download="EduPeak_v1.0.0.apk" class="btn btn-primary" style="font-size: 0.95rem; padding: 0.75rem 2rem;">
+                <i class="fa-solid fa-mobile-screen-button"></i> Launch Live Paper in EduPeak App v1.0.0
               </a>
             </div>
           </div>
@@ -863,8 +760,9 @@
 
           <!-- The exact snippet requested by the user -->
           <div style="margin: 25px 0;">
-            <a href="/downloads/edupeak-latest.apk"
-               download
+            <a href="/downloads/EduPeak_v1.0.0.apk"
+               download="EduPeak_v1.0.0.apk"
+               id="mainDownloadStationBtn"
                style="background: linear-gradient(135deg, #2563EB, #1D4ED8);
                       color: #ffffff;
                       padding: 16px 36px;
@@ -875,18 +773,21 @@
                       display: inline-block;
                       box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35);
                       transition: transform 0.2s ease;">
-              ⚡ Download EduPeak APK (Latest Release)
+              ⚡ Download EduPeak APK (v1.0.0 Official Release)
             </a>
             <p style="color: #94A3B8; font-size: 13px; margin-top: 10px;">
-              100% Free • Safe & Verified APK • Direct Download (~28.4 MB)
+              100% Free • Safe & Verified APK • Direct Download (~157.9 MB • Android 7.0+)
             </p>
           </div>
 
-          <!-- Secondary Quick Actions -->
-          <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
+          <!-- Secondary Quick Actions & Mirrors -->
+          <div style="display: flex; gap: 0.85rem; flex-wrap: wrap; margin-top: 1rem;">
             <button class="btn btn-ghost btn-sm" onclick="copyApkLink()" style="background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.2);">
               <i class="fa-regular fa-copy"></i> <span id="copyLinkBtnText">Copy Direct APK Link</span>
             </button>
+            <a href="https://github.com/thizaruudara/EduPeak/releases/download/v1.0.0/EduPeak_v1.0.0.apk" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm" style="background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.2);">
+              <i class="fa-brands fa-github"></i> GitHub CDN Mirror
+            </a>
             <a href="https://t.me/edupeakbot" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm" style="background: rgba(34, 158, 217, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">
               <i class="fa-brands fa-telegram"></i> Launch @edupeakbot
             </a>
@@ -949,7 +850,7 @@
           </div>
 
           <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">
-            URL: <a href="https://edupeak.lk/downloads/edupeak-latest.apk" style="color: var(--primary); text-decoration: underline;">edupeak.lk/downloads/edupeak-latest.apk</a>
+            URL: <a href="https://edupeak.lk/downloads/EduPeak_v1.0.0.apk" style="color: var(--primary); text-decoration: underline;">edupeak.lk/downloads/EduPeak_v1.0.0.apk</a>
           </span>
         </div>
 
@@ -1108,7 +1009,7 @@
 
     // Copy Direct APK Link with Toast
     function copyApkLink() {
-      const fullUrl = window.location.origin + '/downloads/edupeak-latest.apk';
+      const fullUrl = window.location.origin + '/downloads/EduPeak_v1.0.0.apk';
       navigator.clipboard.writeText(fullUrl).then(() => {
         const textSpan = document.getElementById('copyLinkBtnText');
         if (textSpan) textSpan.textContent = 'Copied to Clipboard!';
@@ -1124,7 +1025,7 @@
     // Download tracking
     function trackDownloadEvent(source) {
       console.log('APK Download initiated from:', source);
-      showToast('⚡ Starting download: edupeak-latest.apk (v1.0.0)');
+      showToast('⚡ Starting download: EduPeak_v1.0.0.apk (~158 MB)');
     }
 
     // Toast helper

@@ -5,6 +5,7 @@
   "scripts": {
     "start": "node server.js",
     "generate-agora-token": "node scripts/generate_agora_token.js",
+    "generate:seedance": "node --experimental-strip-types index.ts",
     "deploy": "git add -A && git commit -m \"deploy: platform updates\" && git push origin main"
   },
   "devDependencies": {
@@ -12,6 +13,8 @@
     "playwright-core": "^1.62.1"
   },
   "dependencies": {
-    "agora-token": "^2.0.6"
+    "@higgsfield/client": "^0.2.6",
+    "agora-token": "^2.0.6",
+    "dotenv": "^18.0.0"
   }
 }

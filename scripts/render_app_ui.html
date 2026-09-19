@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=390, initial-scale=1.0">
+  <title>EduPeak App UI Screen</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    body {
+      background: #f1f5f9;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 0;
+    }
+    .app-screen {
+      width: 390px;
+      height: 844px;
+      background: #f8fafc;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Status Bar */
+    .status-bar {
+      height: 38px;
+      background: #0b1a48;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 18px;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      z-index: 10;
+    }
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+    }
+
+    /* Scrollable Container */
+    .screen-content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-bottom: 75px;
+      scrollbar-width: none;
+    }
+    .screen-content::-webkit-scrollbar { display: none; }
+
+    /* Top Navy Curved Banner */
+    .hero-banner {
+      background: linear-gradient(175deg, #0b1a48 0%, #112a75 55%, #1d4ed8 100%);
+      padding: 12px 16px 22px 16px;
+      border-bottom-left-radius: 28px;
+      border-bottom-right-radius: 28px;
+      color: #ffffff;
+      box-shadow: 0 10px 25px rgba(11, 26, 72, 0.25);
+    }
+
+    /* User Row */
+    .user-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .user-profile-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .user-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #ffffff;
+      padding: 3px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+      flex-shrink: 0;
+    }
+    .user-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 50%;
+    }
+    .user-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .user-name-wrap {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .user-name {
+      font-size: 17px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.2px;
+    }
+    .verified-badge {
+      color: #38bdf8;
+      font-size: 14px;
+    }
+    .target-pill {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 9999px;
+      padding: 2px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #e2e8f0;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      width: fit-content;
+    }
+
+    .user-stats-pills {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stat-pill {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 9999px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .stat-pill-streak {
+      background: #ea580c;
+      border-color: #f97316;
+    }
+
+    /* Level Progress Card */
+    .level-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 18px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+    }
+    .level-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .level-info-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .level-icon-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: rgba(245, 158, 11, 0.25);
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      color: #fbbf24;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    }
+    .level-title-group h4 {
+      font-size: 13px;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+    .level-title-group p {
+      font-size: 10.5px;
+      color: #cbd5e1;
+      font-weight: 600;
+    }
+    .pts-pill {
+      background: #ffffff;
+      color: #0b1a48;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .level-progress-track {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.18);
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+    .level-progress-bar {
+      width: 28%;
+      height: 100%;
+      background: linear-gradient(90deg, #38bdf8, #60a5fa);
+      border-radius: 9999px;
+    }
+
+    /* A/L Countdown Target Card */
+    .countdown-card {
+      background: rgba(8, 18, 50, 0.65);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      border-radius: 18px;
+      padding: 12px 14px;
+    }
+    .countdown-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .countdown-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .target-tag {
+      background: rgba(245, 158, 11, 0.18);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .countdown-exam-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+    .live-dot-green {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    .countdown-timer-grid {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+      align-items: center;
+      gap: 4px;
+      text-align: center;
+    }
+    .timer-tile {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      border-radius: 10px;
+      padding: 6px 2px;
+    }
+    .timer-num {
+      font-size: 15px;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.1;
+    }
+    .timer-unit {
+      font-size: 8px;
+      font-weight: 800;
+      color: #93c5fd;
+      letter-spacing: 0.5px;
+    }
+    .timer-colon {
+      color: #60a5fa;
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    /* Main Body */
+    .body-container {
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* 4-Item Quick Action Row */
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .action-box {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 10px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+    }
+    .action-icon-wrap {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+    .action-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.2;
+      margin-bottom: 2px;
+    }
+    .action-sub {
+      font-size: 9px;
+      font-weight: 700;
+      color: #64748b;
+    }
+
+    /* Daily Study Quests Card */
+    .quests-card {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 14px;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+    }
+    .quests-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .quests-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .quest-target-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #eff6ff;
+      color: #2563eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    }
+    .quests-left h4 {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+    .quests-left p {
+      font-size: 10px;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .mystery-box-pill {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      font-size: 9.5px;
+      font-weight: 700;
+      color: #475569;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .quest-track {
+      width: 100%;
+      height: 5px;
+      background: #f1f5f9;
+      border-radius: 9999px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .quest-bar {
+      width: 33%;
+      height: 100%;
+      background: #2563eb;
+      border-radius: 9999px;
+    }
+
+    .quest-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .quest-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid #f1f5f9;
+      background: #f8fafc;
+    }
+    .quest-item.completed {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+    .quest-item-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    .quest-tag-pill {
+      font-size: 9px;
+      font-weight: 800;
+      padding: 3px 7px;
+      border-radius: 6px;
+      letter-spacing: 0.2px;
+    }
+    .quest-tag-completed {
+      background: #dcfce7;
+      color: #15803d;
+    }
+    .quest-tag-xp {
+      background: #eff6ff;
+      color: #2563eb;
+    }
+
+    /* Learning Progress Card */
+    .progress-card {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+    }
+    .progress-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .progress-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
+      background: #eff6ff;
+      color: #2563eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    }
+    .progress-left h4 {
+      font-size: 12px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .progress-left p {
+      font-size: 9.5px;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .toggle-pill {
+      display: flex;
+      background: #f1f5f9;
+      border-radius: 9999px;
+      padding: 2px;
+    }
+    .toggle-tab {
+      padding: 3px 8px;
+      border-radius: 9999px;
+      font-size: 9px;
+      font-weight: 700;
+      color: #64748b;
+    }
+    .toggle-tab.active {
+      background: #ffffff;
+      color: #2563eb;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    /* Bottom Navigation Bar */
+    .bottom-nav {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: #ffffff;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 8px;
+      z-index: 20;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      color: #64748b;
+      font-size: 15px;
+      width: 44px;
+      cursor: pointer;
+    }
+    .nav-item span {
+      font-size: 9px;
+      font-weight: 700;
+    }
+    .home-active-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      margin-top: -14px;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-screen" id="appScreenContainer">
+    
+    <!-- Top Status Bar -->
+    <div class="status-bar">
+      <span>4:22</span>
+      <div class="status-icons">
+        <i class="fa-solid fa-signal"></i>
+        <i class="fa-solid fa-wifi"></i>
+        <i class="fa-solid fa-battery-full"></i>
+      </div>
+    </div>
+
+    <!-- Scrollable Screen Body -->
+    <div class="screen-content">
+      
+      <!-- Top Curved Navy Banner -->
+      <div class="hero-banner">
+        
+        <!-- User Row -->
+        <div class="user-header-row">
+          <div class="user-profile-info">
+            <div class="user-avatar">
+              <img src="../assets/img/edupeak_logo.png" alt="EduPeak Logo">
+            </div>
+            <div class="user-title-group">
+              <div class="user-name-wrap">
+                <span class="user-name">ThiZaru</span>
+                <i class="fa-solid fa-circle-check verified-badge"></i>
+              </div>
+              <span class="target-pill">
+                <i class="fa-solid fa-bullseye" style="color: #ef4444;"></i> 2027 A/L Target
+              </span>
+            </div>
+          </div>
+
+          <div class="user-stats-pills">
+            <div class="stat-pill">
+              <i class="fa-solid fa-trophy" style="color: #fbbf24;"></i> Badges
+            </div>
+            <div class="stat-pill stat-pill-streak">
+              <i class="fa-solid fa-fire" style="color: #fef08a;"></i> 3d
+            </div>
+          </div>
+        </div>
+
+        <!-- Level Progress Card -->
+        <div class="level-card">
+          <div class="level-top-row">
+            <div class="level-info-left">
+              <div class="level-icon-circle">
+                <i class="fa-solid fa-bolt"></i>
+              </div>
+              <div class="level-title-group">
+                <h4>Level 2 Cadet</h4>
+                <p>5 / 100 XP to Level 3</p>
+              </div>
+            </div>
+            <div class="pts-pill">
+              105 pts
+            </div>
+          </div>
+          <div class="level-progress-track">
+            <div class="level-progress-bar"></div>
+          </div>
+        </div>
+
+        <!-- A/L Countdown Target Card -->
+        <div class="countdown-card">
+          <div class="countdown-header-row">
+            <div class="countdown-title-wrap">
+              <span class="target-tag">
+                <i class="fa-solid fa-hourglass-half"></i> A/L TARGET
+              </span>
+              <span class="countdown-exam-title">2027 A/L Physics Final Exam</span>
+            </div>
+            <span class="live-dot-green"></span>
+          </div>
+
+          <div class="countdown-timer-grid">
+            <div class="timer-tile">
+              <div class="timer-num">325</div>
+              <div class="timer-unit">DAYS</div>
+            </div>
+            <span class="timer-colon">:</span>
+            <div class="timer-tile">
+              <div class="timer-num">16</div>
+              <div class="timer-unit">HOURS</div>
+            </div>
+            <span class="timer-colon">:</span>
+            <div class="timer-tile">
+              <div class="timer-num">07</div>
+              <div class="timer-unit">MINS</div>
+            </div>
+            <span class="timer-colon">:</span>
+            <div class="timer-tile">
+              <div class="timer-num">44</div>
+              <div class="timer-unit">SECS</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Main Body Container -->
+      <div class="body-container">
+        
+        <!-- 4 Quick Actions Row -->
+        <div class="actions-grid">
+          
+          <div class="action-box">
+            <div class="action-icon-wrap" style="background: #fff7ed; color: #ea580c;">
+              <i class="fa-solid fa-bolt"></i>
+            </div>
+            <div class="action-title">Daily MCQ</div>
+            <div class="action-sub">5 Sprints 🔥</div>
+          </div>
+
+          <div class="action-box">
+            <div class="action-icon-wrap" style="background: #faf5ff; color: #9333ea;">
+              <i class="fa-solid fa-comment-dots"></i>
+            </div>
+            <div class="action-title">AI Tutor</div>
+            <div class="action-sub">Instant 💬</div>
+          </div>
+
+          <div class="action-box">
+            <div class="action-icon-wrap" style="background: #eff6ff; color: #2563eb;">
+              <i class="fa-solid fa-camera"></i>
+            </div>
+            <div class="action-title">Submit HW</div>
+            <div class="action-sub">Earn XP 🚀</div>
+          </div>
+
+          <div class="action-box">
+            <div class="action-icon-wrap" style="background: #fffbeb; color: #d97706;">
+              <i class="fa-solid fa-trophy"></i>
+            </div>
+            <div class="action-title">Ranks</div>
+            <div class="action-sub">Podium 👑</div>
+          </div>
+
+        </div>
+
+        <!-- Daily Study Quests Card -->
+        <div class="quests-card">
+          <div class="quests-top-row">
+            <div class="quests-left">
+              <div class="quest-target-icon">
+                <i class="fa-solid fa-bullseye"></i>
+              </div>
+              <div>
+                <h4>Daily Study Quests</h4>
+                <p>1 of 3 completed</p>
+              </div>
+            </div>
+            <div class="mystery-box-pill">
+              🎁 Mystery Box
+            </div>
+          </div>
+
+          <div class="quest-track">
+            <div class="quest-bar"></div>
+          </div>
+
+          <div class="quest-list">
+            <div class="quest-item completed">
+              <div class="quest-item-left">
+                <i class="fa-solid fa-pencil" style="color: #10b981;"></i>
+                <span>Submit Today's Homework Solution</span>
+              </div>
+              <span class="quest-tag-pill quest-tag-completed">COMPLETED</span>
+            </div>
+
+            <div class="quest-item">
+              <div class="quest-item-left">
+                <i class="fa-solid fa-robot" style="color: #2563eb;"></i>
+                <span>Consult WhatsApp 24/7 AI Tutor</span>
+              </div>
+              <span class="quest-tag-pill quest-tag-xp">+10 XP</span>
+            </div>
+
+            <div class="quest-item">
+              <div class="quest-item-left">
+                <i class="fa-solid fa-trophy" style="color: #d97706;"></i>
+                <span>Check Institute Leaderboard Standings</span>
+              </div>
+              <span class="quest-tag-pill quest-tag-xp">+5 XP</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Learning Progress Card -->
+        <div class="progress-card">
+          <div class="progress-left">
+            <div class="progress-icon">
+              <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <div>
+              <h4>Learning Progress</h4>
+              <p>Activity & Performance</p>
+            </div>
+          </div>
+          <div class="toggle-pill">
+            <span class="toggle-tab active">Activity</span>
+            <span class="toggle-tab">Growth</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <div class="bottom-nav">
+      <div class="nav-item">
+        <div class="home-active-btn">
+          <i class="fa-solid fa-house"></i>
+        </div>
+        <span style="color: #2563eb; margin-top: 2px;">Home</span>
+      </div>
+      <div class="nav-item">
+        <i class="fa-regular fa-clipboard"></i>
+      </div>
+      <div class="nav-item">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+      <div class="nav-item">
+        <i class="fa-regular fa-folder"></i>
+      </div>
+      <div class="nav-item">
+        <i class="fa-regular fa-user"></i>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
